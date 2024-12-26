@@ -22,6 +22,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         'fname',
         'lname',
         'email',
+        'phone',
         'password',
         'otp',
         'otp_expires_at',

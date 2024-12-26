@@ -15,7 +15,8 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('fname')->nullable();
             $table->string('lname')->nullable();
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
+            $table->string('phone')->unique()->nullable();
             $table->string('password');
             $table->string('otp')->nullable();
             $table->date('otp_expires_at')->nullable();

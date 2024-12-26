@@ -25,11 +25,13 @@ class AuthController extends BaseController
      */
     public function register(Request $request)
     {
+
         // Validate the request
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'phone' => 'required|unique:users,phone',
             'password' => 'required|string|min:8',
         ]);
 
@@ -46,6 +48,7 @@ class AuthController extends BaseController
             'fname' => $request->fname,
             'lname' => $request->lname,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password), // Hash the password
         ]);
 
@@ -66,12 +69,13 @@ class AuthController extends BaseController
         try {
             // Validation
             $this->validate($request, [
-                'email' => 'required|string|email|max:255',
+                'email' => 'required|string|max:255',
                 'password' => 'required|string|min:8',
             ]);
 
             // Check if user exists
-            $user = User::where('email', $request->email)->first();
+            $user = User::orWhere('email', $request->email)
+                            ->orWhere('phone', $request->email)->first();
 
             if (!$user) {
                 return response()->json([

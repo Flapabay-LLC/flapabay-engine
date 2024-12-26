@@ -169,9 +169,9 @@ class UserController extends BaseController
             // Define your Wasabi S3 endpoint and credentials
             $endpoint = 'https://s3.us-east-1.wasabisys.com';  // Replace with your Wasabi region endpoint
             $bucketName = 'flapapic';                     // Replace with your Wasabi bucket name
-            $region = 'us-east-1';                             // Replace with your Wasabi region
-            $accessKey = '0VDI6B63V4LF0TYZK4AX';                      // Replace with your Wasabi access key
-            $secretKey = 'k3D7ecACAl5tanPRAaXHa3UThuBu6rj9CY8OtuTm';                      // Replace with your Wasabi secret key
+            $region = 'us-west-1';                             // Replace with your Wasabi region
+            $accessKey = 'HJG2GQM9QGBE4K6JCO2S';                      // Replace with your Wasabi access key
+            $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
 
             // Create an S3 client with the specified configuration for Wasabi
             $s3Client = new S3Client([
@@ -189,6 +189,7 @@ class UserController extends BaseController
                 'Bucket'     => $bucketName,
                 'Key'        => $filePath,
                 'SourceFile' => $localPath,  // Path to the local file
+                'ACL'        => 'read-write'
             ]);
 
             // Check if the file was successfully uploaded
