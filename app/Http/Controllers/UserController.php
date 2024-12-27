@@ -167,7 +167,7 @@ class UserController extends BaseController
             $filePath = 'profile_pictures/' . $fileName;
 
             // Define your Wasabi S3 endpoint and credentials
-            $endpoint = 'https://s3.us-east-1.wasabisys.com';  // Replace with your Wasabi region endpoint
+            $endpoint = 'https://s3.us-west-1.wasabisys.com';  // Replace with your Wasabi region endpoint
             $bucketName = 'flapapic';                     // Replace with your Wasabi bucket name
             $region = 'us-west-1';                             // Replace with your Wasabi region
             $accessKey = 'HJG2GQM9QGBE4K6JCO2S';                      // Replace with your Wasabi access key

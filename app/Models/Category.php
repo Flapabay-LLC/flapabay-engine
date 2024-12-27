@@ -21,19 +21,10 @@ class Category extends Model
     protected $fillable = [
         'name',
         'icon',
+        'icon_alt',
         'description',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'name' => 'string', // Cast name as a string
-        'icon' => 'string', // Cast icon as a string
-        'description' => 'string', // Cast description as a string
-    ];
 
     /**
      * Get the category name in uppercase (Optional accessor).

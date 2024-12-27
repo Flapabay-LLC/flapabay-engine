@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('bookings', function (Blueprint $table) {
             $table->bigIncrements('id'); // Primary key
             $table->string('booking_number')->nullable(); // Foreign key to properties table
+            $table->float('amount', 10,2)->nullable(); // Foreign key to properties table
             $table->unsignedBigInteger('property_id'); // Foreign key to properties table
             $table->unsignedBigInteger('user_id'); // Foreign key to users table
             $table->date('start_date')->nullable(); // Date the booking starts
@@ -21,6 +22,9 @@ return new class extends Migration
             $table->text('guest_details')->nullable(); // Details of guests (e.g., "1 adult, 1 child")
             $table->unsignedInteger('guest_count')->nullable(); // Total number of guests (calculated)
             $table->string('booking_status')->default('pending'); // Status of the booking (e.g., pending, confirmed, canceled)
+            $table->string('payment_status')->default('pending'); // Status of the booking (e.g., pending, confirmed, canceled)
+            $table->string('payment_method')->default('pending'); // Status of the booking (e.g., pending, confirmed, canceled)
+            $table->string('payment_date')->default('pending'); // Status of the booking (e.g., pending, confirmed, canceled)
             $table->text('cancellation_reason')->nullable(); // Status of the booking (e.g., pending, confirmed, canceled)
             $table->date('cancellation_date')->nullable(); // Status of the booking (e.g., pending, confirmed, canceled)
             $table->timestamps();

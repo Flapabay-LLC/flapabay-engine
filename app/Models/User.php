@@ -19,6 +19,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var string[]
      */
     protected $fillable = [
+        'host_id', //optional (only if a user is a host)
         'fname',
         'lname',
         'email',

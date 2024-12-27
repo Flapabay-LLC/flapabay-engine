@@ -56,6 +56,19 @@ $router->group(['prefix' => 'v1'], function () use ($router) {
     $router->post('booking', 'BookingController@createBooking');
     $router->get('bookings', 'BookingController@getBookings');
     $router->get('booking/{book_id}', 'BookingController@getBooking');
+    $router->put('booking/{book_id}/cancel', 'BookingController@cancelbooking');
+
+    $router->get('bookings/host/{host_id}', 'HostController@getHostInfo');
+
+    $router->post('payments/checkout', 'PaymentController@checkout');
+    $router->get('payments/status', 'PaymentController@status');
+    $router->get('payments/options', 'PaymentController@options');
+    $router->post('payments/options/add', 'PaymentController@addOption');
+    $router->put('payments/options/edit/{id}', 'PaymentController@editOption');
+
+
+    $router->post('categories/add', 'CategoryController@addCategory');
+    $router->get('categories', 'CategoryController@getAllCategories');
 
 });
 

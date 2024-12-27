@@ -26,17 +26,21 @@ class Booking extends Model
         'guest_details',
         'guest_count',
         'booking_status',
+        'payment_status',
+        'payment_method',
+        'payment_date',
         'cancellation_reason',
         'cancellation_date',
+        'amount',
     ];
 
     /**
      * Get the property associated with the booking.
      */
-    // public function property()
-    // {
-    //     return $this->belongsTo(Property::class, 'property_id');
-    // }
+    public function property()
+    {
+        return $this->belongsTo(Property::class, 'property_id');
+    }
 
     /**
      * Get the user who made the booking.
