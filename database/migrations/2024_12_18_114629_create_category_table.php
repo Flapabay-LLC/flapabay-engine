@@ -15,6 +15,7 @@ return new class extends Migration
             $table->bigIncrements('id'); // Primary key
             $table->string('name')->nullable();
             $table->string('icon')->nullable();
+            $table->string('icon_alt')->nullable();
             $table->string('description')->nullable();
             $table->timestamps();
         });
