@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Booking;
+use App\Models\Invoice;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -130,7 +131,7 @@ class BookingController extends Controller
         $booking->save();
 
         // Fetch the user details to send email
-        $user = User::find($booking->user_id);
+        $user = User::where('id',$booking->user_id)->first();
 
         if ($user) {
             // Send cancellation email
@@ -151,5 +152,54 @@ class BookingController extends Controller
         ]);
     }
 
+    public function generateInvoice(Request $request, $booking_id)
+    {
+        // Validate booking_id is an integer
+        if (!ctype_digit($booking_id)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid booking ID'
+            ], 400);
+        }
+
+        // Fetch the booking
+        $booking = Booking::find($booking_id);
+
+        if (!$booking) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Booking not found'
+            ], 404);
+        }
+
+        try {
+            // Generate the invoice
+            $invoiceData = [
+                'user_id' => $booking->user_id,
+                'booking_id' => $booking->id,
+                'payment_id' => null, // Set this if you have a payment system
+                'amount' => $booking->amount,
+                'status' => 'pending', // Default status
+                'payment_method' => 'N/A', // Default payment method, change if applicable
+                'due_date' => Carbon::now()->addDays(7), // Example: 7 days from now
+                'description' => "Invoice for booking #{$booking->id}",
+                'currency' => 'ZMW', // Default currency, adjust as needed
+            ];
+
+            $invoice = Invoice::create($invoiceData);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Invoice generated successfully',
+                'data' => $invoice
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 }

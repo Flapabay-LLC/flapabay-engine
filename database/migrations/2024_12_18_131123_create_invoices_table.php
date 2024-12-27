@@ -15,7 +15,7 @@ return new class extends Migration
             $table->bigIncrements('id'); // Auto-increment primary key
             $table->unsignedBigInteger('user_id'); // Foreign key referencing users
             $table->unsignedBigInteger('booking_id'); // Foreign key referencing booking
-            $table->unsignedBigInteger('payment_id'); // Foreign key referencing payments
+            $table->unsignedBigInteger('payment_id')->nullable(); // Foreign key referencing payments
             $table->decimal('amount', 10, 2); // Amount for the invoice
             $table->string('status')->default('pending'); // Status of the invoice (e.g., 'pending', 'paid')
             $table->string('payment_method')->nullable(); // Payment method used (e.g., 'credit_card', 'paypal')

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Lumen\Routing\Controller as BaseController;
 
 class UserController extends BaseController
@@ -164,7 +165,7 @@ class UserController extends BaseController
             $file->move(storage_path('app/temp'), $fileName);
 
             // Define the file path in Wasabi bucket
-            $filePath = 'profile_pictures/' . $fileName;
+            $filePath = $fileName;
 
             // Define your Wasabi S3 endpoint and credentials
             $endpoint = 'https://s3.us-west-1.wasabisys.com';  // Replace with your Wasabi region endpoint
@@ -189,7 +190,6 @@ class UserController extends BaseController
                 'Bucket'     => $bucketName,
                 'Key'        => $filePath,
                 'SourceFile' => $localPath,  // Path to the local file
-                'ACL'        => 'read-write'
             ]);
 
             // Check if the file was successfully uploaded
@@ -283,6 +283,48 @@ class UserController extends BaseController
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update profile picture',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function registerHost(Request $request)
+    {
+        // Validate request
+        $this->validate($request, [
+            'user_id' => 'required', // Ensure user_id exists in the users table
+        ]);
+
+        try {
+            // Generate a UUID
+            $uuid = random_int(1000, 9999);
+            // Find the user by user_id
+            $user = User::where('id',$request->input('user_id'))->first();
+
+            if ($user) {
+                // Update the host_id field
+                $user->host_id = $uuid;
+                $user->save();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Host registered successfully',
+                    'data' => [
+                        'user_id' => $user->id,
+                        'host_id' => $user->host_id,
+                    ],
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User not found',
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to register host',
                 'error' => $e->getMessage(),
             ], 500);
         }

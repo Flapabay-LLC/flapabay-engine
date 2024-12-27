@@ -58,25 +58,6 @@ class Property extends Model
      *
      * @var array
      */
-    protected $casts = [
-        'latitude' => 'float',
-        'longitude' => 'float',
-        'price_range' => 'array', // Cast price_range as an array
-        'amenities' => 'array', // Cast amenities as an array
-        'house_rules' => 'array', // Cast house_rules as an array
-        'images' => 'array', // Cast images as an array
-        'video_link' => 'array', // Cast video link as an array
-        'price' => 'decimal:2', // Cast price as decimal with 2 decimal places
-        'price_per_night' => 'decimal:2', // Cast price per night as decimal with 2 decimal places
-        'additional_guest_price' => 'decimal:2', // Cast additional guest price as decimal with 2 decimal places
-        'children_price' => 'decimal:2', // Cast children price as decimal with 2 decimal places
-        'rating' => 'decimal:2', // Cast rating as decimal with 2 decimal places
-        'favorite' => 'boolean', // Cast favorite as a boolean
-        'verified' => 'boolean', // Cast verified as a boolean
-        'allow_extra_guests' => 'boolean', // Cast allow extra guests as a boolean
-        'show_contact_form_instead_of_booking' => 'boolean', // Cast as boolean
-        'allow_instant_booking' => 'boolean', // Cast as boolean
-    ];
 
     /**
      * Scope a query to only include verified properties.

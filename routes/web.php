@@ -42,7 +42,7 @@ $router->group(['prefix' => 'v1'], function () use ($router) {
 
     $router->get('properties', 'PropertyController@getProperties');
     $router->post('properties', 'PropertyController@createProperties');
-    $router->put('properties/{propertyId}', 'PropertyController@updateProperties');
+    $router->post('update-properties', 'PropertyController@updateProperties');
     $router->get('properties/{propertyId}', 'PropertyController@getProperty');
     $router->delete('properties/{propertyId}', 'PropertyController@deleteProperty');
     $router->get('properties/{propertyId}/reviews', 'PropertyController@getPropertyReviews');
@@ -69,6 +69,11 @@ $router->group(['prefix' => 'v1'], function () use ($router) {
 
     $router->post('categories/add', 'CategoryController@addCategory');
     $router->get('categories', 'CategoryController@getAllCategories');
+
+    $router->post('host/signup', 'UserController@registerHost');
+    $router->post('host/signup', 'UserController@registerHost');
+
+    $router->post('bookings/{booking_id}/invoice', 'BookingController@generateInvoice');
 
 });
 
