@@ -86,7 +86,7 @@ class PropertyController extends Controller
             'rating' => 'nullable|numeric',
             'favorite' => 'boolean',
             'images' => 'nullable|array',
-            'video_link' => 'nullable|url',
+            'video_link' => 'nullable',
             'verified' => 'boolean',
             // 'property_type' => 'required',
             // Add any other fields you need to validate
@@ -103,7 +103,7 @@ class PropertyController extends Controller
             DB::beginTransaction();
 
             // Step 2: Insert into Property Model
-            $property = Property::create($validatedData->validated());
+            $property = Property::createProperty($validatedData->validated());
 
             // Step 3: Handle image uploads to Wasabi
             $imagePaths = [];
@@ -155,32 +155,33 @@ class PropertyController extends Controller
                 $property->save();
             }
 
-            // Step 4: Insert into Listing Model
-            $listingData = [
-                'title' => $request->input('title'), // You can customize this as needed
-                'property_id' => $property->id,
-                'post_levels' => $request->input('post_levels', null), // Assuming this is optional
-                'published_at' => Carbon::now(), // Set to current time or customize as needed
-                'status' => 0, // Set default status or customize
-            ];
+            // // Step 4: Insert into Listing Model
+            // $listingData = [
+            //     'title' => $request->input('title'), // You can customize this as needed
+            //     'property_id' => $property->id,
+            //     'post_levels' => $request->input('post_levels', null), // Assuming this is optional
+            //     'published_at' => Carbon::now(), // Set to current time or customize as needed
+            //     'status' => 0, // Set default status or customize
+            // ];
 
-            $listing = Listing::create($listingData);
+            // $listing = Listing::create($listingData);
 
             DB::commit();
             return response()->json([
                 "success" => true,
                 "message" => 'Property created successfully',
                 "property" => $property,
-                "listing" => $listing,
+                // "listing" => $listing,
             ], 201);
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                "success" => false,
-                "message" => 'Failed to create property',
-                "error" => $e->getMessage(),
-            ], 500);
+            dd($e);
+            // DB::rollBack();
+            // return response()->json([
+            //     "success" => false,
+            //     "message" => 'Failed to create property',
+            //     "error" => $e->getMessage(),
+            // ], 500);
         }
 
     }

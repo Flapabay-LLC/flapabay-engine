@@ -23,11 +23,6 @@ class CreatePaymentOptionsTable extends Migration
             $table->string('currency')->nullable(); // Currency type (optional, e.g., USD, EUR)
             $table->timestamps(); // Created at & Updated at
         });
-
-        // Foreign key constraint for the user_id
-        Schema::table('payment_options', function (Blueprint $table) {
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-        });
     }
 
     /**
@@ -37,10 +32,6 @@ class CreatePaymentOptionsTable extends Migration
      */
     public function down()
     {
-        Schema::table('payment_options', function (Blueprint $table) {
-            $table->dropForeign(['user_id']); // Drop foreign key constraint
-        });
-
         Schema::dropIfExists('payment_options');
     }
 }

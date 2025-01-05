@@ -66,6 +66,17 @@ $router->group(['prefix' => 'v1'], function () use ($router) {
     $router->post('payments/options/add', 'PaymentController@addOption');
     $router->put('payments/options/edit/{id}', 'PaymentController@editOption');
 
+    $router->get('/stripe/authenticate', 'StripeController@auth');
+    $router->post('/stripe/account', 'StripeController@connectedAccount');
+    $router->get('/stripe/account/{accountId}', 'StripeController@getConnectedAccount');
+    $router->post('/stripe/payout', 'StripeController@payout');
+    $router->get('/stripe/payout/{payoutId}', 'StripeController@getPayout');
+    $router->get('/stripe/payouts', 'StripeController@getPayouts');
+    $router->post('/stripe/payout/cancel/{payoutId}', 'StripeController@xPayout');
+    $router->post('/stripe/payout/reverse/{payoutId}', 'StripeController@undoPayout');
+
+
+
 
     $router->post('categories/add', 'CategoryController@addCategory');
     $router->get('categories', 'CategoryController@getAllCategories');

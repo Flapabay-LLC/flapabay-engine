@@ -58,6 +58,37 @@ class Property extends Model
      *
      * @var array
      */
+    public static function createProperty($data)
+    {
+       
+        return Property::create([
+            'title' => $data['title'], // Property title
+            'description' => $data['description'], // Property description
+            'location' => $data['location'], // Location of the property
+            'address' => $data['address'], // Address of the property
+            'county' => $data['county'], // County
+            'latitude' => $data['latitude'], // Latitude
+            'longitude' => $data['longitude'], // Longitude
+            'check_in_hour' => $data['check_in_hour'], // Check-in hour
+            'check_out_hour' => $data['check_out_hour'], // Check-out hour
+            'num_of_guests' => $data['num_of_guests'], // Number of guests
+            'num_of_children' => $data['num_of_children'], // Number of children
+            'maximum_guests' => $data['maximum_guests'], // Maximum guests allowed
+            'country' => $data['country'], // Country
+            'currency' => $data['currency'], // Currency
+            'price_range' => $data['price_range'], // Price range
+            'price' => $data['price'], // Price
+            'additional_guest_price' => $data['additional_guest_price'], // Additional guest price
+            'children_price' => $data['children_price'], // Children's price
+            'amenities' => $data['amenities'], // Amenities (should be a JSON string or comma-separated values)
+            'house_rules' => $data['house_rules'], // House rules (if any)
+            'rating' => $data['rating'], // Rating
+            'favorite' => $data['favorite'], // Favorite flag (1/0)
+            'video_link' => $data['video_link'], // Video link (if any)
+            'verified' => $data['verified'], // Verification status (1/0)
+        ]);
+    }
+
 
     /**
      * Scope a query to only include verified properties.
