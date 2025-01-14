@@ -63,7 +63,6 @@ class AuthenticatorController extends Controller
         // Return success response
         return response()->json([
             'message' => 'User successfully registered!',
-            'user' => $user,
             'data' => [
                 'user' => $user,
                 'token' => $token
