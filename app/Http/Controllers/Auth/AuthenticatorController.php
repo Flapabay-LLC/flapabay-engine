@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\GetOTPEmail;
 use App\Models\User;
 use App\Models\UserDetail;
 use Carbon\Carbon;
@@ -115,7 +116,56 @@ class AuthenticatorController extends Controller
     /**
      * Handle the generation and sending of an OTP.
      */
-    public function getOtp(Request $request)
+    public function getPhoneOtp(Request $request)
+    {
+
+        // Step 1: Validate the request
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        // Step 2: Check if the user exists
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Step 3: Generate the OTP
+        $otp = rand(100000, 999999); // Generate a 6-digit OTP
+
+        // Step 4: Set OTP expiration time
+        $expiresAt = Carbon::now()->addMinutes(5); // Set expiration time to 5 minutes
+
+        // Step 5: Store the OTP and expiration time in the database
+        $user->otp = $otp;
+        $user->otp_expires_at = $expiresAt;
+        $user->save();
+
+        // Step 6: Store the OTP in the cache for quick retrieval
+        Cache::put('otp_' . $request->email, $otp, $expiresAt);
+
+        // Example for sending via SMS (using Twilio)
+        /*
+        $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
+        $twilio->messages->create($request->contact, [
+            'from' => env('TWILIO_FROM'),
+            'body' => "Your OTP is: $otp"
+        ]);
+        */
+
+        // Step 5: Return a response
+        return response()->json(['message' => 'OTP sent to your phone!, Please check your SMS'], 200);
+    }
+
+/**
+     * Handle the generation and sending of an OTP.
+     */
+    public function getEmailOtp(Request $request)
     {
 
         // Step 1: Validate the request
@@ -149,22 +199,11 @@ class AuthenticatorController extends Controller
         Cache::put('otp_' . $request->email, $otp, $expiresAt);
 
         // Step 7: Send the OTP via email
-        // Mail::to($request->email)->send(new OtpMail($otp));
-
-        // Example for sending via SMS (using Twilio)
-        /*
-        $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
-        $twilio->messages->create($request->contact, [
-            'from' => env('TWILIO_FROM'),
-            'body' => "Your OTP is: $otp"
-        ]);
-        */
+        Mail::to($request->email)->send(new GetOTPEmail($otp));
 
         // Step 5: Return a response
-        return response()->json(['message' => 'OTP sent successfully!'], 200);
+        return response()->json(['message' => 'OTP sent to your email!, Please check your mail'], 200);
     }
-
-
 
     public function verifyOtp(Request $request)
     {
@@ -186,10 +225,10 @@ class AuthenticatorController extends Controller
         }
 
         // // Step 3: Check if OTP is expired after 5 minutes
-        // dd($user->otp_expires_at);
-        // if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-        //     return response()->json(['error' => 'OTP has expired'], 400);
-        // }
+        // Check if expired
+        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+            return response()->json(['error' => 'OTP has expired'], 400);
+        }
 
         // Step 4: Check if OTP is correct
         if ($user->otp != $request->otp) {
