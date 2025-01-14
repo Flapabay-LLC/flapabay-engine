@@ -8,11 +8,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
-use Laravel\Sanctum\HasApiTokens;
+// use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens;
+    // use HasApiTokens;
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
@@ -26,9 +28,16 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'host_id', //optional (only if a user is a host)
+        'fname',
+        'lname',
         'email',
+        'phone',
         'password',
+        'otp',
+        'otp_expires_at',
+        'otp_verified_at',
+        'email_verified_at',
     ];
 
     /**
@@ -52,6 +61,17 @@ class User extends Authenticatable
         'profile_photo_url',
     ];
 
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -63,5 +83,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Relationship with the User model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\hasOne
+     */
+    public function details()
+    {
+        return $this->hasOne(UserDetail::class);
     }
 }

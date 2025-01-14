@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthenticatorController extends Controller
 {
@@ -57,10 +58,16 @@ class AuthenticatorController extends Controller
             'phone' => $request->phone ?? null,
         ]);
 
+        // Generate JWT token
+        $token = JWTAuth::fromUser($user);
         // Return success response
         return response()->json([
             'message' => 'User successfully registered!',
             'user' => $user,
+            'data' => [
+                'user' => $user,
+                'token' => $token
+            ]
         ], 201);
     }
 
@@ -93,14 +100,14 @@ class AuthenticatorController extends Controller
             }
 
             // Generate JWT token
-            // $token = JWTAuth::fromUser($user);
+            $token = JWTAuth::fromUser($user);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
                 'data' => [
                     'user' => $user,
-                    // 'token' => $token
+                    'token' => $token
                 ]
             ], 200);
 
