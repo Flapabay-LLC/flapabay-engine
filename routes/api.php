@@ -17,9 +17,7 @@ Route::get('/', function () {
     return response()->json(['version' => app()->version()]);
 });
 
-
-Route::get('/test', [UserController::class, 'test']);
-// API version 1 routes
+//Open Routes
 Route::prefix('v1')->group(function () {
     Route::get('/testing', [UserController::class, 'test']);
     // Authentication routes
@@ -31,6 +29,15 @@ Route::prefix('v1')->group(function () {
     Route::post('logout', [AuthenticatorController::class, 'logout']);
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
+
+
+    // Category routes
+    Route::post('categories/add', [CategoryController::class, 'addCategory']);
+    Route::get('categories', [CategoryController::class, 'getAllCategories']);
+});
+
+// Protected routes with JWT api authentication
+Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // User routes
     Route::get('users/{user_id}', [UserController::class, 'show']);
@@ -88,13 +95,4 @@ Route::prefix('v1')->group(function () {
     Route::post('/stripe/refund/create', [StripeController::class, 'makeRefund']);
     Route::get('/stripe/refund/retrieve/{id}', [StripeController::class, 'getRefund']);
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
-
-    // Category routes
-    Route::post('categories/add', [CategoryController::class, 'addCategory']);
-    Route::get('categories', [CategoryController::class, 'getAllCategories']);
-});
-
-// Protected routes with sanctum authentication
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('profile', [UserController::class, 'profile']);
 });
