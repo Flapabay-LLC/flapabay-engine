@@ -244,6 +244,49 @@
         .parallax {
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+   
+
+        .btn-custom {
+            background-color: #feca57;
+            color: #343a40;
+            padding: 10px 30px;
+            font-size: 1.2rem;
+            border-radius: 25px;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            background-color: #ffbe30;
+            transform: translateY(-3px);
+        }
+
+        /* Preloader Effect */
+        .preloader {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preloader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            animation: preloader 1.5s infinite;
+        }
+
+        @keyframes preloader {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
     </style>
 </head>
 <body>
@@ -251,14 +294,14 @@
         <nav class="navbar navbar-expand-md fixed-top">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
-                    {{ config('app.name', 'Laravel') }}
+                    Dev.{{ config('app.name', 'Laravel') }}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav ms-auto">
+                    {{-- <ul class="navbar-nav ms-auto">
                         @guest
                             @if (Route::has('login'))
                                 <li class="nav-item">
@@ -290,7 +333,7 @@
                                 </div>
                             </li>
                         @endguest
-                    </ul>
+                    </ul> --}}
                 </div>
             </div>
         </nav>
@@ -299,9 +342,10 @@
             <div class="text-center hero-content">
                 <h1>Experience <span class="gradient-text">Next-Level</span><br>Booking</h1>
                 <p>Elevate your journey with premium rentals</p>
-                <a href="#features" class="btn btn-custom">Start Exploring</a>
+                <a href="#features" class="btn btn-custom preloader">Running...</a>
             </div>
         </header>
+
 
         <main>
             <div class="container" id="features">
