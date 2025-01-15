@@ -23,13 +23,7 @@ class UserController extends Controller
     {
         try {
             // Query to fetch all users from the wp_users table
-            $users = DB::table('wp_users')->select(
-                'ID',
-                'user_login',
-                'user_email',
-                'user_registered',
-                'display_name'
-            )->get();
+            $users = DB::table('users')->get();
 
             return response()->json([
                 'success' => true,

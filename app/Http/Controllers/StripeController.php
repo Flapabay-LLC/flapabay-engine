@@ -64,101 +64,101 @@ class StripeController extends Controller
 
     // -----------------------------------------------------------------
 
-    // public function makePaymentIntent(Request $request)
-    // {
-    //     try {
-    //         $data = $request->all();
-    //         $paymentIntent = $this->createPaymentIntent($data);
-    //         return response()->json($paymentIntent);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function makePaymentIntent(Request $request)
+    {
+        try {
+            $data = $request->all();
+            $paymentIntent = $this->createPaymentIntent($data);
+            return response()->json($paymentIntent);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function editPaymentIntent($id, Request $request)
-    // {
-    //     try {
-    //         $data = $request->all();
-    //         $paymentIntent = $this->updatePaymentIntent($id, $data);
-    //         return response()->json($paymentIntent);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function editPaymentIntent($id, Request $request)
+    {
+        try {
+            $data = $request->all();
+            $paymentIntent = $this->updatePaymentIntent($id, $data);
+            return response()->json($paymentIntent);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function getPaymentIntent($id)
-    // {
-    //     try {
-    //         $paymentIntent = $this->retrievePaymentIntent($id);
-    //         return response()->json($paymentIntent);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function getPaymentIntent($id)
+    {
+        try {
+            $paymentIntent = $this->retrievePaymentIntent($id);
+            return response()->json($paymentIntent);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function allPaymentIntents(Request $request)
-    // {
-    //     try {
-    //         $params = $request->all();
-    //         $paymentIntents = $this->listAllPaymentIntents($params);
-    //         return response()->json($paymentIntents);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function allPaymentIntents(Request $request)
+    {
+        try {
+            $params = $request->all();
+            $paymentIntents = $this->listAllPaymentIntents($params);
+            return response()->json($paymentIntents);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function xPaymentIntent($id)
-    // {
-    //     try {
-    //         $paymentIntent = $this->cancelPaymentIntent($id);
-    //         return response()->json($paymentIntent);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function xPaymentIntent($id)
+    {
+        try {
+            $paymentIntent = $this->cancelPaymentIntent($id);
+            return response()->json($paymentIntent);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function confirmedPaymentIntent($id, Request $request)
-    // {
-    //     try {
-    //         $params = $request->all();
-    //         $paymentIntent = $this->confirmPaymentIntent($id, $params);
-    //         return response()->json($paymentIntent);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function confirmedPaymentIntent($id, Request $request)
+    {
+        try {
+            $params = $request->all();
+            $paymentIntent = $this->confirmPaymentIntent($id, $params);
+            return response()->json($paymentIntent);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // // ----------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------
 
-    // public function makeRefund(Request $request)
-    // {
-    //     try {
-    //         $data = $request->all();
-    //         $refund = $this->createRefund($data);
-    //         return response()->json($refund);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function makeRefund(Request $request)
+    {
+        try {
+            $data = $request->all();
+            $refund = $this->createRefund($data);
+            return response()->json($refund);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function getRefund($id)
-    // {
-    //     try {
-    //         $refund = $this->retrieveRefund($id);
-    //         return response()->json($refund);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function getRefund($id)
+    {
+        try {
+            $refund = $this->retrieveRefund($id);
+            return response()->json($refund);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 
-    // public function allRefunds(Request $request)
-    // {
-    //     try {
-    //         $params = $request->all();
-    //         $refunds = $this->listAllRefunds($params);
-    //         return response()->json($refunds);
-    //     } catch (ApiErrorException $e) {
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
+    public function allRefunds(Request $request)
+    {
+        try {
+            $params = $request->all();
+            $refunds = $this->listAllRefunds($params);
+            return response()->json($refunds);
+        } catch (ApiErrorException $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 }
