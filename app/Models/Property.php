@@ -48,7 +48,9 @@ class Property extends Model
         'images',
         'video_link',
         'verified',
-        'property_type',
+        'property_type_id', //for filtering
+        'category_id', //for filtering
+        'tags', //for filtering
     ];
 
     /**
