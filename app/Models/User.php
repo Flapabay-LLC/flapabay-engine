@@ -28,7 +28,7 @@ class User extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $fillable = [
-        'host_id', //optional (only if a user is a host)
+        'host_id', //nullable (only if a user is a host)
         'fname',
         'lname',
         'email',
