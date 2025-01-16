@@ -5,62 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\UserReview;
 use App\Http\Requests\StoreUserReviewRequest;
 use App\Http\Requests\UpdateUserReviewRequest;
+use Illuminate\Support\Facades\Request;
 
 class UserReviewController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function userReview(Request $request, $user_id)
     {
-        //
-    }
+        try {
+            // Step 1: Validate the user ID (optional)
+            if (!is_numeric($user_id)) {
+                return response()->json(['error' => 'Invalid user ID'], 400);
+            }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreUserReviewRequest $request)
-    {
-        //
-    }
+            // Step 2: Fetch the user's reviews
+            $reviews = UserReview::where('user_id', $user_id)->get();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(UserReview $userReview)
-    {
-        //
-    }
+            // Step 3: Check if reviews exist
+            if ($reviews->isEmpty()) {
+                return response()->json(['message' => 'No reviews found for this user'], 404);
+            }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(UserReview $userReview)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateUserReviewRequest $request, UserReview $userReview)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(UserReview $userReview)
-    {
-        //
+            // Step 4: Return the reviews as JSON
+            return response()->json([
+                'success' => true,
+                'user_id' => $user_id,
+                'reviews' => $reviews
+            ], 200);
+        } catch (\Exception $e) {
+            // Handle any exceptions
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching reviews',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
