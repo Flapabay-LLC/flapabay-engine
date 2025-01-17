@@ -43,7 +43,7 @@ class ListingController extends Controller
 
         if (!empty($keyword)) {
             $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'LIKE', "%{$keyword}%")
+                $q->orWhere('title', 'LIKE', "%{$keyword}%")
                 ->orWhere('description', 'LIKE', "%{$keyword}%");
             });
         }
