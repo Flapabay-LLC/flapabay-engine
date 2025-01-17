@@ -30,14 +30,20 @@ class PropertyController extends Controller
     public function getProperties(Request $request)
     {
         try {
-            // Base query to get properties from wp_posts and join with wp_aioseo_posts
-            $properties = Property::get();
+            // Get the page number from the request, default to 1
+            $page = $request->input('page', 1);
 
-            // Return success response with data
+            // Paginate the properties with 10 items per page
+            $properties = Property::paginate(10, ['*'], 'page', $page);
+
+            // Return success response with paginated data
             return response()->json([
                 'success' => true,
-                'data' => $properties,
-                'total_results' => count($properties),
+                'data' => $properties->items(),
+                'total_results' => $properties->total(),
+                'current_page' => $properties->currentPage(),
+                'last_page' => $properties->lastPage(),
+                'per_page' => $properties->perPage(),
             ]);
 
         } catch (\Exception $e) {
@@ -48,6 +54,7 @@ class PropertyController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Create a new property and store it in wp_posts and wp_postmeta.

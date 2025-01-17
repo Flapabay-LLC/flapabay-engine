@@ -80,13 +80,12 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('payments/status', [PaymentController::class, 'status']);
     Route::get('payments/payout-options', [PaymentController::class, 'options']);
     Route::post('payments/create-payout-options', [PaymentController::class, 'addOption']);
-    Route::post('payments/payout-options/edit/{id}', [PaymentController::class, 'editOption']);
+    Route::post('payments/update-payout-options/{id}', [PaymentController::class, 'editOption']);
 
     //Payment User Payment Details routes
     Route::get('payments/user-payment-details', [PaymentController::class, 'getUserPaymentDetails']);
     Route::post('payments/user-payment-details', [PaymentController::class, 'addUserPaymentDetails']);
     Route::post('payments/user-payment-details/edit/{id}', [PaymentController::class, 'editUserPaymentDetails']);
-
 
     // Stripe routes
     Route::get('/stripe/authenticate', [StripeController::class, 'auth']);

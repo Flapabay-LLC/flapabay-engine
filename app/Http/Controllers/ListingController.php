@@ -20,25 +20,31 @@ class ListingController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         // Extract filters from the request
         $categoryIds = $request->input('category_id', []);
         $propertyTypeIds = $request->input('property_type_id', []);
         $keyword = $request->input('keyword', '');
+        $page = $request->input('page', 1); // Default to page 1 if not provided
 
         // Build query with filters
         $query = Property::query();
 
         if (!empty($categoryIds)) {
-            foreach ($categoryIds as $categoryId) {
-                $query->orWhereRaw("JSON_CONTAINS(category_id, '\"$categoryId\"')");
-            }
+            $query->where(function ($q) use ($categoryIds) {
+                foreach ($categoryIds as $categoryId) {
+                    $q->orWhereRaw("JSON_CONTAINS(category_id, '\"$categoryId\"')");
+                }
+            });
         }
 
         if (!empty($propertyTypeIds)) {
-            foreach ($propertyTypeIds as $propertyTypeId) {
-                $query->orWhereRaw("JSON_CONTAINS(property_type_id, '\"$propertyTypeId\"')");
-            }
+            $query->where(function ($q) use ($propertyTypeIds) {
+                foreach ($propertyTypeIds as $propertyTypeId) {
+                    $q->orWhereRaw("JSON_CONTAINS(property_type_id, '\"$propertyTypeId\"')");
+                }
+            });
         }
 
         if (!empty($keyword)) {
@@ -48,8 +54,8 @@ class ListingController extends Controller
             });
         }
 
-        // Paginate the results
-        $properties = $query->paginate(10);
+        // Paginate the results, considering the page number
+        $properties = $query->paginate(10, ['*'], 'page', $page);
 
         // Return paginated results as JSON
         return response()->json([
@@ -61,6 +67,7 @@ class ListingController extends Controller
             'per_page' => $properties->perPage(),
         ]);
     }
+
 
 
 

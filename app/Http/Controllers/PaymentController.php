@@ -178,15 +178,15 @@ class PaymentController extends Controller
         }
     }
 
-    public function editOption(Request $request, $id)
+    public function editOption(Request $request)
     {
 
         // Validate the incoming request
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|exists:users,id', // Ensure user exists
-            'payment_method' => 'required|string|in:credit_card,bank_transfer,paypal,mobile', // Allowed payment methods
-            'account_number' => 'required|string',
-            'expiration_date' => 'required', // MM/YY format for expiration date
+            'name' => 'required', // Ensure user exists
+            'description' => 'required', // Allowed payment methods
+            'icon' => 'required',
+            'icon_alt' => 'required', // MM/YY format for expiration date
         ]);
 
         // If validation fails, return an error response
@@ -198,9 +198,7 @@ class PaymentController extends Controller
         }
 
         // Find the payment option by ID
-        $paymentOption = PaymentMethod::find($id);
-
-        // If the payment option does not exist, return a 404 response
+        $paymentOption = PayoutOption::find($request->input('option_id'));
         if (!$paymentOption) {
             return response()->json([
                 'status' => 'error',
@@ -210,12 +208,11 @@ class PaymentController extends Controller
 
         // Update the payment option with the new values
         $paymentOption->update([
-            'user_id' => $request->input('user_id'),
-            'payment_method' => $request->input('payment_method'),
-            'account_number' => $request->input('account_number'),
-            'expiration_date' => $request->input('expiration_date'),
-            'country_code' => $request->input('country_code', 'US'), // Default to 'US' if not provided
-            'currency' => $request->input('currency', 'USD'), // Default to 'USD' if not provided
+            'name' => $request->input('name'),
+            'description' => $request->input('description'),
+            'icon' => $request->input('icon'),
+            'icon_alt' => $request->input('icon_alt'),
+            'currency' => $request->input('currency', 'USD'),
         ]);
 
         // Return success response with the updated payment option data
