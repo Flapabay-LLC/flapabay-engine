@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Payment;
+use App\Models\PaymentMethod;
+use App\Models\PayoutOption;
 use Carbon\Carbon;
 
 class PaymentController extends Controller
@@ -129,22 +131,23 @@ class PaymentController extends Controller
 
     public function options()
     {
-        $options = PaymentOption::get();
+        $options = PayoutOption::get();
         return response()->json([
             'status' => 'error',
             'message' => 'Availability system payment options',
             'data' => $options
-        ], 500);
+        ], 200);
     }
 
     public function addOption(Request $request)
     {
-        // Validate the incoming request
+        try {
+                    // Validate the incoming request
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|exists:users,id', // Ensure user exists
-            'payment_method' => 'required|string|in:credit_card,bank_transfer,paypal,mobile', // Allowed payment methods
-            'account_number' => 'required|string',
-            'expiration_date' => 'required', // MM/YY format for expiration date
+            'name' => 'required', // Ensure user exists
+            'description' => 'required', // Allowed payment methods
+            'icon' => 'required',
+            'icon_alt' => 'required', // MM/YY format for expiration date
         ]);
 
         // If validation fails, return an error response
@@ -156,21 +159,23 @@ class PaymentController extends Controller
         }
 
         // Create the payment option
-        $paymentOption = PaymentOption::create([
-            'user_id' => $request->input('user_id'),
-            'payment_method' => $request->input('payment_method'),
-            'account_number' => $request->input('account_number'),
-            'expiration_date' => $request->input('expiration_date'),
-            'country_code' => $request->input('country_code', 'US'), // Default to 'US' if not provided
-            'currency' => $request->input('currency', 'USD'), // Default to 'USD' if not provided
+        $paymentOption = PayoutOption::create([
+            'name' => $request->input('name'),
+            'description' => $request->input('description'),
+            'icon' => $request->input('icon'),
+            'icon_alt' => $request->input('icon_alt'),
+            'currency' => $request->input('currency', 'USD'),
         ]);
 
         // Return success response with the created payment option data
         return response()->json([
             'status' => 'success',
-            'message' => 'Payment option added successfully',
+            'message' => $request->input('name').' payment option added successfully',
             'data' => $paymentOption
         ], 201);
+        } catch (\Throwable $th) {
+            dd($th);
+        }
     }
 
     public function editOption(Request $request, $id)
@@ -193,7 +198,102 @@ class PaymentController extends Controller
         }
 
         // Find the payment option by ID
-        $paymentOption = PaymentOption::find($id);
+        $paymentOption = PaymentMethod::find($id);
+
+        // If the payment option does not exist, return a 404 response
+        if (!$paymentOption) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Payment option not found.'
+            ], 404);
+        }
+
+        // Update the payment option with the new values
+        $paymentOption->update([
+            'user_id' => $request->input('user_id'),
+            'payment_method' => $request->input('payment_method'),
+            'account_number' => $request->input('account_number'),
+            'expiration_date' => $request->input('expiration_date'),
+            'country_code' => $request->input('country_code', 'US'), // Default to 'US' if not provided
+            'currency' => $request->input('currency', 'USD'), // Default to 'USD' if not provided
+        ]);
+
+        // Return success response with the updated payment option data
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment option updated successfully.',
+            'data' => $paymentOption
+        ], 200);
+    }
+
+
+    public function getUserPaymentDetails($user_id)
+    {
+        $options = PaymentMethod::where('user_id', $user_id)->get();
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Availability system payment options',
+            'data' => $options
+        ], 200);
+    }
+
+
+    public function addUserPaymentDetails(Request $request)
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer|exists:users,id', // Ensure user exists
+            'payment_method' => 'required|string|in:credit_card,bank_transfer,paypal,mobile', // Allowed payment methods
+            'account_number' => 'required|string',
+            'expiration_date' => 'required', // MM/YY format for expiration date
+        ]);
+
+        // If validation fails, return an error response
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 400);
+        }
+
+        // Create the payment option
+        $paymentOption = PaymentMethod::create([
+            'user_id' => $request->input('user_id'),
+            'payment_method' => $request->input('payment_method'),
+            'account_number' => $request->input('account_number'),
+            'expiration_date' => $request->input('expiration_date'),
+            'country_code' => $request->input('country_code', 'US'), // Default to 'US' if not provided
+            'currency' => $request->input('currency', 'USD'), // Default to 'USD' if not provided
+        ]);
+
+        // Return success response with the created payment option data
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment option added successfully',
+            'data' => $paymentOption
+        ], 201);
+    }
+
+    public function editUserPaymentDetails(Request $request, $id)
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer|exists:users,id', // Ensure user exists
+            'payment_method' => 'required|string|in:credit_card,bank_transfer,paypal,mobile', // Allowed payment methods
+            'account_number' => 'required|string',
+            'expiration_date' => 'required',
+        ]);
+
+        // If validation fails, return an error response
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 400);
+        }
+
+        // Find the payment option by ID
+        $paymentOption = PaymentMethod::find($id);
 
         // If the payment option does not exist, return a 404 response
         if (!$paymentOption) {
