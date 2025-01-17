@@ -89,7 +89,9 @@ class PropertyController extends Controller
             'images' => 'nullable|array',
             'video_link' => 'nullable',
             'verified' => 'boolean',
-            // 'property_type' => 'required',
+            'property_type_id' => 'nullable',
+            'category_id' => 'required',
+            'tags' => 'nullable',
             // Add any other fields you need to validate
         ]);
 
@@ -216,7 +218,10 @@ class PropertyController extends Controller
             'favorite' => 'nullable',
             'images' => 'nullable|array',
             'video_link' => 'nullable',
-            'verified' => 'nullable'
+            'verified' => 'nullable',
+            'property_type_id' => 'nullable',
+            'category_id' => 'required',
+            'tags' => 'nullable',
         ]);
 
         if ($validatedData->fails()) {
@@ -267,21 +272,6 @@ class PropertyController extends Controller
                     ],
                 ]);
 
-                // Optionally delete old images if needed
-                if ($property->images) {
-                    $oldImages = json_decode($property->images, true);
-                    foreach ($oldImages as $oldImage) {
-                        // Delete old images from Wasabi
-                        try {
-                            $s3Client->deleteObject([
-                                'Bucket' => $bucketName,
-                                'Key' => basename($oldImage), // Extracting the file name from the URL
-                            ]);
-                        } catch (\Exception $e) {
-                            Log::error('Failed to delete old image from Wasabi: ' . $e->getMessage());
-                        }
-                    }
-                }
 
                 foreach ($request->file('images') as $image) {
                     // Validate the image file
@@ -317,26 +307,12 @@ class PropertyController extends Controller
                 $property->save();
             }
 
-            // Step 6: Update the listing if necessary
-            $listingData = [
-                'title' => $request->input('title'), // You can customize this as needed
-                'property_id' => $property->id,
-                'post_levels' => $request->input('post_levels', null), // Assuming this is optional
-                'published_at' => Carbon::now(), // Set to current time or customize as needed
-                'status' => 0, // Set default status or customize
-            ];
-
-            $listing = Listing::updateOrCreate(
-                ['property_id' => $property->id], // Find the listing by property_id
-                $listingData // Update or create with this data
-            );
 
             DB::commit();
             return response()->json([
                 "success" => true,
                 "message" => 'Property updated successfully',
                 "property" => $property,
-                "listing" => $listing,
             ], 200);
 
         } catch (\Exception $e) {
