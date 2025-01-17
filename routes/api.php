@@ -10,6 +10,7 @@ use App\Http\Controllers\HostController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ListingController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -45,6 +46,8 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('users/{user_id}/profile-picture', [UserController::class, 'updateProfilePicture']);
     Route::get('users/{user_id}/reviews', [UserReviewController::class, 'userReview']);
 
+
+
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);
     Route::post('properties', [PropertyController::class, 'createProperties']);
@@ -56,6 +59,10 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
+
+
+    // Property search filtering routes
+    Route::post('filter-listings', [ListingController::class, 'search']);
 
     // Booking routes
     Route::post('booking', [BookingController::class, 'createBooking']);
