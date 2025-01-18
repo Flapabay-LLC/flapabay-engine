@@ -75,12 +75,17 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('bookings/host/{host_id}', [HostController::class, 'getHostInfo']);
     Route::post('host/signup', [UserController::class, 'registerHost']);
 
-    // Payment routes
+    // Payment Payout routes
     Route::post('payments/checkout', [PaymentController::class, 'checkout']);
     Route::get('payments/status', [PaymentController::class, 'status']);
-    Route::get('payments/options', [PaymentController::class, 'options']);
-    Route::post('payments/options/add', [PaymentController::class, 'addOption']);
-    Route::put('payments/options/edit/{id}', [PaymentController::class, 'editOption']);
+    Route::get('payments/payout-options', [PaymentController::class, 'options']);
+    Route::post('payments/create-payout-options', [PaymentController::class, 'addOption']);
+    Route::post('payments/update-payout-options/{id}', [PaymentController::class, 'editOption']);
+
+    //Payment User Payment Details routes
+    Route::get('payments/user-payment-details', [PaymentController::class, 'getUserPaymentDetails']);
+    Route::post('payments/user-payment-details', [PaymentController::class, 'addUserPaymentDetails']);
+    Route::post('payments/user-payment-details/edit/{id}', [PaymentController::class, 'editUserPaymentDetails']);
 
     // Stripe routes
     Route::get('/stripe/authenticate', [StripeController::class, 'auth']);
