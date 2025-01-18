@@ -13,6 +13,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Call individual seeders
+        $this->call([
+            UserSeeder::class,
+            CategorySeeder::class,
+            PropertyTypeSeeder::class,
+            PropertySeeder::class,
+            UserDetailSeeder::class,
+            UserReviewSeeder::class,
+            BookingSeeder::class,
+            InvoiceSeeder::class,
+            PaymentMethodSeeder::class,
+            PaymentSeeder::class,
+            PayoutOptionSeeder::class,
+        ]);
     }
 }
