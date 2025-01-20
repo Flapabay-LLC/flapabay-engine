@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\UserNotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -107,4 +108,11 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/stripe/refund/create', [StripeController::class, 'makeRefund']);
     Route::get('/stripe/refund/retrieve/{id}', [StripeController::class, 'getRefund']);
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
+
+    //User Notifications
+    Route::post('/create-notification', [UserNotificationController::class, 'store']);
+    Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);
+    Route::delete('/delete-user-notification/{userId}/{notificationId}', [UserNotificationController::class, 'deleteUserNotification']);
+    Route::delete('/delete-user-all-notifications/{userId}', [UserNotificationController::class, 'deleteUserAllNotifications']);
+
 });
