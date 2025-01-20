@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\PropertyReviewController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -60,9 +61,13 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
 
-
     // Property search filtering routes
     Route::post('filter-listings', [ListingController::class, 'search']);
+
+    // Property Rating & Reviews
+    Route::get('/reviews', [PropertyReviewController::class, 'index']);
+    Route::post('/create-review', [PropertyReviewController::class, 'store']);
+    Route::post('/update-review', [PropertyReviewController::class, 'update']);
 
     // Booking routes
     Route::post('booking', [BookingController::class, 'createBooking']);
