@@ -10,6 +10,7 @@ use App\Http\Controllers\HostController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ListingController;
 use Illuminate\Support\Facades\Route;
 
@@ -107,4 +108,10 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/stripe/refund/create', [StripeController::class, 'makeRefund']);
     Route::get('/stripe/refund/retrieve/{id}', [StripeController::class, 'getRefund']);
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
+
+    //Supported Languages
+    Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
+    Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
+    Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
+    Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
 });
