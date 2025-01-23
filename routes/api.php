@@ -10,6 +10,7 @@ use App\Http\Controllers\HostController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ComsmeticController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\LocationController;
@@ -107,6 +108,10 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('/stripe/refund/retrieve/{id}', [StripeController::class, 'getRefund']);
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
 
+    //Currencies
+    Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
+    Route::post('/set-user-currency', [CurrencyController::class, 'setUserCurrency']);
+
     //Cosmetics
     Route::get('icons', [ComsmeticController::class, 'getIcons']);
     Route::post('icons', [ComsmeticController::class, 'createIcon']);
@@ -114,5 +119,4 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     //Locations
     Route::get('locations', [LocationController::class, 'getLocations']);
     Route::post('location', [LocationController::class, 'createLocation']);
-
 });
