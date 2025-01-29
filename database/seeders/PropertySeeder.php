@@ -16,6 +16,14 @@ class PropertySeeder extends Seeder
 
             $properties = [
                 [
+                    'title'=> 'Sweet Home',
+                    'description'=> 'Sweet Home Sweet HomeSweet HomeSweet HomeSweet HomeSweet HomeSweet HomeSweet Home',
+                    'location'=> 'Lusaka',
+                    'address'=> '213 Est Ave. JJ Road, Lusaka',
+                    'county'=> 'Zambia',
+                    'latitude'=> '12.470039830293833',
+                    'longitude'=> '12.76767754545454',
+
                     'check_out_hour' => '11:00:00',
                     'num_of_guests' => 4,
                     'num_of_children' => 1,
@@ -44,6 +52,14 @@ class PropertySeeder extends Seeder
                     'property_type_id' => json_encode([1, 3]),
                 ],
                 [
+                    'title'=> 'Studio Apartment',
+                    'description'=> 'Sweet Home Sweet HomeSweet HomeSweet HomeSweet HomeSweet HomeSweet HomeSweet Home',
+                    'location'=> 'Ndola',
+                    'address'=> '2304 Salama Park, Ndola',
+                    'county'=> 'Zambia',
+                    'latitude'=> '12.472358830293833',
+                    'longitude'=> '12.76767000000454',
+
                     'check_out_hour' => '10:00:00',
                     'num_of_guests' => 2,
                     'num_of_children' => 0,
@@ -77,6 +93,6 @@ class PropertySeeder extends Seeder
             foreach ($properties as $property) {
                 DB::table('properties')->insert($property);
             }
-            
+
     }
 }
