@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             CategorySeeder::class,
+            LocationSeeder::class,
+            IconsSeeder::class,
             PropertyTypeSeeder::class,
             PropertySeeder::class,
             UserDetailSeeder::class,
@@ -27,6 +29,7 @@ class DatabaseSeeder extends Seeder
             PaymentSeeder::class,
             PayoutOptionSeeder::class,
             LanguageSeeder::class,
+            CurrencySeeder::class,
         ]);
     }
 }
