@@ -13,6 +13,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ComsmeticController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
@@ -108,6 +109,12 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('/stripe/refund/retrieve/{id}', [StripeController::class, 'getRefund']);
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
 
+    //User Notifications
+    Route::post('/create-notification', [UserNotificationController::class, 'store']);
+    Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);
+    Route::delete('/delete-user-notification/{userId}/{notificationId}', [UserNotificationController::class, 'deleteUserNotification']);
+    Route::delete('/delete-user-all-notifications/{userId}', [UserNotificationController::class, 'deleteUserAllNotifications']);
+
     //Currencies
     Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
     Route::post('/set-user-currency', [CurrencyController::class, 'setUserCurrency']);
@@ -119,4 +126,5 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     //Locations
     Route::get('locations', [LocationController::class, 'getLocations']);
     Route::post('location', [LocationController::class, 'createLocation']);
+
 });
