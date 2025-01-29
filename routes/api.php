@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatorController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReviewController;
@@ -10,8 +11,14 @@ use App\Http\Controllers\HostController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\CurrencyController;
+use App\Http\Controllers\ComsmeticController;
+use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\PropertyReviewController;
+use App\Http\Controllers\UserNotificationController;
+use App\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -32,7 +39,11 @@ Route::prefix('v1')->group(function () {
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
-
+    //Google & Facebook Auth
+    Route::post('google-signin', [GoogleAuthController::class, 'googleSignIn']);
+    Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
+    Route::get('facebook-signin', [FacebookController::class, 'redirectToFacebook']);
+    Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
@@ -46,8 +57,6 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::put('users/{user_id}', [UserController::class, 'update']);
     Route::post('users/{user_id}/profile-picture', [UserController::class, 'updateProfilePicture']);
     Route::get('users/{user_id}/reviews', [UserReviewController::class, 'userReview']);
-
-
 
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);
@@ -112,4 +121,28 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/stripe/refund/create', [StripeController::class, 'makeRefund']);
     Route::get('/stripe/refund/retrieve/{id}', [StripeController::class, 'getRefund']);
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
+
+    //Supported Languages
+    Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
+    Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
+    Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
+    Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
+  
+    //User Notifications
+    Route::post('/create-notification', [UserNotificationController::class, 'store']);
+    Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);
+    Route::delete('/delete-user-notification/{userId}/{notificationId}', [UserNotificationController::class, 'deleteUserNotification']);
+    Route::delete('/delete-user-all-notifications/{userId}', [UserNotificationController::class, 'deleteUserAllNotifications']);
+
+    //Currencies
+    Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
+    Route::post('/set-user-currency', [CurrencyController::class, 'setUserCurrency']);
+
+    //Cosmetics
+    Route::get('icons', [ComsmeticController::class, 'getIcons']);
+    Route::post('icons', [ComsmeticController::class, 'createIcon']);
+
+    //Locations
+    Route::get('locations', [LocationController::class, 'getLocations']);
+    Route::post('location', [LocationController::class, 'createLocation']);
 });
