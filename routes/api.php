@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatorController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReviewController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ComsmeticController;
+use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
@@ -36,7 +38,11 @@ Route::prefix('v1')->group(function () {
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
-
+    //Google & Facebook Auth
+    Route::post('google-signin', [GoogleAuthController::class, 'googleSignIn']);
+    Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
+    Route::get('facebook-signin', [FacebookController::class, 'redirectToFacebook']);
+    Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);

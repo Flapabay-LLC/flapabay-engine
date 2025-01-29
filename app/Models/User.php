@@ -38,6 +38,8 @@ class User extends Authenticatable implements JWTSubject
         'otp_expires_at',
         'otp_verified_at',
         'email_verified_at',
+        'facebook_id',
+        'google_id'
     ];
 
     /**
