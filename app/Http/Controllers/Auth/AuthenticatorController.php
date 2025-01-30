@@ -6,18 +6,30 @@ use App\Http\Controllers\Controller;
 use App\Mail\GetOTPEmail;
 use App\Models\User;
 use App\Models\UserDetail;
+use App\Traits\MySMS;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Infobip\Api\SendSmsApi;
+use Infobip\Api\SmsApi;
+use Infobip\ApiException;
+use Infobip\Configuration;
+use Infobip\Model\SmsAdvancedTextualRequest;
+use Infobip\Model\SmsBulkRequest;
+use Infobip\Model\SmsDestination;
+use Infobip\Model\SmsTextualMessage;
+use Pnlinh\InfobipSms\Facades\InfobipSms;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthenticatorController extends Controller
 {
 
+    use MySMS;
 /**
      * Register a new user.
      *
@@ -124,7 +136,6 @@ class AuthenticatorController extends Controller
      */
     public function getPhoneOtp(Request $request)
     {
-
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|string',
@@ -137,36 +148,52 @@ class AuthenticatorController extends Controller
         // Step 2: Check if the user exists
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+        if (!$user || !$user->phone) {
+            return response()->json(['error' => 'User not found or no phone number registered'], 404);
         }
 
         // Step 3: Generate the OTP
-        $otp = rand(100000, 999999); // Generate a 6-digit OTP
+        $otp = rand(100000, 999999);
 
         // Step 4: Set OTP expiration time
-        $expiresAt = Carbon::now()->addMinutes(5); // Set expiration time to 5 minutes
+        $expiresAt = Carbon::now()->addMinutes(5);
 
-        // Step 5: Store the OTP and expiration time in the database
-        $user->otp = $otp;
-        $user->otp_expires_at = $expiresAt;
-        $user->save();
+        // Step 5: Store OTP in the database
+        $user->update([
+            'otp' => $otp,
+            'otp_expires_at' => $expiresAt
+        ]);
 
-        // Step 6: Store the OTP in the cache for quick retrieval
+        // Step 6: Store OTP in cache
         Cache::put('otp_' . $request->email, $otp, $expiresAt);
 
-        // Example for sending via SMS (using Twilio)
-        /*
-        $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
-        $twilio->messages->create($request->contact, [
-            'from' => env('TWILIO_FROM'),
-            'body' => "Your OTP is: $otp"
-        ]);
-        */
+        // Step 7: Send OTP via Infobip SMS
+        try {
 
-        // Step 5: Return a response
-        return response()->json(['message' => 'OTP sent to your phone!, Please check your SMS'], 200);
+            // Send the SMS message
+            $smsResponse = $this->sendOTP($user, $otp);
+
+            return response()->json([
+                'message' => 'OTP sent to your phone! Please check your SMS.',
+                'messageId' => $smsResponse->getMessages()[0]->getMessageId()
+            ], 200);
+
+        } catch (ApiException $apiException) {
+            // Log the detailed error for debugging
+            Log::error('Infobip SMS Error', [
+                'error' => $apiException->getMessage(),
+                'code' => $apiException->getCode(),
+                'response' => $apiException->getResponseBody()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to send OTP via SMS',
+                'message' => 'Please try again or contact support if the problem persists'
+            ], 500);
+        }
     }
+
+
 
 /**
      * Handle the generation and sending of an OTP.
