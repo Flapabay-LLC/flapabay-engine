@@ -138,7 +138,8 @@ class AuthenticatorController extends Controller
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|string',
+            'email' => 'nullable|email|string',
+            'phone' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -146,7 +147,8 @@ class AuthenticatorController extends Controller
         }
 
         // Step 2: Check if the user exists
-        $user = User::where('email', $request->email)->first();
+        $user = User::orWhere('email', $request->email)
+        ->orWhere('phone', $request->phone)->first();
 
         if (!$user || !$user->phone) {
             return response()->json(['error' => 'User not found or no phone number registered'], 404);
@@ -195,7 +197,7 @@ class AuthenticatorController extends Controller
 
 
 
-/**
+    /**
      * Handle the generation and sending of an OTP.
      */
     public function getEmailOtp(Request $request)
