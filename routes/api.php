@@ -19,6 +19,7 @@ use App\Http\Controllers\ListingController;
 use App\Http\Controllers\PropertyReviewController;
 use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\StayController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -89,6 +90,10 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('bookings/host/{host_id}', [HostController::class, 'getHostInfo']);
     Route::post('host/signup', [UserController::class, 'registerHost']);
 
+    //-- Stays
+    Route::resource('stays', StayController::class);
+    Route::post('update-stay/{stay}', [StayController::class, 'update']);
+
     // Payment Payout routes
     Route::post('payments/checkout', [PaymentController::class, 'checkout']);
     Route::get('payments/status', [PaymentController::class, 'status']);
@@ -127,7 +132,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
     Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
     Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
-  
+
     //User Notifications
     Route::post('/create-notification', [UserNotificationController::class, 'store']);
     Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);
