@@ -52,23 +52,10 @@ Route::prefix('v1')->group(function () {
 // Protected routes with JWT api authentication
 Route::middleware('auth:api')->prefix('v1')->group(function () {
 
-    // User routes
-    Route::get('users/{user_id}', [UserController::class, 'show']);
-    Route::put('users/{user_id}', [UserController::class, 'update']);
-    Route::post('users/{user_id}/profile-picture', [UserController::class, 'updateProfilePicture']);
-    Route::get('users/{user_id}/reviews', [UserReviewController::class, 'userReview']);
-
-    // Property routes
-    Route::get('properties', [PropertyController::class, 'getProperties']);
-    Route::post('properties', [PropertyController::class, 'createProperties']);
-    Route::post('update-properties', [PropertyController::class, 'updateProperties']);
-    Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
-    Route::delete('properties/{propertyId}', [PropertyController::class, 'deleteProperty']);
-    Route::get('properties/{propertyId}/reviews', [PropertyController::class, 'getPropertyReviews']);
-    Route::get('properties/{propertyId}/description', [PropertyController::class, 'getPropertyDescription']);
-    Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
-    Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
-    Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
+    Route::apiResource('bookings', BookingController::class);
+    Route::post('bookings/{booking_id}/invoice', [BookingController::class, 'generateInvoice']);
+    Route::apiResource('properties', PropertyController::class);
+    Route::apiResource('users', UserController::class);
 
     // Property search filtering routes
     Route::post('filter-listings', [ListingController::class, 'search']);
@@ -78,15 +65,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/create-review', [PropertyReviewController::class, 'store']);
     Route::post('/update-review', [PropertyReviewController::class, 'update']);
 
-    // Booking routes
-    Route::post('booking', [BookingController::class, 'createBooking']);
-    Route::get('bookings', [BookingController::class, 'getBookings']);
-    Route::get('booking/{book_id}', [BookingController::class, 'getBooking']);
-    Route::put('booking/{book_id}/cancel', [BookingController::class, 'cancelBooking']);
-    Route::post('bookings/{booking_id}/invoice', [BookingController::class, 'generateInvoice']);
-
     // Host routes
-    Route::get('bookings/host/{host_id}', [HostController::class, 'getHostInfo']);
     Route::post('host/signup', [UserController::class, 'registerHost']);
 
     // Payment Payout routes
@@ -127,7 +106,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
     Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
     Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
-  
+
     //User Notifications
     Route::post('/create-notification', [UserNotificationController::class, 'store']);
     Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);
