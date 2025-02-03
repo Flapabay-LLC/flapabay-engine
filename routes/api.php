@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\Auth\AuthenticatorController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
@@ -15,10 +16,13 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ComsmeticController;
 use App\Http\Controllers\FacebookController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\PropertyReviewController;
 use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\PlaceItemController;
+use App\Http\Controllers\PropertyTypeController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -69,6 +73,9 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
+
+    // Listings
+    Route::resource('listings', ListingController::class);
 
     // Property search filtering routes
     Route::post('filter-listings', [ListingController::class, 'search']);
@@ -127,7 +134,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
     Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
     Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
-  
+
     //User Notifications
     Route::post('/create-notification', [UserNotificationController::class, 'store']);
     Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);
@@ -145,4 +152,11 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     //Locations
     Route::get('locations', [LocationController::class, 'getLocations']);
     Route::post('location', [LocationController::class, 'createLocation']);
+
+    //Listing prefill data
+    Route::resource('amenities', AmenityController::class);
+    Route::resource('favorites', FavoriteController::class);
+    Route::resource('place-items', PlaceItemController::class);
+    Route::resource('property-types', PropertyTypeController::class);
+
 });
