@@ -30,6 +30,9 @@ class DatabaseSeeder extends Seeder
             PayoutOptionSeeder::class,
             LanguageSeeder::class,
             CurrencySeeder::class,
+            AmenitySeeder::class,
+            FavoriteSeeder::class,
+            PlaceItemSeeder::class,
         ]);
     }
 }
