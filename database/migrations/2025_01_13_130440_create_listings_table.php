@@ -15,6 +15,7 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('title')->nullable();
             $table->unsignedBigInteger('property_id');
+            $table->unsignedBigInteger('host_id');
             $table->json('post_levels')->nullable();
             $table->unsignedBigInteger('category_id')->nullable();
             $table->date('published_at')->nullable();

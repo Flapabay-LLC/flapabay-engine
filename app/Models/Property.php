@@ -21,7 +21,7 @@ class Property extends Model
         'description',
         'location',
         'address',
-        'county',
+        'country',
         'latitude',
         'longitude',
         'check_in_hour',
@@ -43,14 +43,27 @@ class Property extends Model
         'amenities',
         'house_rules',
         'page',
-        'rating',
-        'favorite',
+        'rating', //array [1,2,3,4,5]
         'images',
         'video_link',
         'verified',
         'property_type_id', //for filtering
         'category_id', //for filtering
         'tags', //for filtering
+
+        //Based on listing information
+        'about_place',
+        'host_type', //enum
+        'occupation_type', //enum
+        'street',
+        'city',
+        'zip',
+        'has_unallocated_rooms', //boolean
+        'num_of_bedrooms',
+        'num_of_bathrooms',
+        'num_of_quarters',
+        'favorites',
+        'first_reserver',
     ];
 
     /**
@@ -60,13 +73,11 @@ class Property extends Model
      */
     public static function createProperty($data)
     {
-
         return Property::create([
             'title' => $data['title'], // Property title
             'description' => $data['description'], // Property description
             'location' => $data['location'], // Location of the property
             'address' => $data['address'], // Address of the property
-            'county' => $data['county'], // County
             'latitude' => $data['latitude'], // Latitude
             'longitude' => $data['longitude'], // Longitude
             'check_in_hour' => $data['check_in_hour'], // Check-in hour
@@ -80,12 +91,13 @@ class Property extends Model
             'price' => $data['price'], // Price
             'additional_guest_price' => $data['additional_guest_price'], // Additional guest price
             'children_price' => $data['children_price'], // Children's price
-            'amenities' => $data['amenities'], // Amenities (should be a JSON string or comma-separated values)
-            'house_rules' => $data['house_rules'], // House rules (if any)
-            'rating' => $data['rating'], // Rating
-            'favorite' => $data['favorite'], // Favorite flag (1/0)
+            'amenities' => json_encode($data['amenities']), // Convert array to JSON string
+            'house_rules' => json_encode($data['house_rules']), // Convert array to JSON string
             'video_link' => $data['video_link'], // Video link (if any)
             'verified' => $data['verified'], // Verification status (1/0)
+            'num_of_bedrooms' => $data['num_of_bedrooms'], // Number of bedrooms
+            'num_of_bathrooms' => $data['num_of_bathrooms'], // Number of bathrooms
+            'num_of_quarters' => $data['num_of_quarters'], // Number of quarters
         ]);
     }
 

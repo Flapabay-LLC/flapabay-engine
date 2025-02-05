@@ -19,8 +19,9 @@ class Listing extends Model
     protected $fillable = [
         'title',
         'property_id',
+        'host_id',
         'post_levels',
-        'category_id',
+        'listing_type',
         'published_at',
         'status',
     ];

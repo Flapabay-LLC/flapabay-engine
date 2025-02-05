@@ -13,7 +13,7 @@ class PropertyTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        
+
             $propertyTypes = [
                 [
                     'name' => 'Apartment',
@@ -37,6 +37,61 @@ class PropertyTypeSeeder extends Seeder
                 ],
                 [
                     'name' => 'Studio',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Barn',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Bed & Breakfast',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Boat',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Cabin',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Camper/RV',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Container',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Cave',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Dammuso',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Dome',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Farm',
+                    'icon' => 'studio_icon.png',
+                    'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
+                ],
+                [
+                    'name' => 'Guesthouse',
                     'icon' => 'studio_icon.png',
                     'description' => 'A small apartment consisting of a single room used for both living and sleeping.',
                 ],
