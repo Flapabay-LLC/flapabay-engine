@@ -1,0 +1,70 @@
+@baseUrl = http://localhost:8000/api/v1
+@token = somesaucytoken
+@userEmail = email@email.com
+@userPassword = 12345678
+@userPhone = 077665548
+
+### Login
+POST {{baseUrl}}/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+### Sign up
+POST {{baseUrl}}/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "phone": "{{userPhone}}",
+  "password": "{{userPassword}}",
+  "fname": "Tony",
+  "lname": "Starks"
+}
+
+### Get user info
+GET {{baseUrl}}/users/4 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get bookings (trips)
+GET {{baseUrl}}/bookings HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Get booking
+GET {{baseUrl}}/bookings/11 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Create booking
+POST {{baseUrl}}/bookings HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "property_id": 1,
+  "user_id": 4,
+  "start_date": "2025-01-01 23:59:59",
+  "end_date": "2025-01-30 23:59:59",
+  "guest_details": "stuff",
+  "guest_count": 10,
+  "amount": 1
+}
+
+### Cancel booking
+PUT  {{baseUrl}}/bookings/11 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "reason": "Rental sucks!"
+}
+
+### Generate invoice for booking
+POST  {{baseUrl}}/bookings/11/invoice HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}

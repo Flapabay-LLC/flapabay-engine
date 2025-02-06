@@ -23,7 +23,7 @@ class AmenitySeeder extends Seeder
                 'description' => '',
             ],
             [
-                'name' => 'Pool',
+                'name' => 'Swimming Pool',
                 'white_icon' => 'swimming_prool',
                 'black_icon' => 'swimming_prool',
                 'svg' => '',

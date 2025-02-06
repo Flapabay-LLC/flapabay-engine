@@ -7,9 +7,11 @@ use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use Illuminate\Http\Request;
 use App\Models\Booking;
+use App\Models\Property;
 use App\Models\Invoice;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -17,36 +19,51 @@ use Illuminate\Support\Facades\Mail;
 class BookingController extends Controller
 {
 
-    public function getBookings()
+    public function index()
     {
-        try {
-            $bookings = Booking::get();
-            return response()->json([
-                'success' => true,
-                'message' => 'All Bookings',
-                'booking' => $bookings,
-            ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $bookings = Auth::user()->bookings()->with('property')->latest()->paginate(10);
+        return response()->json($bookings);
     }
 
-    public function getBooking($book_id)
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'property_id' => 'required|exists:properties,id',
+            'start_date' => 'required|date|after:today',
+            'end_date' => 'required|date|after:check_in_date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()->first()], 422);
+        }
+
+        $property = Property::findOrFail($request->property_id);
+
+        $totalDays = strtotime($request->check_out_date) - strtotime($request->check_in_date);
+        $totalDays = floor($totalDays / (60 * 60 * 24));
+        $totalPrice = $property->price_per_night * $totalDays;
+
+        $booking = Booking::create([
+            'user_id' => Auth::id(),
+            'property_id' => $property->id,
+            'check_in_date' => $request->check_in_date,
+            'check_out_date' => $request->check_out_date,
+            'amount' => $totalPrice,
+            'booking_status' => 'pending',
+        ]);
+
+        return response()->json(['message' => 'Booking request sent.', 'booking' => $booking], 201);
+    }
+
+    public function show(string $id)
     {
         try {
-            $booking = Booking::where('id', $book_id)->first();
+            $booking = Booking::where('id', $id)->first();
             return response()->json([
                 'success' => true,
                 'message' => 'Booking Information',
                 'booking' => $booking,
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -57,67 +74,10 @@ class BookingController extends Controller
         }
     }
 
-
-    public function createBooking(Request $request)
-    {
-        // Step 1: Validate incoming request data
-        $validatedData = Validator::make($request->all(), [
-            'property_id' => 'required', // Ensure property exists
-            'user_id' => 'required', // Ensure user exists
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'guest_details' => 'nullable|string',
-            'guest_count' => 'required|integer|min:1',
-            'amount' => 'required|integer|min:1',
-        ]);
-
-        if ($validatedData->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validatedData->errors(),
-            ], 422);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            // Step 2: Create the booking
-            $booking = Booking::create([
-                'booking_number' => uniqid('booking_'), // Generate a unique booking number
-                'property_id' => $request->input('property_id'),
-                'amount' => $request->input('amount'),
-                'user_id' => $request->input('user_id'),
-                'start_date' => $request->input('start_date'),
-                'end_date' => $request->input('end_date'),
-                'guest_details' => $request->input('guest_details'),
-                'guest_count' => $request->input('guest_count'),
-                'booking_status' => 'pending', // Default status
-                'payment_status' => 'pending', // Default status
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Booking created successfully',
-                'booking' => $booking,
-            ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create booking',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function cancelbooking(Request $request, $book_id)
+    public function update(Request $request, string $id)
     {
         // Find the booking by ID
-        $booking = Booking::find($book_id);
+        $booking = Booking::find($id);
 
         // Check if the booking exists
         if (!$booking) {
@@ -134,7 +94,7 @@ class BookingController extends Controller
         $booking->save();
 
         // Fetch the user details to send email
-        $user = User::where('id',$booking->user_id)->first();
+        $user = User::where('id', $booking->user_id)->first();
 
         if ($user) {
             // Send cancellation email
@@ -142,7 +102,7 @@ class BookingController extends Controller
                 "Your booking has been cancelled. Reason: {$booking->cancellation_reason}",
                 function ($message) use ($user) {
                     $message->to($user->email)
-                            ->subject('Booking Cancelled');
+                        ->subject('Booking Cancelled');
                 }
             );
         }
@@ -153,6 +113,16 @@ class BookingController extends Controller
             'message' => 'Booking cancelled successfully',
             'data' => $booking
         ]);
+    }
+
+    public function destroy(Booking $booking)
+    {
+        if ($booking->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $booking->delete();
+        return response()->json(['message' => 'Booking canceled.']);
     }
 
     public function generateInvoice(Request $request, $booking_id)

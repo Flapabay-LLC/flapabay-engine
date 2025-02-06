@@ -27,7 +27,7 @@ class PropertyController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getProperties(Request $request)
+    public function index(Request $request)
     {
         try {
             // Get the page number from the request, default to 1
@@ -45,7 +45,6 @@ class PropertyController extends Controller
                 'last_page' => $properties->lastPage(),
                 'per_page' => $properties->perPage(),
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -55,14 +54,14 @@ class PropertyController extends Controller
         }
     }
 
-
     /**
      * Create a new property and store it in wp_posts and wp_postmeta.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createProperties(Request $request) {
+    public function store(Request $request)
+    {
         // Step 1: Validate incoming request data
         $validatedData = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
@@ -166,17 +165,6 @@ class PropertyController extends Controller
                 $property->save();
             }
 
-            // // Step 4: Insert into Listing Model
-            // $listingData = [
-            //     'title' => $request->input('title'), // You can customize this as needed
-            //     'property_id' => $property->id,
-            //     'post_levels' => $request->input('post_levels', null), // Assuming this is optional
-            //     'published_at' => Carbon::now(), // Set to current time or customize as needed
-            //     'status' => 0, // Set default status or customize
-            // ];
-
-            // $listing = Listing::create($listingData);
-
             DB::commit();
             return response()->json([
                 "success" => true,
@@ -184,7 +172,6 @@ class PropertyController extends Controller
                 "property" => $property,
                 // "listing" => $listing,
             ], 201);
-
         } catch (\Exception $e) {
             dd($e);
             // DB::rollBack();
@@ -194,11 +181,47 @@ class PropertyController extends Controller
             //     "error" => $e->getMessage(),
             // ], 500);
         }
-
     }
 
+    public function show(string $id)
+    {
+        // Step 1: Validate the property ID
+        if (!is_numeric($id) || $id <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid property ID',
+            ], 400);
+        }
 
-    public function updateProperties(Request $request) {
+        try {
+            // Step 2: Retrieve the property from wp_posts
+            $property = Property::findOrFail($id);
+
+            if (!$property) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Property not found',
+                ], 404);
+            }
+
+            //return the property model and
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Property retrieved successfully',
+                'property' => $property,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve property',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function update(Request $request, string $id)
+    {
         // Step 1: Validate incoming request data
         $validatedData = Validator::make($request->all(), [
             'title' => 'nullable',
@@ -322,7 +345,6 @@ class PropertyController extends Controller
                 "message" => 'Property updated successfully',
                 "property" => $property,
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -331,14 +353,12 @@ class PropertyController extends Controller
                 "error" => $e->getMessage(),
             ], 500);
         }
-
     }
 
-
-
-    public function deleteProperty($propertyId) {
+    public function destroy(string $id)
+    {
         // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+        if (!is_numeric($id) || $id <= 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid property ID',
@@ -349,16 +369,16 @@ class PropertyController extends Controller
             DB::beginTransaction();
 
             // Step 2: Find the property
-            $property = Property::findOrFail($propertyId);
+            $property = Property::findOrFail($id);
 
             // Step 3: Delete related Listings
-            Listing::where('property_id', $propertyId)->delete();
+            Listing::where('property_id', $id)->delete();
 
             // Step 4: Delete related Availability
-            Availability::where('property_id', $propertyId)->delete();
+            Availability::where('property_id', $id)->delete();
 
             // Step 5: Delete related Bookings
-            Booking::where('property_id', $propertyId)->delete();
+            Booking::where('property_id', $id)->delete();
 
             // Step 6: Delete the Property
             $property->delete();
@@ -368,7 +388,6 @@ class PropertyController extends Controller
                 'success' => true,
                 'message' => 'Property deleted successfully',
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -379,11 +398,10 @@ class PropertyController extends Controller
         }
     }
 
-
-
-    public function getProperty($propertyId) {
+    public function getPropertyReviews(string $id)
+    {
         // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+        if (!is_numeric($id) || $id <= 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid property ID',
@@ -391,46 +409,8 @@ class PropertyController extends Controller
         }
 
         try {
-            // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
-
-            if (!$property) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Property not found',
-                ], 404);
-            }
-
-           //return the property model and
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Property retrieved successfully',
-                'property' => $property,
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve property',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
-    public function getPropertyReviews($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
-
-        try {
-            // Step 2: Retrieve reviews from UserReview Model where property_id = $propertyId
-            $reviews = UserReview::where('property_id', $propertyId)->get();
+            // Step 2: Retrieve reviews from UserReview Model where property_id = $id
+            $reviews = UserReview::where('property_id', $id)->get();
 
             // Step 3: Check if reviews exist
             if ($reviews->isEmpty()) {
@@ -446,7 +426,6 @@ class PropertyController extends Controller
                 'message' => 'Reviews retrieved successfully',
                 'reviews' => $reviews,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -456,10 +435,10 @@ class PropertyController extends Controller
         }
     }
 
-
-    public function getPropertyDescription($propertyId) {
+    public function getPropertyDescription(string $id)
+    {
         // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+        if (!is_numeric($id) || $id <= 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid property ID',
@@ -468,7 +447,7 @@ class PropertyController extends Controller
 
         try {
             // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            $property = Property::with('listing')->where('id', $id)->first();
 
             if (!$property) {
                 return response()->json([
@@ -477,14 +456,13 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
+            //return the property model and
 
             return response()->json([
                 'success' => true,
                 'message' => 'Property retrieved successfully',
                 'description' => $property->description,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -494,9 +472,10 @@ class PropertyController extends Controller
         }
     }
 
-    public function getPropertyPriceDetails($propertyId) {
+    public function getPropertyPriceDetails(string $id)
+    {
         // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+        if (!is_numeric($id) || $id <= 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid property ID',
@@ -505,7 +484,7 @@ class PropertyController extends Controller
 
         try {
             // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            $property = Property::with('listing')->where('id', $id)->first();
 
             if (!$property) {
                 return response()->json([
@@ -514,7 +493,7 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
+            //return the property model and
 
             return response()->json([
                 'success' => true,
@@ -525,7 +504,6 @@ class PropertyController extends Controller
                 'additional_guest_price' => $property->additional_guest_price,
                 'children_price' => $property->children_price,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -535,10 +513,10 @@ class PropertyController extends Controller
         }
     }
 
-
-    public function getPropertyAmenities($propertyId) {
+    public function getPropertyAmenities(string $id)
+    {
         // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+        if (!is_numeric($id) || $id <= 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid property ID',
@@ -547,7 +525,7 @@ class PropertyController extends Controller
 
         try {
             // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            $property = Property::with('listing')->where('id', $id)->first();
 
             if (!$property) {
                 return response()->json([
@@ -556,14 +534,13 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
+            //return the property model and
 
             return response()->json([
                 'success' => true,
                 'message' => 'Property retrieved successfully',
                 'amenities' => $property->amenities,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -573,10 +550,10 @@ class PropertyController extends Controller
         }
     }
 
-
-    public function getAvailabilityDates($propertyId) {
+    public function getAvailabilityDates(string $id)
+    {
         // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+        if (!is_numeric($id) || $id <= 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid property ID',
@@ -585,7 +562,7 @@ class PropertyController extends Controller
 
         try {
             // Step 2: Retrieve availability records for the specified property
-            $availabilityRecords = Availability::where('property_id', $propertyId)->get();
+            $availabilityRecords = Availability::where('property_id', $id)->get();
 
             // Step 3: Extract available dates
             $availableDates = [];
@@ -602,7 +579,6 @@ class PropertyController extends Controller
                 'message' => 'Availability dates retrieved successfully',
                 'available_dates' => array_unique($availableDates), // Remove duplicates
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
