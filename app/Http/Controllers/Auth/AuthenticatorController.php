@@ -30,7 +30,7 @@ class AuthenticatorController extends Controller
 {
 
     use MySMS;
-/**
+    /**
      * Register a new user.
      *
      * @param \Illuminate\Http\Request $request
@@ -93,7 +93,7 @@ class AuthenticatorController extends Controller
 
             // Check if user exists
             $user = User::orWhere('email', $request->email)
-                            ->orWhere('phone', $request->email)->first();
+                ->orWhere('phone', $request->email)->first();
 
             if (!$user) {
                 return response()->json([
@@ -121,7 +121,6 @@ class AuthenticatorController extends Controller
                     'token' => $token
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -129,6 +128,26 @@ class AuthenticatorController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function checkPhoneNumber(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'nullable',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+
+        $user = User::where('phone', $request->phone)->first();
+
+        if (!$user || !$user->phone) {
+            return response()->json(['error' => 'User phone number not registered'], 404);
+        }
+
+        return response()->json(['message' => 'Phone number found!', 'ok' => true], 200);
     }
 
     /**
@@ -148,7 +167,7 @@ class AuthenticatorController extends Controller
 
         // Step 2: Check if the user exists
         $user = User::orWhere('email', $request->email)
-        ->orWhere('phone', $request->phone)->first();
+            ->orWhere('phone', $request->phone)->first();
 
         if (!$user || !$user->phone) {
             return response()->json(['error' => 'User not found or no phone number registered'], 404);
@@ -179,7 +198,6 @@ class AuthenticatorController extends Controller
                 'message' => 'OTP sent to your phone! Please check your SMS.',
                 'messageId' => $smsResponse->getMessages()[0]->getMessageId()
             ], 200);
-
         } catch (ApiException $apiException) {
             // Log the detailed error for debugging
             Log::error('Infobip SMS Error', [
@@ -249,14 +267,14 @@ class AuthenticatorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors(), 'status'=>false], 400);
+            return response()->json(['error' => $validator->errors(), 'status' => false], 400);
         }
 
         // Step 2: Check if the user exists
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json(['error' => 'User not found', 'status'=>false], 404);
+            return response()->json(['error' => 'User not found', 'status' => false], 404);
         }
 
         // // Step 3: Check if OTP is expired after 5 minutes
@@ -267,11 +285,11 @@ class AuthenticatorController extends Controller
 
         // Step 4: Check if OTP is correct
         if ($user->otp != $request->otp) {
-            return response()->json(['error' => 'Invalid OTP', 'status'=>false], 400);
+            return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
         }
 
         // OTP is valid and not expired
-        return response()->json(['message' => 'OTP verified successfully!', 'status'=>true], 200);
+        return response()->json(['message' => 'OTP verified successfully!', 'status' => true], 200);
     }
 
 
