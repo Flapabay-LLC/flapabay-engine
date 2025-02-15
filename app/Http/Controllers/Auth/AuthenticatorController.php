@@ -305,10 +305,6 @@ class AuthenticatorController extends Controller
         // Step 5: Send reset email
         $resetLink = url('/v1/reset-password?token=' . $token . '&email=' . urlencode($email));
 
-        // Mail::send('emails.reset', ['link' => $resetLink], function ($message) use ($email) {
-        //     $message->to($email);
-        //     $message->subject('Password Reset Request');
-        // });
         try {
             // Send the email
             Mail::send('emails.reset', ['link' => $resetLink], function ($message) use ($email) {
@@ -347,7 +343,7 @@ class AuthenticatorController extends Controller
 
         // Step 4: Update the password in wp_users table
         try {
-            $user = User::where('email', $email)->update([
+            $user = User::where('email', $email)->first()->update([
                 'password' => $hashedPassword
             ]);
 
