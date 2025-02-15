@@ -28,7 +28,6 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthenticatorController extends Controller
 {
-
     use MySMS;
     /**
      * Register a new user.
@@ -130,26 +129,6 @@ class AuthenticatorController extends Controller
         }
     }
 
-    public function checkPhoneNumber(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'nullable',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-
-        $user = User::where('phone', $request->phone)->first();
-
-        if (!$user || !$user->phone) {
-            return response()->json(['error' => 'User phone number not registered'], 404);
-        }
-
-        return response()->json(['message' => 'Phone number found!', 'ok' => true], 200);
-    }
-
     /**
      * Handle the generation and sending of an OTP.
      */
@@ -212,8 +191,6 @@ class AuthenticatorController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Handle the generation and sending of an OTP.
@@ -292,8 +269,6 @@ class AuthenticatorController extends Controller
         return response()->json(['message' => 'OTP verified successfully!', 'status' => true], 200);
     }
 
-
-
     /**
      * Handle forgot password functionality.
      */
@@ -348,7 +323,6 @@ class AuthenticatorController extends Controller
         // Step 6: Return response
         return response()->json(['message' => 'Reset email sent successfully'], 200);
     }
-
 
     /**
      * Handle the password reset process.

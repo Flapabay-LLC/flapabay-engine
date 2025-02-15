@@ -3,26 +3,26 @@
 use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\Auth\AuthenticatorController;
 use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\UserReviewController;
-use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\HostController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\StripeController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ComsmeticController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\HostController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ListingController;
-use App\Http\Controllers\PropertyReviewController;
-use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlaceItemController;
+use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyReviewController;
 use App\Http\Controllers\PropertyTypeController;
+use App\Http\Controllers\StripeController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserNotificationController;
+use App\Http\Controllers\UserReviewController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -38,7 +38,8 @@ Route::prefix('v1')->group(function () {
     Route::post('login', [AuthenticatorController::class, 'login']);
     Route::post('get-email-otp', [AuthenticatorController::class, 'getEmailOtp']);
     Route::post('get-phone-otp', [AuthenticatorController::class, 'getPhoneOtp']);
-    Route::post('check-phone-number', [AuthenticatorController::class, 'checkPhoneNumber']);
+    // Initiate phone number verification
+    Route::post('phone-verifications', [PhoneVerificationController::class, 'initiate']);
     Route::get('verify-otp', [AuthenticatorController::class, 'verifyOtp']);
     Route::post('logout', [AuthenticatorController::class, 'logout']);
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
@@ -159,5 +160,4 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::resource('favorites', FavoriteController::class);
     Route::resource('place-items', PlaceItemController::class);
     Route::resource('property-types', PropertyTypeController::class);
-
 });
