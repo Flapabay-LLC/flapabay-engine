@@ -51,5 +51,31 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
             'profile_photo_path' => 'https://example.com/photo.jpg',
         ]);
+
+        User::create([
+            'fname' => 'Tony',
+            'lname' => 'Starks',
+            'email' => 'email5@email.com',
+            'phone' => '77665549',
+            'password' => bcrypt('12345678'),
+            'otp' => '654321',
+            'otp_expires_at' => now()->addMinutes(10),
+            'otp_verified_at' => now(),
+            'email_verified_at' => now(),
+            'profile_photo_path' => 'https://example.com/photo.jpg',
+        ]);
+
+        User::create([
+            'fname' => 'George',
+            'lname' => 'Munganga',
+            'email' => 'georgemunganga@gmail.com',
+            'phone' => '975743472',
+            'password' => bcrypt('12345678'),
+            'otp' => '654321',
+            'otp_expires_at' => now()->addMinutes(10),
+            'otp_verified_at' => now(),
+            'email_verified_at' => now(),
+            'profile_photo_path' => 'https://example.com/photo.jpg',
+        ]);
     }
 }
