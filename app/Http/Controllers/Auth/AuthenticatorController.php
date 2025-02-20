@@ -302,22 +302,36 @@ class AuthenticatorController extends Controller
         //     'created_at' => Carbon::now(),
         // ]);
 
+        // Step 3: Generate the OTP
+        $otp = rand(100000, 999999);
+
+        // Step 4: Set OTP expiration time
+        $expiresAt = Carbon::now()->addMinutes(5);
+
+        // Step 5: Store OTP in the database
+        $user->update([
+            'otp' => $otp,
+            'otp_expires_at' => $expiresAt
+        ]);
+
+        // Step 6: Store OTP in cache
+        Cache::put('otp_' . $request->email, $otp, $expiresAt);
+
         // Step 5: Send reset email
         $resetLink = url('/v1/reset-password?token=' . $token . '&email=' . urlencode($email));
 
         try {
             // Send the email
-            Mail::send('emails.reset', ['link' => $resetLink], function ($message) use ($email) {
+            Mail::send('emails.reset', ['link' => $otp], function ($message) use ($email) {
                 $message->to($email);
                 $message->subject('Password Reset Request');
             });
 
             return response()->json(['success' => 'Password reset email has been resent.'], 200);
         } catch (\Exception $e) {
+            Log::info($e);
             return response()->json(['error' => 'Failed to send email. Please try again later.'], 500);
         }
-        // Step 6: Return response
-        return response()->json(['message' => 'Reset email sent successfully'], 200);
     }
 
     /**
@@ -325,10 +339,9 @@ class AuthenticatorController extends Controller
      */
     public function resetPassword(Request $request)
     {
-        // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'new_password' => 'required|string|min:8', // Ensure minimum length for security
+            'new_password' => 'required|string|min:8',
         ]);
 
         if ($validator->fails()) {
@@ -338,16 +351,14 @@ class AuthenticatorController extends Controller
         $email = $request->input('email');
         $newPassword = $request->input('new_password');
 
-        // Step 3: Hash the new password
         $hashedPassword = Hash::make($newPassword);
 
-        // Step 4: Update the password in wp_users table
         try {
+            Log::info($email);
             $user = User::where('email', $email)->first()->update([
                 'password' => $hashedPassword
             ]);
 
-            // Step 5: Return a response
             return response()->json([
                 'success' => true,
                 'user' => $user,
