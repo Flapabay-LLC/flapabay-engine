@@ -28,9 +28,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthenticatorController extends Controller
 {
-
     use MySMS;
-/**
+    /**
      * Register a new user.
      *
      * @param \Illuminate\Http\Request $request
@@ -93,7 +92,7 @@ class AuthenticatorController extends Controller
 
             // Check if user exists
             $user = User::orWhere('email', $request->email)
-                            ->orWhere('phone', $request->email)->first();
+                ->orWhere('phone', $request->email)->first();
 
             if (!$user) {
                 return response()->json([
@@ -121,7 +120,6 @@ class AuthenticatorController extends Controller
                     'token' => $token
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -148,7 +146,7 @@ class AuthenticatorController extends Controller
 
         // Step 2: Check if the user exists
         $user = User::orWhere('email', $request->email)
-        ->orWhere('phone', $request->phone)->first();
+            ->orWhere('phone', $request->phone)->first();
 
         if (!$user || !$user->phone) {
             return response()->json(['error' => 'User not found or no phone number registered'], 404);
@@ -179,7 +177,6 @@ class AuthenticatorController extends Controller
                 'message' => 'OTP sent to your phone! Please check your SMS.',
                 'messageId' => $smsResponse->getMessages()[0]->getMessageId()
             ], 200);
-
         } catch (ApiException $apiException) {
             // Log the detailed error for debugging
             Log::error('Infobip SMS Error', [
@@ -194,8 +191,6 @@ class AuthenticatorController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Handle the generation and sending of an OTP.
@@ -249,14 +244,14 @@ class AuthenticatorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors(), 'status'=>false], 400);
+            return response()->json(['error' => $validator->errors(), 'status' => false], 400);
         }
 
         // Step 2: Check if the user exists
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json(['error' => 'User not found', 'status'=>false], 404);
+            return response()->json(['error' => 'User not found', 'status' => false], 404);
         }
 
         // // Step 3: Check if OTP is expired after 5 minutes
@@ -267,14 +262,12 @@ class AuthenticatorController extends Controller
 
         // Step 4: Check if OTP is correct
         if ($user->otp != $request->otp) {
-            return response()->json(['error' => 'Invalid OTP', 'status'=>false], 400);
+            return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
         }
 
         // OTP is valid and not expired
-        return response()->json(['message' => 'OTP verified successfully!', 'status'=>true], 200);
+        return response()->json(['message' => 'OTP verified successfully!', 'status' => true], 200);
     }
-
-
 
     /**
      * Handle forgot password functionality.
@@ -309,38 +302,46 @@ class AuthenticatorController extends Controller
         //     'created_at' => Carbon::now(),
         // ]);
 
+        // Step 3: Generate the OTP
+        $otp = rand(100000, 999999);
+
+        // Step 4: Set OTP expiration time
+        $expiresAt = Carbon::now()->addMinutes(5);
+
+        // Step 5: Store OTP in the database
+        $user->update([
+            'otp' => $otp,
+            'otp_expires_at' => $expiresAt
+        ]);
+
+        // Step 6: Store OTP in cache
+        Cache::put('otp_' . $request->email, $otp, $expiresAt);
+
         // Step 5: Send reset email
         $resetLink = url('/v1/reset-password?token=' . $token . '&email=' . urlencode($email));
 
-        // Mail::send('emails.reset', ['link' => $resetLink], function ($message) use ($email) {
-        //     $message->to($email);
-        //     $message->subject('Password Reset Request');
-        // });
         try {
             // Send the email
-            Mail::send('emails.reset', ['link' => $resetLink], function ($message) use ($email) {
+            Mail::send('emails.reset', ['link' => $otp], function ($message) use ($email) {
                 $message->to($email);
                 $message->subject('Password Reset Request');
             });
 
             return response()->json(['success' => 'Password reset email has been resent.'], 200);
         } catch (\Exception $e) {
+            Log::info($e);
             return response()->json(['error' => 'Failed to send email. Please try again later.'], 500);
         }
-        // Step 6: Return response
-        return response()->json(['message' => 'Reset email sent successfully'], 200);
     }
-
 
     /**
      * Handle the password reset process.
      */
     public function resetPassword(Request $request)
     {
-        // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'new_password' => 'required|string|min:8', // Ensure minimum length for security
+            'new_password' => 'required|string|min:8',
         ]);
 
         if ($validator->fails()) {
@@ -350,16 +351,14 @@ class AuthenticatorController extends Controller
         $email = $request->input('email');
         $newPassword = $request->input('new_password');
 
-        // Step 3: Hash the new password
         $hashedPassword = Hash::make($newPassword);
 
-        // Step 4: Update the password in wp_users table
         try {
-            $user = User::where('email', $email)->update([
+            Log::info($email);
+            $user = User::where('email', $email)->first()->update([
                 'password' => $hashedPassword
             ]);
 
-            // Step 5: Return a response
             return response()->json([
                 'success' => true,
                 'user' => $user,

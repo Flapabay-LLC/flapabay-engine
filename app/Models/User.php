@@ -14,8 +14,6 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
-    // use HasApiTokens;
-
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
@@ -62,7 +60,6 @@ class User extends Authenticatable implements JWTSubject
     protected $appends = [
         'profile_photo_url',
     ];
-
 
     public function getJWTIdentifier()
     {
