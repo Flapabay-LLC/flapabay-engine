@@ -42,6 +42,8 @@ class User extends Authenticatable implements JWTSubject
         'google_id'
     ];
 
+
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -86,6 +88,22 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
         ];
     }
+
+        // Always eager load:
+        protected $with = ['details'];
+
+        // Merge into user array output:
+        public function toArray()
+        {
+            $array = parent::toArray();
+
+            if ($this->relationLoaded('details') && $this->details) {
+                $array = array_merge($array, $this->details->toArray());
+                unset($array['details']);
+            }
+
+            return $array;
+        }
 
     /**
      * Relationship with the User model.
