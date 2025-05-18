@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Twilio\Rest\Client;
+
 
 class AuthenticatorController extends Controller
 {
@@ -26,41 +28,46 @@ class AuthenticatorController extends Controller
      */
     public function register(Request $request)
     {
-
-        // Validate the request
+        // Step 1: Validate input
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone' => 'required|unique:users,phone',
-            'password' => 'required|string|min:8',
+            'email' => 'required|email|unique:users,email,' . $request->phone . ',phone',
+            'phone' => 'required|digits_between:7,15',
+            'dob' => 'required|date',
+            'password' => 'required|min:6', // Make sure password is included
         ]);
 
-        // dd($request);
-        // If validation fails, return error response
         if ($validator->fails()) {
             return response()->json([
                 'error' => $validator->errors()
             ], 422);
         }
 
-        // Create the user with hashed password
-        $user = User::create([
-            'fname' => $request->fname,
-            'lname' => $request->lname,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password), // Hash the password
-        ]);
+        // Step 2: Update or create the user based on the phone number
+        $user = User::updateOrCreate(
+            ['phone' => $request->phone], // search condition
+            [
+                'fname' => $request->fname,
+                'lname' => $request->lname,
+                'email' => $request->email,
+                'password' => Hash::make($request->password), // Hash the password
+            ]
+        );
 
-        UserDetail::create([
-            'user_id' => $user->id,
-            'phone' => $request->phone ?? null,
-        ]);
+        // Step 3: Create or update user details based on user_id
+        UserDetail::updateOrCreate(
+            ['user_id' => $user->id], // search condition
+            [
+                'phone' => $request->phone ?? null,
+                'dob' => $request->dob ?? null,
+            ]
+        );
 
-        // Generate JWT token
+        // Step 4: Generate a JWT token
         $token = JWTAuth::fromUser($user);
-        // Return success response
+
+        // Step 5: Return response
         return response()->json([
             'message' => 'User successfully registered!',
             'data' => [
@@ -81,7 +88,7 @@ class AuthenticatorController extends Controller
 
             // Check if user exists
             $user = User::orWhere('email', $request->email)
-                            ->orWhere('phone', $request->email)->first();
+                        ->orWhere('phone', $request->email)->first();
 
             if (!$user) {
                 return response()->json([
@@ -100,7 +107,6 @@ class AuthenticatorController extends Controller
 
             // Generate JWT token
             $token = JWTAuth::fromUser($user);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
@@ -109,7 +115,6 @@ class AuthenticatorController extends Controller
                     'token' => $token
                 ]
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -119,54 +124,113 @@ class AuthenticatorController extends Controller
         }
     }
 
+
+    public function registerUserDetails(Request $request)
+    {
+        // Step 1: Validate input
+        $validator = Validator::make($request->all(), [
+            'fname' => 'required|string|max:255',
+            'lname' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $request->phone . ',phone',
+            'phone' => 'required|digits_between:7,15',
+            'dob' => 'required|date',
+            'password' => 'required|min:6', // Make sure password is included
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => $validator->errors()
+            ], 422);
+        }
+
+        // Step 2: Update or create the user based on the phone number
+        $user = User::updateOrCreate(
+            ['phone' => $request->phone], // search condition
+            [
+                'fname' => $request->fname,
+                'lname' => $request->lname,
+                'email' => $request->email,
+                'password' => Hash::make($request->password), // Hash the password
+            ]
+        );
+
+        // Step 3: Create or update user details based on user_id
+        UserDetail::updateOrCreate(
+            ['user_id' => $user->id], // search condition
+            [
+                'phone' => $request->phone ?? null,
+                'dob' => $request->dob ?? null,
+            ]
+        );
+
+        // Step 4: Generate a JWT token
+        $token = JWTAuth::fromUser($user);
+
+        // Step 5: Return response
+        return response()->json([
+            'message' => 'User successfully registered!',
+            'data' => [
+                'user' => $user,
+                'token' => $token
+            ]
+        ], 201);
+    }
+
+
     /**
      * Handle the generation and sending of an OTP.
      */
     public function getPhoneOtp(Request $request)
     {
-
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|string',
+            'code' => 'required', // Validate country code like +254, +1, +91
+            'phone' => 'required|digits_between:7,15', // Validate phone digits only
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        // Step 2: Check if the user exists
-        $user = User::where('email', $request->email)->first();
+        // Step 2: Combine full phone in E.164 format
+        $fullPhone = $request->code . $request->phone;
 
+        // Step 3: Check if the user exists
+        $user = User::where('phone', $fullPhone)->first();
         if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+            $user = User::create([
+                'phone' => $fullPhone,
+                'password' => Hash::make('12345678'),
+            ]);
         }
 
-        // Step 3: Generate the OTP
-        $otp = rand(100000, 999999); // Generate a 6-digit OTP
+        // Step 4: Generate the OTP
+        $otp = rand(10000, 99999);
 
-        // Step 4: Set OTP expiration time
-        $expiresAt = Carbon::now()->addMinutes(5); // Set expiration time to 5 minutes
-
-        // Step 5: Store the OTP and expiration time in the database
+        // Step 5: Store the OTP and expiration time
+        $expiresAt = Carbon::now()->addMinutes(5);
         $user->otp = $otp;
         $user->otp_expires_at = $expiresAt;
         $user->save();
 
-        // Step 6: Store the OTP in the cache for quick retrieval
-        Cache::put('otp_' . $request->email, $otp, $expiresAt);
+        // Step 6: Cache the OTP for quick retrieval
+        Cache::put('otp_' . $fullPhone, $otp, $expiresAt);
 
-        // Example for sending via SMS (using Twilio)
-        /*
-        $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
-        $twilio->messages->create($request->contact, [
-            'from' => env('TWILIO_FROM'),
-            'body' => "Your OTP is: $otp"
-        ]);
-        */
+        // Step 7: Send OTP via Twilio
+        try {
+            $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
 
-        // Step 5: Return a response
-        return response()->json(['message' => 'OTP sent to your phone!, Please check your SMS'], 200);
+            $twilio->messages->create('+'.$fullPhone, [
+                'from' => env('TWILIO_FROM'),
+                'body' => "Your OTP is: $otp"
+            ]);
+
+            return response()->json(['message' => 'OTP sent to your phone!'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to send OTP. ' . $e->getMessage()], 500);
+        }
     }
+
 
 /**
      * Handle the generation and sending of an OTP.
@@ -215,35 +279,65 @@ class AuthenticatorController extends Controller
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|string',
+            'phone' => 'required',
             'otp' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors(), 'status'=>false], 400);
+            return response()->json(['error' => $validator->errors(), 'status' => false], 400);
         }
 
-        // Step 2: Check if the user exists
-        $user = User::where('email', $request->email)->first();
+        // Step 2: Find user by phone
+        $user = User::where('phone', $request->phone)->first();
 
         if (!$user) {
-            return response()->json(['error' => 'User not found', 'status'=>false], 404);
+            return response()->json(['error' => 'User not found', 'status' => false], 404);
         }
 
-        // // Step 3: Check if OTP is expired after 5 minutes
-        // Check if expired
-        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-            return response()->json(['error' => 'OTP has expired'], 400);
-        }
+        // Step 3: Check if OTP is expired
+        // if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+        //     return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
+        // }
 
-        // Step 4: Check if OTP is correct
+        // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
-            return response()->json(['error' => 'Invalid OTP', 'status'=>false], 400);
+            return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
         }
 
-        // OTP is valid and not expired
-        return response()->json(['message' => 'OTP verified successfully!', 'status'=>true], 200);
+        // Step 5: Check if user has complete records
+        $requiredFields = ['fname', 'lname', 'email', 'phone', 'password'];
+        $isProfileComplete = true;
+
+        foreach ($requiredFields as $field) {
+            if (empty($user->$field)) {
+                $isProfileComplete = false;
+                break;
+            }
+        }
+
+        // Step 6: If profile is complete, authenticate and return token
+        if ($isProfileComplete) {
+            $token = JWTAuth::fromUser($user);
+
+            // Optionally mark OTP as verified
+            $user->otp_verified_at = now();
+            $user->save();
+
+            return response()->json([
+                'message' => 'OTP verified and user authenticated!',
+                'status' => true,
+                'token' => $token,
+                'user' => $user
+            ], 200);
+        }
+
+        // Step 7: Return success without token if profile is incomplete
+        return response()->json([
+            'message' => 'OTP verified! Complete your profile to continue.',
+            'status' => true
+        ], 200);
     }
+
 
 
 

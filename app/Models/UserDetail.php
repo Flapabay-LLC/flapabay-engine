@@ -30,6 +30,7 @@ class UserDetail extends Model
         'twitter',
         'linkedin',
         'youtube',
+        'dob'
     ];
 
 

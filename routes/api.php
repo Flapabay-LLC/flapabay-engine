@@ -31,9 +31,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/testing', [UserController::class, 'test']);
     // Authentication routes
     Route::post('register', [AuthenticatorController::class, 'register']);
+    Route::post('register-user-details', [AuthenticatorController::class, 'registerUserDetails']);
     Route::post('login', [AuthenticatorController::class, 'login']);
     Route::post('get-email-otp', [AuthenticatorController::class, 'getEmailOtp']);
-    Route::post('get-phone-otp', [AuthenticatorController::class, 'getPhoneOtp']);
+    Route::post('get-phone-otp', [AuthenticatorController::class, 'getPhoneOtp']); //step1
     Route::get('verify-otp', [AuthenticatorController::class, 'verifyOtp']);
     Route::post('logout', [AuthenticatorController::class, 'logout']);
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
@@ -127,7 +128,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
     Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
     Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
-  
+
     //User Notifications
     Route::post('/create-notification', [UserNotificationController::class, 'store']);
     Route::get('/fetch-user-notifications/{userId}', [UserNotificationController::class, 'fetchUserNotifications']);

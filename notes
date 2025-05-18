@@ -1,0 +1,56 @@
+Create Property
+
+
+
+Create Listing
+    -Get how much you could earn API
+    -about_place
+    -describe your place/types (Get property types)
+    occupation_type[] (room/ entire_place/ shared_room_in_hotel) - Get occupation_types
+    - get long, lang,  country, street, city, zip, text address (Where is your place located)
+    Number of Guests, Bedrooms, Beds, Bathrooms (Share some basics about your place)
+    -favourites[] (Tell guests what your place has to offer)
+    -amenities[] (Tell guests what your place has to offer)
+    -images[]
+    -first_reserver (any_flapabay_guest/an_experienced_guest) - choose who to welcome for your first reservation
+
+
+
+
+
+
+
+
+
+
+
+Predata
+- Get amenties API
+  Get property types API
+  Get favorites API
+  Get occupation types API
+
+
+about_place
+description
+occupation_type -enum(room/ entire_place/ shared_room_in_hotel)
+country
+street
+city
+zip
+address
+long
+lang
+num_of_guest
+num_of_bedroom
+num_of_bed
+favourites[]
+amenities[]
+images[]
+first_reserver -enum(any_flapabay_guest/an_experienced_guest)
+
+host_type (How are you hosting on Flapabay)
+            -Private Individual
+            -Business
+
+place_items[] (External security/ Noise decibel monitor present/ Weapon(s) on the Property) - checkboxes
