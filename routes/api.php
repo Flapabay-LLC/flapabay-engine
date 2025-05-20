@@ -35,7 +35,8 @@ Route::prefix('v1')->group(function () {
     Route::post('login', [AuthenticatorController::class, 'login']);
     Route::post('get-email-otp', [AuthenticatorController::class, 'getEmailOtp']);
     Route::post('get-phone-otp', [AuthenticatorController::class, 'getPhoneOtp']); //step1
-    Route::get('verify-otp', [AuthenticatorController::class, 'verifyOtp']);
+    Route::post('verify-otp-byphone', [AuthenticatorController::class, 'verifyOtpByPhone']);
+    Route::post('verify-otp-byemail', [AuthenticatorController::class, 'verifyOtpByEmail']);
     Route::post('logout', [AuthenticatorController::class, 'logout']);
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);

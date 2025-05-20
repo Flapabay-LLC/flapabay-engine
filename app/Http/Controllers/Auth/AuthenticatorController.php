@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\GetOTPEmail;
 use App\Models\User;
+use App\Traits\AuthTrait;
 use App\Models\UserDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -19,6 +20,8 @@ use Twilio\Rest\Client;
 
 class AuthenticatorController extends Controller
 {
+
+    use AuthTrait;
 
 /**
      * Register a new user.
@@ -204,17 +207,10 @@ class AuthenticatorController extends Controller
             ]);
         }
 
-        // Step 4: Generate the OTP
-        $otp = rand(10000, 99999);
-
-        // Step 5: Store the OTP and expiration time
-        $expiresAt = Carbon::now()->addMinutes(5);
-        $user->otp = $otp;
-        $user->otp_expires_at = $expiresAt;
-        $user->save();
+        $otp = $this->generate_otp($user, $request);
 
         // Step 6: Cache the OTP for quick retrieval
-        Cache::put('otp_' . $fullPhone, $otp, $expiresAt);
+        Cache::put('otp_' . $fullPhone, $otp);
 
         // Step 7: Send OTP via Twilio
         try {
@@ -255,18 +251,10 @@ class AuthenticatorController extends Controller
         }
 
         // Step 3: Generate the OTP
-        $otp = rand(100000, 999999); // Generate a 6-digit OTP
-
-        // Step 4: Set OTP expiration time
-        $expiresAt = Carbon::now()->addMinutes(5); // Set expiration time to 5 minutes
-
-        // Step 5: Store the OTP and expiration time in the database
-        $user->otp = $otp;
-        $user->otp_expires_at = $expiresAt;
-        $user->save();
+        $otp = $this->generate_otp($user, $request);
 
         // Step 6: Store the OTP in the cache for quick retrieval
-        Cache::put('otp_' . $request->email, $otp, $expiresAt);
+        Cache::put('otp_' . $request->email, $otp);
 
         // Step 7: Send the OTP via email
         Mail::to($request->email)->send(new GetOTPEmail($otp));
@@ -275,7 +263,7 @@ class AuthenticatorController extends Controller
         return response()->json(['message' => 'OTP sent to your email!, Please check your mail'], 200);
     }
 
-    public function verifyOtp(Request $request)
+    public function verifyOtpByPhone(Request $request)
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
@@ -286,9 +274,9 @@ class AuthenticatorController extends Controller
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors(), 'status' => false], 400);
         }
-
+        
         // Step 2: Find user by phone
-        $user = User::where('phone', $request->phone)->first();
+        $user = User::where('phone', '26'. $request->phone)->first();
 
         if (!$user) {
             return response()->json(['error' => 'User not found', 'status' => false], 404);
@@ -338,7 +326,68 @@ class AuthenticatorController extends Controller
         ], 200);
     }
 
+    public function verifyOtpByEmail(Request $request)
+    {
+        // Step 1: Validate the request
+        $validator = Validator::make($request->all(), [
+            'email' => 'required',
+            'otp' => 'required|numeric',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors(), 'status' => false], 400);
+        }
+
+        // Step 2: Find user by phone
+        $user = User::where('email', $request->phone)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found', 'status' => false], 404);
+        }
+
+        // Step 3: Check if OTP is expired
+        // if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+        //     return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
+        // }
+
+        // Step 4: Check if OTP matches
+        if ($user->otp != $request->otp) {
+            return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
+        }
+
+        // Step 5: Check if user has complete records
+        $requiredFields = ['fname', 'lname', 'email', 'phone', 'password'];
+        $isProfileComplete = true;
+
+        foreach ($requiredFields as $field) {
+            if (empty($user->$field)) {
+                $isProfileComplete = false;
+                break;
+            }
+        }
+
+        // Step 6: If profile is complete, authenticate and return token
+        if ($isProfileComplete) {
+            $token = JWTAuth::fromUser($user);
+
+            // Optionally mark OTP as verified
+            $user->otp_verified_at = now();
+            $user->save();
+
+            return response()->json([
+                'message' => 'OTP verified and user authenticated!',
+                'status' => true,
+                'token' => $token,
+                'user' => $user
+            ], 200);
+        }
+
+        // Step 7: Return success without token if profile is incomplete
+        return response()->json([
+            'message' => 'OTP verified! Complete your profile to continue.',
+            'status' => true
+        ], 200);
+    }
 
 
     /**
