@@ -57,7 +57,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // User routes
     Route::get('users/{user_id}', [UserController::class, 'show']);
-    Route::put('users/{user_id}', [UserController::class, 'update']);
+    Route::post('users/{user_id}', [UserController::class, 'update']);
     Route::post('users/{user_id}/profile-picture', [UserController::class, 'updateProfilePicture']);
     Route::get('users/{user_id}/reviews', [UserReviewController::class, 'userReview']);
 
