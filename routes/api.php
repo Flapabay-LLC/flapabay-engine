@@ -33,6 +33,7 @@ Route::prefix('v1')->group(function () {
     Route::post('register', [AuthenticatorController::class, 'register']);
     Route::post('register-user-details', [AuthenticatorController::class, 'registerUserDetails']);
     Route::post('login', [AuthenticatorController::class, 'login']);
+    Route::post('login-w-phone', [AuthenticatorController::class, 'loginWPhone']);
     Route::post('get-email-otp', [AuthenticatorController::class, 'getEmailOtp']);
     Route::post('get-phone-otp', [AuthenticatorController::class, 'getPhoneOtp']); //step1
     Route::post('verify-otp-byphone', [AuthenticatorController::class, 'verifyOtpByPhone']);
