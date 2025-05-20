@@ -136,6 +136,7 @@ class UserController extends Controller
 
     public function updateProfilePicture(Request $request, $user_id)
     {
+        // dd('here');
         try {
             // Validate the incoming request
             $validatedData = Validator::make($request->all(), [
@@ -228,59 +229,6 @@ class UserController extends Controller
             ], 500);
         }
     }
-
-
-
-
-
-
-    public function updateProfilePictureBKP(Request $request, $user_id)
-    {
-        try {
-
-            dd($request);
-            // Step 1: Validate the incoming request
-            $validatedData = Validator::make($request->all(), [
-                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
-            ]);
-
-            // Check if validation fails
-            if ($validatedData->fails()) {
-                return response()->json(['error' => $validatedData->errors()], 400);
-            }
-
-            // Step 2: Retrieve the uploaded file
-            $file = $request->file('profile_picture');
-
-            // Step 3: Generate a unique filename
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-            // Step 4: Store the file using the 'public' disk and profile-pictures directory
-            $filePath = $file->storeAs('profile-pic', $filename, 'public');
-
-            // Step 5: Generate the URL to the uploaded file
-            $fileUrl = Storage::url($filePath);
-
-            // Optionally, you can update the user's profile picture path in the database here
-            $user = UserDetail::where('user_id',$user_id)->first();
-            $user->profile_picture_url = $fileUrl; // Assuming you have a profile_picture column
-            $user->save();
-
-            // Step 7: Return the uploaded file's path in the response
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile picture updated successfully',
-                'file_path' => $fileUrl
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update profile picture',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
 
     public function registerHost(Request $request)
     {
