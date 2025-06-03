@@ -127,58 +127,64 @@ class AuthenticatorController extends Controller
         }
     }
 
-
     public function registerUserDetails(Request $request)
     {
         // Step 1: Validate input
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $request->phone . ',phone',
+            'email' => 'required|email:dns|unique:users,email,' . $request->phone . ',phone',
             'phone' => 'required|digits_between:7,15',
             'dob' => 'required|date',
-            'password' => 'required|min:6', // Make sure password is included
+            'password' => 'required|min:6',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json([
                 'error' => $validator->errors()
             ], 422);
         }
-
-        // Step 2: Update or create the user based on the phone number
-        $user = User::updateOrCreate(
-            ['phone' => $request->phone], // search condition
-            [
-                'fname' => $request->fname,
-                'lname' => $request->lname,
-                'email' => $request->email,
-                'password' => Hash::make($request->password), // Hash the password
-            ]
-        );
-
-        // Step 3: Create or update user details based on user_id
+    
+        // Step 2: Find or create/update user
+        $user = User::where('phone', $request->phone)->orWhere('email', $request->email)->first();
+    
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+    
+        // Update user
+        $user->update([
+            'fname' => $request->fname,
+            'lname' => $request->lname,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+    
+        // Step 3: Create or update user details
         UserDetail::updateOrCreate(
-            ['user_id' => $user->id], // search condition
+            ['user_id' => $user->id],
             [
                 'phone' => $request->phone ?? null,
                 'dob' => $request->dob ?? null,
             ]
         );
-
+    
         // Step 4: Generate a JWT token
         $token = JWTAuth::fromUser($user);
-
+    
         // Step 5: Return response
         return response()->json([
-            'message' => 'User successfully registered!',
+            'message' => 'User successfully updated!',
             'data' => [
                 'user' => $user,
                 'token' => $token
             ]
-        ], 201);
+        ], 200);
     }
-
+    
 
     /**
      * Handle the generation and sending of an OTP.
