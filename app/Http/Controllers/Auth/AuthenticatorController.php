@@ -133,8 +133,8 @@ class AuthenticatorController extends Controller
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
-            'email' => 'required|email:dns|unique:users,email,' . $request->phone . ',phone',
-            'phone' => 'required|digits_between:7,15',
+            'email' => 'required|email:dns|unique:users,email,',
+            'phone' => 'required|digits_between:7,15|unique:users,phone,',
             'dob' => 'required|date',
             'password' => 'required|min:6',
         ]);
