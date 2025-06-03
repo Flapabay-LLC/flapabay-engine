@@ -236,7 +236,7 @@ class AuthenticatorController extends Controller
 
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|string',
+            'email' => 'required|email:dns|string'
         ]);
 
         if ($validator->fails()) {
