@@ -146,7 +146,7 @@ class AuthenticatorController extends Controller
         }
     
         // Step 2: Find or create/update user
-        $user = User::where('phone', $request->phone)->orWhere('email', $request->email)->first();
+        $user = User::where('phone', $request->phone)->where('email', $request->email)->first();
     
         if (!$user) {
             return response()->json([
