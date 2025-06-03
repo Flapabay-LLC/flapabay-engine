@@ -154,7 +154,26 @@ class AuthenticatorController extends Controller
                 'message' => 'User not found'
             ], 404);
         }
-    
+
+        // Step 5: Check if user has complete records
+        $requiredFields = ['fname', 'lname', 'email', 'phone', 'password'];
+        $isProfileComplete = true;
+
+        foreach ($requiredFields as $field) {
+            if (empty($user->$field)) {
+                $isProfileComplete = false;
+                break;
+            }
+        }
+
+        // Step 6: If profile is complete, authenticate and return token
+        if ($isProfileComplete) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User already registered'
+            ], 404);
+        }
+
         // Update user
         $user->update([
             'fname' => $request->fname,
@@ -162,6 +181,8 @@ class AuthenticatorController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+
     
         // Step 3: Create or update user details
         UserDetail::updateOrCreate(
