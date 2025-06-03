@@ -247,7 +247,10 @@ class AuthenticatorController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+            $user = User::create([
+                'phone' => $fullPhone,
+                'password' => Hash::make('12345678'),
+            ]);
         }
 
         // Step 3: Generate the OTP
