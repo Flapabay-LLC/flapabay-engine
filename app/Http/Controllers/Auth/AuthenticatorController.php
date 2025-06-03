@@ -286,9 +286,9 @@ class AuthenticatorController extends Controller
         }
 
         // Step 3: Check if OTP is expired
-        // if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-        //     return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
-        // }
+        if (Carbon::now()->format('Y-m-d H:i:s') > $user->otp_expires_at){
+            return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
+        }
 
         // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
@@ -353,12 +353,8 @@ class AuthenticatorController extends Controller
         }
 
         // Step 3: Check if OTP is expired
-        dd([
-            'now' => Carbon::now(),
-            'otp_expires_at' => $user->otp_expires_at,
-        ]);
         
-        if (Carbon::now() > $user->otp_expires_at) {
+        if (Carbon::now()->format('Y-m-d H:i:s') > $user->otp_expires_at) {
             return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
         }
 
