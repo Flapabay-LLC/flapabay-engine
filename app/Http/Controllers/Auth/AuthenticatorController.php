@@ -80,6 +80,80 @@ class AuthenticatorController extends Controller
         ], 201);
     }
 
+    public function otpLogin(Request $request)
+    {
+        try {
+            // Step 1: Validate request input
+            $validator = Validator::make($request->all(), [
+                'otp' => 'required|numeric',
+                'phone' => 'nullable|string',
+                'email' => 'nullable|email'
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['status' => false, 'error' => $validator->errors()], 400);
+            }
+    
+            if (empty($request->phone) && empty($request->email)) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'Phone or email is required'
+                ], 422);
+            }
+    
+            // Step 2: Find user by phone or email
+            $query = User::query();
+    
+            if (!empty($request->phone)) {
+                $query->where('phone', '26' . ltrim($request->phone, '0'));
+            }
+    
+            if (!empty($request->email)) {
+                $query->orWhere('email', $request->email);
+            }
+    
+            $user = $query->first();
+    
+            if (!$user) {
+                return response()->json(['status' => false, 'error' => 'User not found'], 404);
+            }
+    
+            // Step 3: Check OTP expiration
+            if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+                return response()->json(['status' => false, 'error' => 'OTP has expired'], 400);
+            }
+    
+            // Step 4: Check OTP match
+            if ($user->otp != $request->otp) {
+                return response()->json(['status' => false, 'error' => 'Invalid OTP'], 400);
+            }
+    
+            // Step 5: OTP is valid – mark as verified
+            $user->otp_verified_at = Carbon::now();
+            $user->otp = null;
+            $user->otp_expires_at = null;
+            $user->save();
+    
+            // Step 6: Authenticate the user with JWT
+            $token = JWTAuth::fromUser($user);
+    
+            return response()->json([
+                'message' => 'Login successful using OTP!',
+                'status' => true,
+                'token' => $token,
+                'user' => $user
+            ], 200);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Login failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+
     public function login(Request $request)
     {
         try {
@@ -181,8 +255,6 @@ class AuthenticatorController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
-
-
     
         // Step 3: Create or update user details
         UserDetail::updateOrCreate(
@@ -255,7 +327,7 @@ class AuthenticatorController extends Controller
     }
 
 
-/**
+    /**
      * Handle the generation and sending of an OTP.
      */
     public function getEmailOtp(Request $request)

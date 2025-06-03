@@ -30,8 +30,9 @@ Route::get('/', function () {
 Route::prefix('v1')->group(function () {
     Route::get('/testing', [UserController::class, 'test']);
     // Authentication routes
-    Route::post('register', [AuthenticatorController::class, 'register']);
+    // Route::post('register', [AuthenticatorController::class, 'register']);
     Route::post('register-user-details', [AuthenticatorController::class, 'registerUserDetails']);
+    Route::post('otp-login', [AuthenticatorController::class, 'otpLogin']);
     Route::post('login', [AuthenticatorController::class, 'login']);
     Route::post('login-w-phone', [AuthenticatorController::class, 'loginWPhone']);
     Route::post('get-email-otp', [AuthenticatorController::class, 'getEmailOtp']);
