@@ -346,7 +346,7 @@ class AuthenticatorController extends Controller
         }
 
         // Step 2: Find user by phone
-        $user = User::where('email', $request->phone)->first();
+        $user = User::where('email', $request->email)->first();
 
         if (!$user) {
             return response()->json(['error' => 'User not found', 'status' => false], 404);
@@ -357,10 +357,7 @@ class AuthenticatorController extends Controller
         if (Carbon::now()->format('Y-m-d H:i:s') > $user->otp_expires_at) {
             return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
         }
-        dd([
-            'db otp' => $user->otp,
-            'request otp' => $request->otp,
-        ]);
+        
         // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
             return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
