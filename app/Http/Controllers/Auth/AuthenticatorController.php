@@ -35,7 +35,7 @@ class AuthenticatorController extends Controller
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $request->phone . ',phone',
+            'email' => 'required|email:dns|unique:users,email,' . $request->phone . ',phone',
             'phone' => 'required|digits_between:7,15',
             'dob' => 'required|date',
             'password' => 'required|min:6', // Make sure password is included
@@ -85,7 +85,7 @@ class AuthenticatorController extends Controller
         try {
             // Validation
             $this->validate($request, [
-                'email' => 'required|string|max:255',
+                'email' => 'required|email:dns|string',
                 'password' => 'required|string|min:8',
             ]);
 
@@ -407,7 +407,7 @@ class AuthenticatorController extends Controller
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email' => 'required|email:dns|string',
         ]);
 
         if ($validator->fails()) {
@@ -463,7 +463,7 @@ class AuthenticatorController extends Controller
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email' => 'required|email:dns|string',
             'new_password' => 'required|string|min:8', // Ensure minimum length for security
         ]);
 
