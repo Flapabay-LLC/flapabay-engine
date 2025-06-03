@@ -17,7 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
+
 
 class PropertyController extends Controller
 {
@@ -62,27 +62,25 @@ class PropertyController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createProperties(StorePropertyRequest $request)
-    {
+    public function createProperties(StorePropertyRequest $request) {
         $validatedData = $request->validated();
-
         try {
             DB::beginTransaction();
 
-            // Step 1: Create property record
+            // Step 2: Insert into Property Model
             $property = Property::createProperty($validatedData);
 
-            // Step 2: Handle image uploads
+            // Step 3: Handle image uploads to Wasabi
             $imagePaths = [];
-
-            if ($request->hasFile('images')) {
-                // Setup Wasabi S3 client
-                $endpoint = 'https://s3.us-west-1.wasabisys.com';
-                $bucketName = 'flapapic';
-                $region = 'us-west-1';
-                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+            if ($request->has('images')) {
+                // Define your Wasabi S3 endpoint and credentials
+                $endpoint = 'https://s3.us-west-1.wasabisys.com';  // Replace with your Wasabi region endpoint
+                $bucketName = 'flapapic';                     // Replace with your Wasabi bucket name
+                $region = 'us-west-1';                             // Replace with your Wasabi region
+                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';                      // Replace with your Wasabi access key
                 $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
 
+                // Create an S3 client with the specified configuration for Wasabi
                 $s3Client = new S3Client([
                     'region'     => $region,
                     'version'    => 'latest',
@@ -94,86 +92,125 @@ class PropertyController extends Controller
                 ]);
 
                 foreach ($request->file('images') as $image) {
+                    // Validate the image file
                     if ($image->isValid()) {
+                        // Generate a unique file name
                         $fileName = time() . '_' . $image->getClientOriginalName();
-                        $wasabiUrl = null;
 
-                        try {
-                            $result = $s3Client->putObject([
-                                'Bucket'     => $bucketName,
-                                'Key'        => 'properties/' . $fileName,
-                                'SourceFile' => $image->getPathname(),
-                            ]);
+                        // Attempt to upload the image to the Wasabi bucket
+                        $result = $s3Client->putObject([
+                            'Bucket'     => $bucketName,
+                            'Key'        => 'properties/' . $fileName,
+                            'SourceFile' => $image->getPathname(),  // Use the temporary file path
+                        ]);
 
-                            if (isset($result['ObjectURL'])) {
-                                $wasabiUrl = $result['ObjectURL'];
-                            } else {
-                                throw new Exception('Object URL not returned from Wasabi');
-                            }
-                        } catch (Exception $e) {
-                            // Fallback to local storage
-                            $localPath = $image->storeAs('properties', $fileName, 'public');
-                            $wasabiUrl = Storage::disk('public')->url($localPath);
+                        // Check if the file was successfully uploaded
+                        if (isset($result['ObjectURL'])) {
+                            $imagePaths[] = $result['ObjectURL']; // Store the URL of the uploaded image
+                        } else {
+                            throw new Exception('Failed to upload image to Wasabi.');
                         }
-
-                        $imagePaths[] = $wasabiUrl;
                     }
                 }
             }
 
-            // Save image paths to the property
+            // Save image paths to the property (if applicable)
             if (!empty($imagePaths)) {
-                $property->images = json_encode($imagePaths);
+                $property->images = json_encode($imagePaths); // Store as JSON or adjust as needed
                 $property->save();
             }
-            DB::commit();
 
+            DB::commit();
             return response()->json([
                 "success" => true,
                 "message" => 'Property created successfully',
                 "property" => $property,
+                // "listing" => $listing,
             ], 201);
 
-        } catch (Exception $e) {
-            DB::rollBack();
-
+        } catch (\Exception $e) {
             return response()->json([
                 "success" => false,
                 "message" => 'Failed to create property',
                 "error" => $e->getMessage(),
             ], 500);
         }
+
     }
 
 
-    public function updateProperties(UpdatePropertyRequest $request) {
+    public function updateProperties(Request $request) {
         // Step 1: Validate incoming request data
-       
+        $validatedData = Validator::make($request->all(), [
+            'title' => 'nullable',
+            'description' => 'nullable',
+            'location' => 'nullable',
+            'address' => 'nullable',
+            'county' => 'nullable',
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
+            'check_in_hour'  => 'nullable',
+            'check_out_hour' => 'nullable',
+            'num_of_guests' => 'nullable',
+            'num_of_children' => 'nullable',
+            'maximum_guests' => 'nullable',
+            'country' => 'nullable',
+            'currency' => 'nullable',
+            'price_range' => 'nullable',
+            'price' => 'nullable',
+            'additional_guest_price' => 'nullable',
+            'children_price' => 'nullable',
+            'amenities' => 'nullable',
+            'house_rules' => 'nullable',
+            'page' => 'nullable',
+            'rating' => 'nullable',
+            'favorite' => 'nullable',
+            'images' => 'nullable|array',
+            'video_link' => 'nullable',
+            'verified' => 'nullable',
+            'property_type_id' => 'nullable',
+            'category_id' => 'required',
+            'tags' => 'nullable',
+        ]);
+
+        if ($validatedData->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validatedData->errors(),
+            ], 422);
+        }
 
         try {
             DB::beginTransaction();
-    
-            // Fetch existing property
-            $property = Property::find($request->input('property_id'));
+
+            // Step 2: Fetch the existing property
+            $property = Property::where('id', $request->input('property_id'))->first();
+
+            // Check if property exists
             if (!$property) {
                 return response()->json([
                     "success" => false,
                     "message" => 'Property not found.',
                 ], 404);
             }
-    
-            // Update property data
-            $property->update($request->validated());
-    
+
+            // Step 3: Update the property with validated data
+            $property->update($validatedData->validated());
+
+
+            // Step 4: Handle image uploads to Wasabi
             $imagePaths = [];
-    
-            if ($request->hasFile('images')) {
-                $endpoint = 'https://s3.us-west-1.wasabisys.com';
-                $bucketName = 'flapapic';
-                $region = 'us-west-1';
-                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+
+            if ($request->has('images')) {
+                // Define your Wasabi S3 endpoint and credentials
+                $endpoint = 'https://s3.us-west-1.wasabisys.com';  // Replace with your Wasabi region endpoint
+                $bucketName = 'flapapic';                     // Replace with your Wasabi bucket name
+                $region = 'us-west-1';                             // Replace with your Wasabi region
+                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';                      // Replace with your Wasabi access key
                 $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
-    
+
+                // Create an S3 client with the specified configuration for Wasabi
                 $s3Client = new S3Client([
                     'region'     => $region,
                     'version'    => 'latest',
@@ -183,53 +220,50 @@ class PropertyController extends Controller
                         'secret' => $secretKey,
                     ],
                 ]);
-    
+
+
                 foreach ($request->file('images') as $image) {
+                    // Validate the image file
                     if ($image->isValid()) {
+                        // Generate a unique file name
                         $fileName = time() . '_' . $image->getClientOriginalName();
-    
+
+                        // Attempt to upload the image to the Wasabi bucket
                         try {
                             $result = $s3Client->putObject([
                                 'Bucket'     => $bucketName,
                                 'Key'        => 'properties/images/' . $fileName,
-                                'SourceFile' => $image->getPathname(),
+                                'SourceFile' => $image->getPathname(),  // Use the temporary file path
                             ]);
-    
+
+                            // Check if the file was successfully uploaded
                             if (isset($result['ObjectURL'])) {
-                                $imagePaths[] = $result['ObjectURL'];
+                                $imagePaths[] = $result['ObjectURL']; // Store the URL of the uploaded image
                             } else {
-                                throw new \Exception('Wasabi upload returned no ObjectURL');
+                                throw new Exception('Failed to upload image to Wasabi.');
                             }
-    
                         } catch (\Exception $e) {
-                            Log::error('Wasabi upload failed: ' . $e->getMessage());
-    
-                            // Fallback: Store in local Laravel storage
-                            $path = $image->store('properties/images', 'public');
-                            if ($path) {
-                                $imagePaths[] = Storage::disk('public')->url($path);
-                            } else {
-                                Log::error('Fallback local upload also failed');
-                                throw new \Exception('Failed to upload image to Wasabi or local.');
-                            }
+                            Log::error('Failed to upload image to Wasabi: ' . $e->getMessage());
+                            throw new Exception('Failed to upload image to Wasabi.');
                         }
                     }
                 }
             }
-    
+
+            // Step 5: Save new image paths to the property (if applicable)
             if (!empty($imagePaths)) {
-                $property->images = json_encode($imagePaths);
+                $property->images = json_encode($imagePaths); // Store as JSON or adjust as needed
                 $property->save();
             }
-    
+
+
             DB::commit();
-    
             return response()->json([
                 "success" => true,
                 "message" => 'Property updated successfully',
                 "property" => $property,
             ], 200);
-    
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

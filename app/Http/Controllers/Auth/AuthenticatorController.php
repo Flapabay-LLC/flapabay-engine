@@ -308,7 +308,7 @@ class AuthenticatorController extends Controller
             $token = JWTAuth::fromUser($user);
 
             // Optionally mark OTP as verified
-            $user->otp_verified_at = now();
+            $user->otp_verified_at = Carbon::now();
             $user->save();
 
             return response()->json([
