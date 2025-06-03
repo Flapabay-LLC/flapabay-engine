@@ -266,10 +266,10 @@ class AuthenticatorController extends Controller
     public function verifyOtpByPhone(Request $request)
     {
         // Step 1: Validate the request
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required',
-            'otp' => 'required|numeric',
-        ]);
+        // $validator = Validator::make($request->all(), [
+        //     'phone' => 'required',
+        //     'otp' => 'required|numeric',
+        // ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors(), 'status' => false], 400);
@@ -283,9 +283,9 @@ class AuthenticatorController extends Controller
         }
 
         // Step 3: Check if OTP is expired
-        // if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-        //     return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
-        // }
+        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+            return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
+        }
 
         // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
@@ -319,6 +319,10 @@ class AuthenticatorController extends Controller
             ], 200);
         }
 
+        // Optionally mark OTP as verified
+        $user->otp_verified_at = Carbon::now();
+        $user->save();
+        
         // Step 7: Return success without token if profile is incomplete
         return response()->json([
             'message' => 'OTP verified! Complete your profile to continue.',
