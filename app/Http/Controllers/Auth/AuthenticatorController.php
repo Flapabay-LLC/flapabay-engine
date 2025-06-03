@@ -248,7 +248,7 @@ class AuthenticatorController extends Controller
 
         if (!$user) {
             $user = User::create([
-                'phone' => $fullPhone,
+                'email' => $request->email,
                 'password' => Hash::make('12345678'),
             ]);
         }
