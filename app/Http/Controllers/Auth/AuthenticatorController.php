@@ -192,7 +192,7 @@ class AuthenticatorController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
+            return response()->json(['error' => $validator->errors(), 'code'=>400], 400);
         }
 
         // Step 2: Combine full phone in E.164 format
@@ -214,12 +214,12 @@ class AuthenticatorController extends Controller
 
         // Step 7: Send OTP via Twilio
         try {
-            $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
+            // $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
 
-            $twilio->messages->create('+'.$fullPhone, [
-                'from' => env('TWILIO_FROM'),
-                'body' => "Your OTP is: $otp"
-            ]);
+            // $twilio->messages->create('+'.$fullPhone, [
+            //     'from' => env('TWILIO_FROM'),
+            //     'body' => "Your OTP is: $otp"
+            // ]);
 
             return response()->json(['message' => 'OTP sent to your phone!'], 200);
         } catch (\Exception $e) {
@@ -350,9 +350,9 @@ class AuthenticatorController extends Controller
         }
 
         // Step 3: Check if OTP is expired
-        // if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-        //     return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
-        // }
+        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+            return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
+        }
 
         // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
@@ -386,6 +386,9 @@ class AuthenticatorController extends Controller
             ], 200);
         }
 
+        // Optionally mark OTP as verified
+        $user->otp_verified_at = now();
+        $user->save();
         // Step 7: Return success without token if profile is incomplete
         return response()->json([
             'message' => 'OTP verified! Complete your profile to continue.',
