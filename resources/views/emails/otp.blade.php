@@ -30,7 +30,7 @@
                             </div>
 
                             <p style="color: #666; font-size: 14px; line-height: 1.5; margin: 20px 0 0;">
-                                ⏰ This code will expire in <strong>5 minutes</strong>.
+                                ⏰ This code will expire in <strong>10 minutes</strong>.
                             </p>
 
                             <p style="color: #888; font-size: 13px; line-height: 1.5; margin: 30px 0 0; padding-top: 20px; border-top: 1px solid #eee;">

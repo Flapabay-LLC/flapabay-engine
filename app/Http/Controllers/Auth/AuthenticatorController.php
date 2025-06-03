@@ -357,7 +357,10 @@ class AuthenticatorController extends Controller
         if (Carbon::now()->format('Y-m-d H:i:s') > $user->otp_expires_at) {
             return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
         }
-
+        dd([
+            'db otp' => $user->otp,
+            'request otp' => $request->otp,
+        ]);
         // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
             return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
