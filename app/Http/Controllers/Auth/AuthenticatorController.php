@@ -23,7 +23,7 @@ class AuthenticatorController extends Controller
 
     use AuthTrait;
 
-/**
+    /**
      * Register a new user.
      *
      * @param \Illuminate\Http\Request $request
@@ -80,14 +80,80 @@ class AuthenticatorController extends Controller
         ], 201);
     }
 
+    public function getEmailPhoneOtp(Request $request)
+    {
+        // Step 1: Validate the request
+        $validator = Validator::make($request->all(), [
+            'code' => 'nullable|string', // Only needed if phone is used
+            'phone' => 'nullable|digits_between:7,15',
+            'email' => 'nullable|email:dns|string',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors(), 'code' => 400], 400);
+        }
+    
+        // Step 2: Ensure at least one contact method is provided
+        if (!$request->phone && !$request->email) {
+            return response()->json(['error' => 'Either phone or email is required.'], 422);
+        }
+    
+        // Step 3: Determine identifier and find user
+        $user = null;
+        $identifier = null;
+    
+        if ($request->phone) {
+            if (!$request->code) {
+                return response()->json(['error' => 'Country code is required for phone number.'], 422);
+            }
+    
+            $fullPhone = $request->code . $request->phone;
+            $user = User::where('phone', $fullPhone)->first();
+            $identifier = $fullPhone;
+        } elseif ($request->email) {
+            $user = User::where('email', $request->email)->first();
+            $identifier = $request->email;
+        }
+    
+        // Step 4: Return error if user not found
+        if (!$user) {
+            return response()->json(['error' => 'User not found', 'code' => 404], 404);
+        }
+    
+        // Step 5: Generate OTP and store in cache
+        $otp = $this->generate_otp($user, $request);
+        Cache::put('otp_' . $identifier, $otp, now()->addMinutes(10));
+    
+        // Step 6: Send OTP
+        try {
+            // if (isset($fullPhone)) {
+            //     $twilio = new Client(env('TWILIO_SID'), env('TWILIO_TOKEN'));
+            //     $twilio->messages->create('+' . $fullPhone, [
+            //         'from' => env('TWILIO_FROM'),
+            //         'body' => "Your OTP is: $otp"
+            //     ]);
+            // }
+    
+            // if ($request->email) {
+            //     Mail::to($request->email)->send(new GetOTPEmail($otp));
+            // }
+    
+            return response()->json(['message' => 'OTP has been sent.'], 200);
+    
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to send OTP. ' . $e->getMessage()], 500);
+        }
+    }
+
     public function otpLogin(Request $request)
     {
         try {
-            // Step 1: Validate request input
+            // Step 1: Validate input
             $validator = Validator::make($request->all(), [
                 'otp' => 'required|numeric',
                 'phone' => 'nullable|string',
-                'email' => 'nullable|email'
+                'email' => 'nullable|email:dns|string',
+                'code' => 'nullable|string', // Required if phone is used
             ]);
     
             if ($validator->fails()) {
@@ -95,64 +161,58 @@ class AuthenticatorController extends Controller
             }
     
             if (empty($request->phone) && empty($request->email)) {
-                return response()->json([
-                    'status' => false,
-                    'error' => 'Phone or email is required'
-                ], 422);
+                return response()->json(['status' => false, 'error' => 'Phone or email is required'], 422);
             }
     
-            // Step 2: Find user by phone or email
-            $query = User::query();
+            // Step 2: Identify and find user
+            $user = null;
+            $cacheKey = null;
     
             if (!empty($request->phone)) {
-                $query->where('phone', '26' . ltrim($request->phone, '0'));
-            }
+                if (empty($request->code)) {
+                    return response()->json(['status' => false, 'error' => 'Country code is required for phone'], 422);
+                }
     
-            if (!empty($request->email)) {
-                $query->orWhere('email', $request->email);
-            }
+                $fullPhone = $request->code . $request->phone;
+                $user = User::where('phone', $fullPhone)->first();
+                $cacheKey = 'otp_' . $fullPhone;
     
-            $user = $query->first();
+            } elseif (!empty($request->email)) {
+                $user = User::where('email', $request->email)->first();
+                $cacheKey = 'otp_' . $request->email;
+            }
     
             if (!$user) {
                 return response()->json(['status' => false, 'error' => 'User not found'], 404);
             }
     
-            // Step 3: Check OTP expiration
-            if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-                return response()->json(['status' => false, 'error' => 'OTP has expired'], 400);
+            // Step 3: Compare OTP from cache
+            $cachedOtp = Cache::get($cacheKey);
+    
+            if (!$cachedOtp) {
+                return response()->json(['status' => false, 'error' => 'OTP expired or not found'], 400);
             }
     
-            // Step 4: Check OTP match
-            if ($user->otp != $request->otp) {
+            if ($request->otp != $cachedOtp) {
                 return response()->json(['status' => false, 'error' => 'Invalid OTP'], 400);
             }
     
-            // Step 5: OTP is valid – mark as verified
-            $user->otp_verified_at = Carbon::now();
-            $user->otp = null;
-            $user->otp_expires_at = null;
-            $user->save();
-    
-            // Step 6: Authenticate the user with JWT
+            // Step 4: Generate JWT Token
             $token = JWTAuth::fromUser($user);
     
             return response()->json([
-                'message' => 'Login successful using OTP!',
                 'status' => true,
+                'message' => 'OTP verified successfully',
                 'token' => $token,
                 'user' => $user
             ], 200);
     
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Login failed',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['status' => false, 'error' => 'Server error', 'details' => $e->getMessage()], 500);
         }
     }
     
+
 
     public function login(Request $request)
     {
@@ -332,7 +392,6 @@ class AuthenticatorController extends Controller
      */
     public function getEmailOtp(Request $request)
     {
-
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email:dns|string'
@@ -376,7 +435,7 @@ class AuthenticatorController extends Controller
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors(), 'status' => false], 400);
         }
-        
+
         // Step 2: Find user by phone
         $user = User::where('phone', '26'. $request->phone)->first();
 
