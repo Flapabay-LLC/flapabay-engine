@@ -160,7 +160,6 @@ class AuthenticatorController extends Controller
                 return response()->json(['status' => false, 'error' => $validator->errors()], 400);
             }
     
-            dd($request);
             // dd('here');
             if (empty($request->phone) && empty($request->email)) {
                 return response()->json(['status' => false, 'error' => 'Phone or email is required'], 422);
@@ -188,14 +187,8 @@ class AuthenticatorController extends Controller
                 return response()->json(['status' => false, 'error' => 'User not found'], 404);
             }
     
-            // Step 3: Compare OTP from cache
-            $cachedOtp = Cache::get($cacheKey);
-    
-            if (!$cachedOtp) {
-                return response()->json(['status' => false, 'error' => 'OTP expired or not found'], 400);
-            }
-    
-            if ($request->otp != $cachedOtp) {
+            // Step 3: Compare OTP 
+            if ($request->otp != $user->otp) {
                 return response()->json(['status' => false, 'error' => 'Invalid OTP'], 400);
             }
     
