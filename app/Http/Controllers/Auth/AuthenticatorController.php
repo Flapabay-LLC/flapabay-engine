@@ -134,9 +134,9 @@ class AuthenticatorController extends Controller
             //     ]);
             // }
     
-            // if ($request->email) {
-            //     Mail::to($request->email)->send(new GetOTPEmail($otp));
-            // }
+            if ($request->email) {
+                Mail::to($request->email)->send(new GetOTPEmail($otp));
+            }
     
             return response()->json(['message' => 'OTP has been sent.'], 200);
     
