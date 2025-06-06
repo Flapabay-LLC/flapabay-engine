@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PropertyType;
-use App\Http\Requests\StorePropertyTypeRequest;
-use App\Http\Requests\UpdatePropertyTypeRequest;
+use App\Models\Favorite;
+use App\Http\Requests\StoreFavoriteRequest;
+use App\Http\Requests\UpdateFavoriteRequest;
 
-class PropertyTypeController extends Controller
+class FavoriteController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -14,16 +14,16 @@ class PropertyTypeController extends Controller
     public function index()
     {
         try {
-            $placeItems = PropertyType::all();
+            $favorites = Favorite::all();
             return response()->json([
                 'status' => 'success',
-                'message' => 'Property types fetched successfully',
-                'data' => $placeItems
+                'message' => 'Favorites fetched successfully',
+                'data' => $favorites
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch Property types',
+                'message' => 'Failed to fetch favorites',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -40,7 +40,7 @@ class PropertyTypeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePropertyTypeRequest $request)
+    public function store(StoreFavoriteRequest $request)
     {
         //
     }
@@ -48,7 +48,7 @@ class PropertyTypeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(PropertyType $propertyType)
+    public function show(Favorite $favorite)
     {
         //
     }
@@ -56,7 +56,7 @@ class PropertyTypeController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PropertyType $propertyType)
+    public function edit(Favorite $favorite)
     {
         //
     }
@@ -64,7 +64,7 @@ class PropertyTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdatePropertyTypeRequest $request, PropertyType $propertyType)
+    public function update(UpdateFavoriteRequest $request, Favorite $favorite)
     {
         //
     }
@@ -72,7 +72,7 @@ class PropertyTypeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PropertyType $propertyType)
+    public function destroy(Favorite $favorite)
     {
         //
     }

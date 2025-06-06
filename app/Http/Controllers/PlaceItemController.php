@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PropertyType;
-use App\Http\Requests\StorePropertyTypeRequest;
-use App\Http\Requests\UpdatePropertyTypeRequest;
+use App\Models\PlaceItem;
+use App\Http\Requests\StorePlaceItemRequest;
+use App\Http\Requests\UpdatePlaceItemRequest;
 
-class PropertyTypeController extends Controller
+class PlaceItemController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -14,16 +14,16 @@ class PropertyTypeController extends Controller
     public function index()
     {
         try {
-            $placeItems = PropertyType::all();
+            $placeItems = PlaceItem::all();
             return response()->json([
                 'status' => 'success',
-                'message' => 'Property types fetched successfully',
+                'message' => 'Place items fetched successfully',
                 'data' => $placeItems
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch Property types',
+                'message' => 'Failed to fetch Place items',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -40,7 +40,7 @@ class PropertyTypeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePropertyTypeRequest $request)
+    public function store(StorePlaceItemRequest $request)
     {
         //
     }
@@ -48,7 +48,7 @@ class PropertyTypeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(PropertyType $propertyType)
+    public function show(PlaceItem $placeItem)
     {
         //
     }
@@ -56,7 +56,7 @@ class PropertyTypeController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PropertyType $propertyType)
+    public function edit(PlaceItem $placeItem)
     {
         //
     }
@@ -64,7 +64,7 @@ class PropertyTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdatePropertyTypeRequest $request, PropertyType $propertyType)
+    public function update(UpdatePlaceItemRequest $request, PlaceItem $placeItem)
     {
         //
     }
@@ -72,7 +72,7 @@ class PropertyTypeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PropertyType $propertyType)
+    public function destroy(PlaceItem $placeItem)
     {
         //
     }
