@@ -148,7 +148,7 @@ class AuthenticatorController extends Controller
     public function otpLogin(Request $request)
     {
         try {
-            // dd($request);
+            dd($request);
             // Step 1: Validate input
             $validator = Validator::make($request->all(), [
                 'otp' => 'required|numeric',
