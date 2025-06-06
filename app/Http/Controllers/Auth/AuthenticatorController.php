@@ -148,10 +148,11 @@ class AuthenticatorController extends Controller
     public function otpLogin(Request $request)
     {
         try {
+            // dd($request);
             // Step 1: Validate input
             $validator = Validator::make($request->all(), [
                 'otp' => 'required|numeric',
-                'phone' => 'nullable|string',
+                'phone' => 'nullable',
                 'email' => 'nullable|email:dns|string',
                 'code' => 'nullable|string', // Required if phone is used
             ]);
@@ -160,6 +161,7 @@ class AuthenticatorController extends Controller
                 return response()->json(['status' => false, 'error' => $validator->errors()], 400);
             }
     
+            // dd('here');
             if (empty($request->phone) && empty($request->email)) {
                 return response()->json(['status' => false, 'error' => 'Phone or email is required'], 422);
             }
