@@ -156,11 +156,11 @@ class AuthenticatorController extends Controller
                 'code' => 'nullable|string', // Required if phone is used
             ]);
     
-            dd($request);
             if ($validator->fails()) {
                 return response()->json(['status' => false, 'error' => $validator->errors()], 400);
             }
     
+            dd($request);
             // dd('here');
             if (empty($request->phone) && empty($request->email)) {
                 return response()->json(['status' => false, 'error' => 'Phone or email is required'], 422);
