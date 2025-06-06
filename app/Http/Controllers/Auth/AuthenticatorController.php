@@ -351,20 +351,14 @@ class AuthenticatorController extends Controller
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-<<<<<<< HEAD
             'code' => 'required', // Validate country code like +254, +1, +91
             'phone' => 'required|digits_between:7,15', // Validate phone digits only
-=======
-            'email' => 'nullable|email|string',
-            'phone' => 'nullable',
->>>>>>> b77b3b26e07c687b94cf2c688ecb92fe7ed02257
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors(), 'code'=>400], 400);
         }
 
-<<<<<<< HEAD
         // Step 2: Combine full phone in E.164 format
         $fullPhone = $request->code . $request->phone;
 
@@ -394,62 +388,10 @@ class AuthenticatorController extends Controller
             return response()->json(['message' => 'OTP sent to your phone!'], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to send OTP. ' . $e->getMessage()], 500);
-=======
-        // Step 2: Check if the user exists
-        $user = User::orWhere('email', $request->email)
-        ->orWhere('phone', $request->phone)->first();
-
-        if (!$user || !$user->phone) {
-            return response()->json(['error' => 'User not found or no phone number registered'], 404);
-        }
-
-        // Step 3: Generate the OTP
-        $otp = rand(100000, 999999);
-
-        // Step 4: Set OTP expiration time
-        $expiresAt = Carbon::now()->addMinutes(5);
-
-        // Step 5: Store OTP in the database
-        $user->update([
-            'otp' => $otp,
-            'otp_expires_at' => $expiresAt
-        ]);
-
-        // Step 6: Store OTP in cache
-        Cache::put('otp_' . $request->email, $otp, $expiresAt);
-
-        // Step 7: Send OTP via Infobip SMS
-        try {
-
-            // Send the SMS message
-            $smsResponse = $this->sendOTP($user, $otp);
-
-            return response()->json([
-                'message' => 'OTP sent to your phone! Please check your SMS.',
-                'messageId' => $smsResponse->getMessages()[0]->getMessageId()
-            ], 200);
-
-        } catch (ApiException $apiException) {
-            // Log the detailed error for debugging
-            Log::error('Infobip SMS Error', [
-                'error' => $apiException->getMessage(),
-                'code' => $apiException->getCode(),
-                'response' => $apiException->getResponseBody()
-            ]);
-
-            return response()->json([
-                'error' => 'Failed to send OTP via SMS',
-                'message' => 'Please try again or contact support if the problem persists'
-            ], 500);
->>>>>>> b77b3b26e07c687b94cf2c688ecb92fe7ed02257
         }
     }
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> b77b3b26e07c687b94cf2c688ecb92fe7ed02257
     /**
      * Handle the generation and sending of an OTP.
      */
