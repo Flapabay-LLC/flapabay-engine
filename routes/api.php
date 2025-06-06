@@ -51,13 +51,13 @@ Route::prefix('v1')->group(function () {
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
     //Google & Facebook Auth
-    Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
+    // Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
     Route::post('google/signin', [GoogleAuthController::class, 'googleSignIn']);
     // Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
 
 
     Route::get('facebook/signin', [FacebookController::class, 'redirectToFacebook']);
-    Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
+    // Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
