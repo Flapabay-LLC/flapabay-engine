@@ -10,3 +10,11 @@ Auth::routes();
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/documentation', [DocumentationController::class, 'index'])->name('doc');
+
+
+//Callbacks
+
+Route::prefix('v1')->group(function () {
+    Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
+    Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
+});

@@ -199,7 +199,6 @@ class AuthenticatorController extends Controller
     
             // Step 4: Generate JWT Token
             $token = JWTAuth::fromUser($user);
-    
             return response()->json([
                 'status' => true,
                 'message' => 'OTP verified successfully',

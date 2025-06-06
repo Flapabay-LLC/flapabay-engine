@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::post('verify-otp-byphone', [AuthenticatorController::class, 'verifyOtpByPhone']);
     Route::post('verify-otp-byemail', [AuthenticatorController::class, 'verifyOtpByEmail']);
     Route::post('logout', [AuthenticatorController::class, 'logout']);
+    
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
