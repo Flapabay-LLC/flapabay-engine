@@ -148,7 +148,6 @@ class AuthenticatorController extends Controller
     public function otpLogin(Request $request)
     {
         try {
-            dd($request);
             // Step 1: Validate input
             $validator = Validator::make($request->all(), [
                 'otp' => 'required|numeric',
@@ -157,6 +156,7 @@ class AuthenticatorController extends Controller
                 'code' => 'nullable|string', // Required if phone is used
             ]);
     
+            dd($request);
             if ($validator->fails()) {
                 return response()->json(['status' => false, 'error' => $validator->errors()], 400);
             }
