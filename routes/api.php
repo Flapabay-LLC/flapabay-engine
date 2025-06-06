@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\Auth\AuthenticatorController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
@@ -15,10 +16,13 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\ComsmeticController;
 use App\Http\Controllers\FacebookController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\PropertyReviewController;
 use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\PlaceItemController;
+use App\Http\Controllers\PropertyTypeController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -79,6 +83,9 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
+
+    // Listings
+    Route::resource('listings', ListingController::class);
 
     // Property search filtering routes
     Route::post('filter-listings', [ListingController::class, 'search']);
