@@ -56,7 +56,7 @@ Route::prefix('v1')->group(function () {
     // Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
 
 
-    Route::get('facebook/signin', [FacebookController::class, 'redirectToFacebook']);
+    Route::post('facebook/signin', [FacebookController::class, 'facebookSignIn']);
     // Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
