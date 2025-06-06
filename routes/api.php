@@ -42,14 +42,17 @@ Route::prefix('v1')->group(function () {
     Route::post('verify-otp-byphone', [AuthenticatorController::class, 'verifyOtpByPhone']);
     Route::post('verify-otp-byemail', [AuthenticatorController::class, 'verifyOtpByEmail']);
     Route::post('logout', [AuthenticatorController::class, 'logout']);
-    
+
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
     //Google & Facebook Auth
-    Route::post('google-signin', [GoogleAuthController::class, 'googleSignIn']);
-    Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
-    Route::get('facebook-signin', [FacebookController::class, 'redirectToFacebook']);
+    Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
+    Route::post('google/signin', [GoogleAuthController::class, 'googleSignIn']);
+    // Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
+
+
+    Route::get('facebook/signin', [FacebookController::class, 'redirectToFacebook']);
     Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);

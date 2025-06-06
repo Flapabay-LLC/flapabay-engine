@@ -23,7 +23,7 @@ class GoogleAuthController extends Controller
             $user = User::firstOrCreate(
                 ['email' => $googleUser->getEmail()],
                 [
-                    'name' => $googleUser->getName(),
+                    'fname' => $googleUser->getName(),
                     'google_id' => $googleUser->getId(),
                     'password' => bcrypt(uniqid()), // Random password
                 ]
@@ -68,6 +68,7 @@ class GoogleAuthController extends Controller
                 ['email' => $googleUser->getEmail()],
                 [
                     'fname' => $googleUser->getName(),
+                    'lname' => $googleUser->getName(),
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
                     'password' =>  Hash::make(uniqid()), // Random password
