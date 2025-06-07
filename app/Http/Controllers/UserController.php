@@ -136,7 +136,6 @@ class UserController extends Controller
 
     public function updateProfilePicture(Request $request, $user_id)
     {
-        // dd('here');
         try {
             // Validate the incoming request
             $validatedData = Validator::make($request->all(), [
@@ -152,50 +151,55 @@ class UserController extends Controller
             $file = $request->file('profile_picture');
             $fileName = time() . '_' . $file->getClientOriginalName();
 
-            // Define the local path where the image will be stored temporarily
-            $localPath = storage_path('app/temp/' . $fileName);
+            $fileUrl = null;
+            $wasabiUploadSuccess = false;
 
-            // Store the image locally
-            $file->move(storage_path('app/temp'), $fileName);
+            try {
+                // Define your Wasabi S3 endpoint and credentials
+                $endpoint = 'https://s3.us-west-1.wasabisys.com';
+                $bucketName = 'flapapic';
+                $region = 'us-west-1';
+                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+                $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
 
-            // Define the file path in Wasabi bucket
-            $filePath = $fileName;
+                // Create an S3 client with the specified configuration for Wasabi
+                $s3Client = new S3Client([
+                    'region'     => $region,
+                    'version'    => 'latest',
+                    'endpoint'   => $endpoint,
+                    'credentials' => [
+                        'key'    => $accessKey,
+                        'secret' => $secretKey,
+                    ],
+                ]);
 
-            // Define your Wasabi S3 endpoint and credentials
-            $endpoint = 'https://s3.us-west-1.wasabisys.com';  // Replace with your Wasabi region endpoint
-            $bucketName = 'flapapic';                     // Replace with your Wasabi bucket name
-            $region = 'us-west-1';                             // Replace with your Wasabi region
-            $accessKey = 'HJG2GQM9QGBE4K6JCO2S';                      // Replace with your Wasabi access key
-            $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
+                // Attempt to upload the local file to the Wasabi bucket
+                $result = $s3Client->putObject([
+                    'Bucket'     => $bucketName,
+                    'Key'        => $fileName,
+                    'SourceFile' => $file->getRealPath(),
+                ]);
 
-            // Create an S3 client with the specified configuration for Wasabi
-            $s3Client = new S3Client([
-                'region'     => $region,
-                'version'    => 'latest',
-                'endpoint'   => $endpoint,
-                'credentials' => [
-                    'key'    => $accessKey,
-                    'secret' => $secretKey,
-                ],
-            ]);
-
-            // Attempt to upload the local file to the Wasabi bucket
-            $result = $s3Client->putObject([
-                'Bucket'     => $bucketName,
-                'Key'        => $filePath,
-                'SourceFile' => $localPath,  // Path to the local file
-            ]);
-
-            // Check if the file was successfully uploaded
-            if (!isset($result['ObjectURL'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to upload profile picture to Wasabi.',
-                ], 500);
+                if (isset($result['ObjectURL'])) {
+                    $fileUrl = $result['ObjectURL'];
+                    $wasabiUploadSuccess = true;
+                }
+            } catch (\Exception $wasabiError) {
+                Log::error('Wasabi upload failed: ' . $wasabiError->getMessage());
+                $wasabiUploadSuccess = false;
             }
 
-            // Get the file URL from Wasabi
-            $fileUrl = $result['ObjectURL'];
+            // If Wasabi upload failed, fall back to local storage
+            if (!$wasabiUploadSuccess) {
+                try {
+                    // Store in Laravel's public storage
+                    $path = $file->storeAs('public/profile-pictures', $fileName);
+                    $fileUrl = asset('storage/profile-pictures/' . $fileName);
+                } catch (\Exception $localStorageError) {
+                    Log::error('Local storage upload failed: ' . $localStorageError->getMessage());
+                    throw new \Exception('Failed to upload profile picture to both Wasabi and local storage');
+                }
+            }
 
             // Update the user's profile picture URL in the database
             $user = UserDetail::where('user_id', $user_id)->first();
@@ -210,13 +214,11 @@ class UserController extends Controller
             $user->profile_picture_url = $fileUrl;
             $user->save();
 
-            // Delete the local temporary file
-            unlink($localPath);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Profile picture updated successfully.',
-                'file_url' => $fileUrl
+                'file_url' => $fileUrl,
+                'storage_type' => $wasabiUploadSuccess ? 'wasabi' : 'local'
             ], 200);
         } catch (\Exception $e) {
             // Log the error for debugging purposes

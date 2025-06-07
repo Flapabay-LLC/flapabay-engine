@@ -107,6 +107,9 @@ class AuthenticatorController extends Controller
         // Step 2: Ensure at least one contact method is provided
         if (!$request->phone && !$request->email) {
             return response()->json(['error' => 'Either phone or email is required.'], 422);
+        }        
+        if (!$request->email) {
+            return response()->json(['error' => 'Either phone or email is required.'], 422);
         }
     
         // Step 3: Determine identifier and find user
@@ -208,8 +211,10 @@ class AuthenticatorController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'OTP verified successfully',
-                'token' => $token,
-                'user' => $user
+                'data' => [
+                    'token' => $token,
+                    'user' => $user
+                ]
             ], 200);
     
         } catch (\Exception $e) {
@@ -272,7 +277,7 @@ class AuthenticatorController extends Controller
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
-            'email' => 'required|email:dns|unique:users,email,',
+            'email' => 'required|email:dns,',
             'phone' => 'required|digits_between:7,15|unique:users,phone,',
             'dob' => 'required|date',
             'password' => 'required|min:6',
@@ -285,7 +290,7 @@ class AuthenticatorController extends Controller
         }
     
         // Step 2: Find or create/update user
-        $user = User::where('phone', $request->phone)->where('email', $request->email)->first();
+        $user = User::orWhere('phone', $request->phone)->orWhere('email', $request->email)->first();
     
         if (!$user) {
             return response()->json([
