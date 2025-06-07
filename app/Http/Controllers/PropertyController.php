@@ -289,17 +289,41 @@ class PropertyController extends Controller
 
 
     public function getProperty($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
-
         try {
-            // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            // Step 1: Validate the property ID
+            if (!is_numeric($propertyId) || $propertyId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid property ID',
+                ], 400);
+            }
+
+            // Step 2: Retrieve the property with its relationships
+            $property = Property::with([
+                'category' => function($query) {
+                    $query->select('id', 'name', 'description');
+                },
+                'propertyType' => function($query) {
+                    $query->select('id', 'name', 'description');
+                },
+                'reviews' => function($query) {
+                    $query->select('id', 'property_id', 'user_id', 'rating', 'review', 'created_at')
+                          ->with(['user' => function($q) {
+                              $q->select('id', 'fname', 'lname', 'email');
+                          }]);
+                }
+            ])
+            ->select([
+                'id', 'title', 'description', 'location', 'address', 'county', 'country',
+                'latitude', 'longitude', 'check_in_hour', 'check_out_hour',
+                'num_of_guests', 'num_of_children', 'maximum_guests',
+                'allow_extra_guests', 'neighborhood_area', 'show_contact_form_instead_of_booking',
+                'allow_instant_booking', 'currency', 'price_range', 'price',
+                'price_per_night', 'additional_guest_price', 'children_price',
+                'amenities', 'house_rules', 'page', 'rating', 'favorite',
+                'images', 'video_link', 'verified', 'property_type_id'
+            ])
+            ->find($propertyId);
 
             if (!$property) {
                 return response()->json([
@@ -308,15 +332,46 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
+            // Step 3: Format the response data
+            $propertyData = $property->toArray();
+            
+            // Ensure images are properly decoded if they're stored as JSON
+            if (isset($propertyData['images']) && is_string($propertyData['images'])) {
+                $propertyData['images'] = json_decode($propertyData['images'], true) ?? [];
+            }
+
+            // Ensure amenities are properly decoded if they're stored as JSON
+            if (isset($propertyData['amenities']) && is_string($propertyData['amenities'])) {
+                $propertyData['amenities'] = json_decode($propertyData['amenities'], true) ?? [];
+            }
+
+            // Ensure house_rules are properly decoded if they're stored as JSON
+            if (isset($propertyData['house_rules']) && is_string($propertyData['house_rules'])) {
+                $propertyData['house_rules'] = json_decode($propertyData['house_rules'], true) ?? [];
+            }
+
+            // Ensure price_range is properly decoded if it's stored as JSON
+            if (isset($propertyData['price_range']) && is_string($propertyData['price_range'])) {
+                $propertyData['price_range'] = json_decode($propertyData['price_range'], true) ?? [];
+            }
+
+            // Calculate average rating from reviews
+            if (isset($propertyData['reviews']) && !empty($propertyData['reviews'])) {
+                $propertyData['average_rating'] = collect($propertyData['reviews'])->avg('rating');
+                $propertyData['total_reviews'] = count($propertyData['reviews']);
+            } else {
+                $propertyData['average_rating'] = 0;
+                $propertyData['total_reviews'] = 0;
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Property retrieved successfully',
-                'property' => $property,
+                'property' => $propertyData,
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Property retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve property',
@@ -365,17 +420,18 @@ class PropertyController extends Controller
 
 
     public function getPropertyDescription($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
-
         try {
-            // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            // Step 1: Validate the property ID
+            if (!is_numeric($propertyId) || $propertyId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid property ID',
+                ], 400);
+            }
+
+            // Step 2: Retrieve the property description
+            $property = Property::select(['id', 'title', 'description', 'about_place'])
+                ->find($propertyId);
 
             if (!$property) {
                 return response()->json([
@@ -384,15 +440,18 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
-
             return response()->json([
                 'success' => true,
-                'message' => 'Property retrieved successfully',
-                'description' => $property->description,
+                'message' => 'Property description retrieved successfully',
+                'data' => [
+                    'title' => $property->title,
+                    'description' => $property->description,
+                    'about_place' => $property->about_place
+                ]
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Property description retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve property description',
@@ -402,17 +461,26 @@ class PropertyController extends Controller
     }
 
     public function getPropertyPriceDetails($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
-
         try {
-            // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            // Step 1: Validate the property ID
+            if (!is_numeric($propertyId) || $propertyId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid property ID',
+                ], 400);
+            }
+
+            // Step 2: Retrieve the property price details
+            $property = Property::select([
+                'id',
+                'title',
+                'currency',
+                'price',
+                'price_per_night',
+                'price_range',
+                'additional_guest_price',
+                'children_price'
+            ])->find($propertyId);
 
             if (!$property) {
                 return response()->json([
@@ -421,22 +489,28 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
+            // Format price range if it exists
+            $priceRange = $property->price_range ? json_decode($property->price_range, true) : null;
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property retrieved successfully',
-                'price' => $property->price,
-                'price_range' => $property->price_range,
-                'price_per_night' => $property->price_per_night,
-                'additional_guest_price' => $property->additional_guest_price,
-                'children_price' => $property->children_price,
+                'message' => 'Property price details retrieved successfully',
+                'data' => [
+                    'title' => $property->title,
+                    'currency' => $property->currency,
+                    'price' => $property->price,
+                    'price_per_night' => $property->price_per_night,
+                    'price_range' => $priceRange,
+                    'additional_guest_price' => $property->additional_guest_price,
+                    'children_price' => $property->children_price
+                ]
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Property price details retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve property prices',
+                'message' => 'Failed to retrieve property price details',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -444,17 +518,18 @@ class PropertyController extends Controller
 
 
     public function getPropertyAmenities($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
-
         try {
-            // Step 2: Retrieve the property from wp_posts
-            $property = Property::with('listing')->where('id', $propertyId)->first();
+            // Step 1: Validate the property ID
+            if (!is_numeric($propertyId) || $propertyId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid property ID',
+                ], 400);
+            }
+
+            // Step 2: Retrieve the property amenities
+            $property = Property::select(['id', 'title', 'amenities'])
+                ->find($propertyId);
 
             if (!$property) {
                 return response()->json([
@@ -463,18 +538,23 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-           //return the property model and
+            // Decode amenities JSON if it exists
+            $amenities = $property->amenities ? json_decode($property->amenities, true) : [];
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property retrieved successfully',
-                'amenities' => $property->amenities,
+                'message' => 'Property amenities retrieved successfully',
+                'data' => [
+                    'title' => $property->title,
+                    'amenities' => $amenities
+                ]
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Property amenities retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve amenities',
+                'message' => 'Failed to retrieve property amenities',
                 'error' => $e->getMessage(),
             ], 500);
         }

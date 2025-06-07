@@ -195,4 +195,28 @@ class Property extends Model
         }
         return null;
     }
+
+    /**
+     * Get the category that owns the property.
+     */
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the property type that owns the property.
+     */
+    public function propertyType()
+    {
+        return $this->belongsTo(PropertyType::class);
+    }
+
+    /**
+     * Get the reviews for the property.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(UserReview::class);
+    }
 }

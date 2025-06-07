@@ -23,4 +23,19 @@ class UserReview extends Model
         'review'
     ];
 
+    /**
+     * Get the user that wrote the review.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the property that was reviewed.
+     */
+    public function property()
+    {
+        return $this->belongsTo(Property::class);
+    }
 }
