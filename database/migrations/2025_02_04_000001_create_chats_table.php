@@ -11,25 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('favorites', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('property_id');
+        Schema::create('chats', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user1_id');
+            $table->unsignedBigInteger('user2_id');
             $table->timestamps();
 
-            // Add foreign key constraints
-            $table->foreign('user_id')
+            $table->foreign('user1_id')
                 ->references('id')
                 ->on('users')
                 ->onDelete('cascade');
 
-            $table->foreign('property_id')
+            $table->foreign('user2_id')
                 ->references('id')
-                ->on('properties')
+                ->on('users')
                 ->onDelete('cascade');
 
-            // Add unique constraint to prevent duplicate favorites
-            $table->unique(['user_id', 'property_id']);
+            // Ensure unique chat between two users
+            $table->unique(['user1_id', 'user2_id']);
         });
     }
 
@@ -38,6 +37,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('favorites');
+        Schema::dropIfExists('chats');
     }
-};
+}; 

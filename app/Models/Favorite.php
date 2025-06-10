@@ -10,12 +10,18 @@ class Favorite extends Model
     /** @use HasFactory<\Database\Factories\FavoriteFactory> */
     use HasFactory;
 
-    public $fillable = [
-        'name',
-        'description',
-        'white_icon',
-        'black_icon',
-        'svg',
-        'uri'
+    protected $fillable = [
+        'user_id',
+        'property_id'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function property()
+    {
+        return $this->belongsTo(Property::class);
+    }
 }

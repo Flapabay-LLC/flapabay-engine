@@ -17,13 +17,27 @@ class Listing extends Model
      * @var array
      */
     protected $fillable = [
-        'title',
-        'property_id',
         'host_id',
-        'post_levels',
-        'listing_type',
-        'published_at',
+        'title',
+        'description',
+        'property_type_id',
+        'price_per_night',
+        'bedrooms',
+        'bathrooms',
+        'max_guests',
+        'address',
+        'city',
+        'state',
+        'country',
+        'zip_code',
+        'latitude',
+        'longitude',
         'status',
+        'is_instant_bookable',
+        'cancellation_policy',
+        'house_rules',
+        'check_in_time',
+        'check_out_time'
     ];
 
     /**
@@ -32,25 +46,74 @@ class Listing extends Model
      * @var array
      */
     protected $casts = [
-        'post_levels' => 'array', // Cast the JSON column as an array
-        'published_at' => 'date', // Cast published_at as a date
-        'status' => 'boolean', // Cast status as a boolean
+        'price_per_night' => 'decimal:2',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'is_instant_bookable' => 'boolean'
     ];
 
     /**
-     * Get the property associated with the post.
+     * Get the host associated with the post.
      */
-    public function property()
+    public function host()
     {
-        return $this->belongsTo(Property::class, 'property_id');
+        return $this->belongsTo(User::class, 'host_id');
     }
 
     /**
-     * Get the category associated with the post.
+     * Get the property type associated with the post.
      */
-    public function category()
+    public function propertyType()
     {
-        // return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(PropertyType::class);
+    }
+
+    /**
+     * Get the amenities associated with the post.
+     */
+    public function amenities()
+    {
+        return $this->belongsToMany(Amenity::class, 'listing_amenities');
+    }
+
+    /**
+     * Get the images associated with the post.
+     */
+    public function images()
+    {
+        return $this->hasMany(ListingImage::class);
+    }
+
+    /**
+     * Get the place items associated with the post.
+     */
+    public function placeItems()
+    {
+        return $this->belongsToMany(PlaceItem::class, 'listing_place_items');
+    }
+
+    /**
+     * Get the reviews associated with the post.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(PropertyReview::class, 'property_id');
+    }
+
+    /**
+     * Get the bookings associated with the post.
+     */
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'property_id');
+    }
+
+    /**
+     * Get the favorites associated with the post.
+     */
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class, 'property_id');
     }
 
     /**
