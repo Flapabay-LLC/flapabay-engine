@@ -16,6 +16,12 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Models\Amenity;
+use App\Models\Favorite;
+use App\Models\PlaceItem;
+use App\Models\PropertyType;
+use Illuminate\Support\Facades\Auth;
+use App\Models\SystemFavourite;
 
 class ListingController extends Controller
 {
@@ -262,5 +268,493 @@ class ListingController extends Controller
     public function destroy(Listing $listing)
     {
         //
+    }
+
+    /**
+     * Get all system amenities
+     */
+    public function getSystemAmenities()
+    {
+        try {
+            $amenities = Amenity::all();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Amenities fetched successfully',
+                'data' => $amenities
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch amenities',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all system favorites
+     */
+    public function getSystemFavorites()
+    {
+        try {
+            $favorites = SystemFavourite::all();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'System favorites retrieved successfully',
+                'data' => $favorites
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve system favorites',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all system place items
+     */
+    public function getSystemPlaceItems()
+    {
+        try {
+            $placeItems = PlaceItem::all();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Place items fetched successfully',
+                'data' => $placeItems
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch place items',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all system property types
+     */
+    public function getSystemPropertyTypes()
+    {
+        try {
+            $propertyTypes = PropertyType::all();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property types fetched successfully',
+                'data' => $propertyTypes
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch property types',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Search listings with filters
+     */
+    public function searchListings(Request $request)
+    {
+        try {
+            $query = Listing::with(['host', 'propertyType', 'amenities', 'images'])
+                ->where('status', 'active');
+
+            // Location search
+            if ($request->has('location')) {
+                $location = $request->location;
+                $query->where(function($q) use ($location) {
+                    $q->where('city', 'like', "%{$location}%")
+                        ->orWhere('state', 'like', "%{$location}%")
+                        ->orWhere('country', 'like', "%{$location}%");
+                });
+            }
+
+            // Price range
+            if ($request->has('min_price')) {
+                $query->where('price_per_night', '>=', $request->min_price);
+            }
+            if ($request->has('max_price')) {
+                $query->where('price_per_night', '<=', $request->max_price);
+            }
+
+            // Property type
+            if ($request->has('property_type_id')) {
+                $query->where('property_type_id', $request->property_type_id);
+            }
+
+            // Bedrooms
+            if ($request->has('bedrooms')) {
+                $query->where('bedrooms', '>=', $request->bedrooms);
+            }
+
+            // Bathrooms
+            if ($request->has('bathrooms')) {
+                $query->where('bathrooms', '>=', $request->bathrooms);
+            }
+
+            // Guests
+            if ($request->has('guests')) {
+                $query->where('max_guests', '>=', $request->guests);
+            }
+
+            // Amenities
+            if ($request->has('amenities')) {
+                $amenities = explode(',', $request->amenities);
+                $query->whereHas('amenities', function($q) use ($amenities) {
+                    $q->whereIn('amenities.id', $amenities);
+                });
+            }
+
+            // Sort by
+            if ($request->has('sort_by')) {
+                switch ($request->sort_by) {
+                    case 'price_asc':
+                        $query->orderBy('price_per_night', 'asc');
+                        break;
+                    case 'price_desc':
+                        $query->orderBy('price_per_night', 'desc');
+                        break;
+                    case 'rating':
+                        $query->withAvg('reviews', 'rating')
+                            ->orderBy('reviews_avg_rating', 'desc');
+                        break;
+                    default:
+                        $query->latest();
+                }
+            } else {
+                $query->latest();
+            }
+
+            $listings = $query->paginate(10);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Listings fetched successfully',
+                'data' => $listings
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to search listings',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new listing
+     */
+    public function createNewListing(Request $request)
+    {
+        try {
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'required|string',
+                'property_type_id' => 'required|exists:property_types,id',
+                'price_per_night' => 'required|numeric|min:0',
+                'bedrooms' => 'required|integer|min:1',
+                'bathrooms' => 'required|integer|min:1',
+                'max_guests' => 'required|integer|min:1',
+                'address' => 'required|string',
+                'city' => 'required|string',
+                'state' => 'required|string',
+                'country' => 'required|string',
+                'zip_code' => 'required|string',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'amenities' => 'array',
+                'amenities.*' => 'exists:amenities,id',
+                'place_items' => 'array',
+                'place_items.*' => 'exists:place_items,id',
+                'images' => 'array',
+                'images.*' => 'image|mimes:jpeg,png,jpg|max:2048'
+            ]);
+
+            DB::beginTransaction();
+
+            $listing = Listing::create([
+                'host_id' => Auth::id(),
+                'title' => $request->title,
+                'description' => $request->description,
+                'property_type_id' => $request->property_type_id,
+                'price_per_night' => $request->price_per_night,
+                'bedrooms' => $request->bedrooms,
+                'bathrooms' => $request->bathrooms,
+                'max_guests' => $request->max_guests,
+                'address' => $request->address,
+                'city' => $request->city,
+                'state' => $request->state,
+                'country' => $request->country,
+                'zip_code' => $request->zip_code,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'status' => 'draft'
+            ]);
+
+            if ($request->has('amenities')) {
+                $listing->amenities()->attach($request->amenities);
+            }
+
+            if ($request->has('place_items')) {
+                $listing->placeItems()->attach($request->place_items);
+            }
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('listings', 'public');
+                    $listing->images()->create([
+                        'image_path' => $path
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Listing created successfully',
+                'data' => $listing->load(['amenities', 'placeItems', 'images'])
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create listing',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a host's listing
+     */
+    public function updateHostListing(Request $request, $listingId)
+    {
+        try {
+            $listing = Listing::where('host_id', Auth::id())
+                ->findOrFail($listingId);
+
+            $request->validate([
+                'title' => 'sometimes|string|max:255',
+                'description' => 'sometimes|string',
+                'property_type_id' => 'sometimes|exists:property_types,id',
+                'price_per_night' => 'sometimes|numeric|min:0',
+                'bedrooms' => 'sometimes|integer|min:1',
+                'bathrooms' => 'sometimes|integer|min:1',
+                'max_guests' => 'sometimes|integer|min:1',
+                'address' => 'sometimes|string',
+                'city' => 'sometimes|string',
+                'state' => 'sometimes|string',
+                'country' => 'sometimes|string',
+                'zip_code' => 'sometimes|string',
+                'latitude' => 'sometimes|numeric',
+                'longitude' => 'sometimes|numeric',
+                'status' => 'sometimes|in:draft,active,inactive',
+                'amenities' => 'sometimes|array',
+                'amenities.*' => 'exists:amenities,id',
+                'place_items' => 'sometimes|array',
+                'place_items.*' => 'exists:place_items,id',
+                'images' => 'sometimes|array',
+                'images.*' => 'image|mimes:jpeg,png,jpg|max:2048'
+            ]);
+
+            DB::beginTransaction();
+
+            $listing->update($request->only([
+                'title', 'description', 'property_type_id', 'price_per_night',
+                'bedrooms', 'bathrooms', 'max_guests', 'address', 'city',
+                'state', 'country', 'zip_code', 'latitude', 'longitude', 'status'
+            ]));
+
+            if ($request->has('amenities')) {
+                $listing->amenities()->sync($request->amenities);
+            }
+
+            if ($request->has('place_items')) {
+                $listing->placeItems()->sync($request->place_items);
+            }
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('listings', 'public');
+                    $listing->images()->create([
+                        'image_path' => $path
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Listing updated successfully',
+                'data' => $listing->load(['amenities', 'placeItems', 'images'])
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update listing',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Fetch all listings for a host
+     */
+    public function fetchHostListings()
+    {
+        try {
+            $listings = Listing::where('host_id', Auth::id())
+                ->with(['propertyType', 'amenities', 'images', 'reviews'])
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Host listings fetched successfully',
+                'data' => $listings
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch host listings',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a host's listing
+     */
+    public function deleteHostListing($listingId)
+    {
+        try {
+            $listing = Listing::where('host_id', Auth::id())
+                ->findOrFail($listingId);
+
+            DB::beginTransaction();
+
+            // Delete related records
+            $listing->amenities()->detach();
+            $listing->placeItems()->detach();
+            $listing->images()->delete();
+            $listing->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Listing deleted successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete listing',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new system amenity
+     */
+    public function createSystemAmenity(Request $request)
+    {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255|unique:amenities',
+                'icon' => 'nullable|string|max:255',
+                'description' => 'nullable|string'
+            ]);
+
+            $amenity = Amenity::create([
+                'name' => $request->name,
+                'icon' => $request->icon,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Amenity created successfully',
+                'data' => $amenity
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create amenity',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new system favorite
+     */
+    public function createSystemFavorite(Request $request)
+    {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255|unique:system_favourites',
+                'icon' => 'nullable|string|max:255',
+                'description' => 'nullable|string'
+            ]);
+
+            $favorite = SystemFavourite::create([
+                'name' => $request->name,
+                'icon' => $request->icon,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'System favorite created successfully',
+                'data' => $favorite
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create system favorite',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a new property type
+     */
+    public function createSystemPropertyType(Request $request)
+    {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255|unique:property_types',
+                'icon' => 'nullable|string|max:255',
+                'description' => 'nullable|string'
+            ]);
+
+            $propertyType = PropertyType::create([
+                'name' => $request->name,
+                'icon' => $request->icon,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property type created successfully',
+                'data' => $propertyType
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create property type',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

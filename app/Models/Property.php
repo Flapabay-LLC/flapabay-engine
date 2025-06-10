@@ -64,6 +64,13 @@ class Property extends Model
         'num_of_quarters',
         'favorites',
         'first_reserver',
+        'name',
+        'state',
+        'zip_code',
+        'bedrooms',
+        'bathrooms',
+        'max_guests',
+        'status'
     ];
 
     /**
@@ -218,5 +225,20 @@ class Property extends Model
     public function reviews()
     {
         return $this->hasMany(UserReview::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(PropertyImage::class);
+    }
+
+    public function amenities()
+    {
+        return $this->belongsToMany(Amenity::class, 'property_amenities');
+    }
+
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
     }
 }

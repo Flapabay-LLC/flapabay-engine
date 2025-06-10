@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             LanguageSeeder::class,
             CurrencySeeder::class,
             AmenitySeeder::class,
-            FavoriteSeeder::class,
+            // FavoriteSeeder::class,
             PlaceItemSeeder::class,
         ]);
     }

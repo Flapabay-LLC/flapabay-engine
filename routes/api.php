@@ -23,6 +23,7 @@ use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PlaceItemController;
 use App\Http\Controllers\PropertyTypeController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -61,6 +62,13 @@ Route::prefix('v1')->group(function () {
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
+
+
+    
+    Route::get('system/amenities', [ListingController::class, 'getSystemAmenities']);
+    Route::get('system/favorites', [ListingController::class, 'getSystemFavorites']);
+    Route::get('system/place-items', [ListingController::class, 'getSystemPlaceItems']);
+    Route::get('system/property-types', [ListingController::class, 'getSystemPropertyTypes']);
 });
 
 // Protected routes with JWT api authentication
@@ -71,6 +79,29 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('users/{user_id}', [UserController::class, 'update']);
     Route::post('users/{user_id}/profile-picture', [UserController::class, 'updateProfilePicture']);
     Route::get('users/{user_id}/reviews', [UserReviewController::class, 'userReview']);
+
+    // Favorites routes
+    Route::get('favorites', [FavoriteController::class, 'index']);
+    Route::get('favorites/user/{userId}', [FavoriteController::class, 'getUserFavorites']);
+    Route::post('favorites', [FavoriteController::class, 'store']);
+    Route::delete('favorites', [FavoriteController::class, 'destroy']);
+
+    // Chat routes
+    Route::get('chats', [ChatController::class, 'getAllMyChats']);
+    Route::get('chats/unread', [ChatController::class, 'getAllMyUnreadMessages']);
+    Route::get('chats/read', [ChatController::class, 'getAllMyReadMessages']);
+    Route::get('chats/{chatId}/messages', [ChatController::class, 'getAllChatMessages']);
+    Route::post('chats/message', [ChatController::class, 'sendChatMessage']);
+    Route::post('chats/reply', [ChatController::class, 'sendMessageThreadReply']);
+    Route::delete('chats/message/{messageId}/me', [ChatController::class, 'deleteMessageForMe']);
+    Route::delete('chats/message/{messageId}/both', [ChatController::class, 'deleteMessageForBoth']);
+
+    // Listing routes
+    Route::get('listings/search', [ListingController::class, 'searchListings']);
+    Route::post('listings', [ListingController::class, 'createNewListing']);
+    Route::put('listings/{listingId}', [ListingController::class, 'updateHostListing']);
+    Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
+    Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
 
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);
@@ -83,9 +114,6 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
-
-    // Listings
-    Route::resource('listings', ListingController::class);
 
     // Property search filtering routes
     Route::post('filter-listings', [ListingController::class, 'search']);
@@ -162,4 +190,12 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     //Locations
     Route::get('locations', [LocationController::class, 'getLocations']);
     Route::post('location', [LocationController::class, 'createLocation']);
+
+    // System Data Management Routes
+    Route::post('/system/amenities', [ListingController::class, 'createSystemAmenity']);
+    Route::post('/system/favorites', [ListingController::class, 'createSystemFavorite']);
+    Route::post('/system/property-types', [ListingController::class, 'createSystemPropertyType']);
+
 });
+
+
