@@ -239,6 +239,7 @@ class UserController extends Controller
             'user_id' => 'required', // Ensure user_id exists in the users table
         ]);
 
+        // dd('here');
         try {
             // Generate a UUID
             $uuid = random_int(1000, 9999);

@@ -37,50 +37,153 @@ class ListingController extends Controller
      */
     public function search(Request $request)
     {
-        // Extract filters from the request
-        $categoryIds = $request->input('category_id', []);
-        $propertyTypeIds = $request->input('property_type_id', []);
-        $keyword = $request->input('keyword', '');
-        $page = $request->input('page', 1); // Default to page 1 if not provided
+        try {
+            // Validate request
+            $validator = Validator::make($request->all(), [
+                'keyword' => 'nullable|string',
+                'location' => 'nullable|string',
+                'min_price' => 'nullable|numeric|min:0',
+                'max_price' => 'nullable|numeric|min:0',
+                'property_type_id' => 'nullable|integer',
+                'bedrooms' => 'nullable|integer|min:0',
+                'bathrooms' => 'nullable|integer|min:0',
+                'guests' => 'nullable|integer|min:1',
+                'amenities' => 'nullable|array',
+                'category_id' => 'nullable|integer',
+                'sort_by' => 'nullable|in:price_asc,price_desc,rating',
+                'per_page' => 'nullable|integer|min:1'
+            ]);
 
-        // Build query with filters
-        $query = Property::query();
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        if (!empty($categoryIds)) {
-            $query->where(function ($q) use ($categoryIds) {
-                foreach ($categoryIds as $categoryId) {
-                    $q->orWhereRaw("JSON_CONTAINS(category_id, '\"$categoryId\"')");
+            $query = Listing::with(['property', 'propertyType', 'amenities', 'images', 'reviews'])
+                ->whereHas('property', function($q) {
+                    $q->where('verified', true);
+                });
+
+            // Keyword search
+            if ($request->has('keyword')) {
+                $keyword = $request->keyword;
+                $query->where(function($q) use ($keyword) {
+                    $q->where('title', 'like', "%{$keyword}%")
+                      ->orWhereHas('property', function($q) use ($keyword) {
+                          $q->where('description', 'like', "%{$keyword}%")
+                            ->orWhere('title', 'like', "%{$keyword}%");
+                      });
+                });
+            }
+
+            // Location search
+            if ($request->has('location')) {
+                $location = $request->location;
+                $query->whereHas('property', function($q) use ($location) {
+                    $q->where('location', 'like', "%{$location}%")
+                        ->orWhere('address', 'like', "%{$location}%")
+                        ->orWhere('country', 'like', "%{$location}%")
+                        ->orWhere('neighborhood_area', 'like', "%{$location}%")
+                        ->orWhere('city', 'like', "%{$location}%");
+                });
+            }
+
+            // Price range
+            if ($request->has('min_price')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('price_per_night', '>=', $request->min_price);
+                });
+            }
+            if ($request->has('max_price')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('price_per_night', '<=', $request->max_price);
+                });
+            }
+
+            // Property type
+            if ($request->has('property_type_id')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->whereRaw("JSON_CONTAINS(property_type_id, ?)", [json_encode($request->property_type_id)]);
+                });
+            }
+
+            // Bedrooms
+            if ($request->has('bedrooms')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('num_of_bedrooms', '>=', $request->bedrooms);
+                });
+            }
+
+            // Bathrooms
+            if ($request->has('bathrooms')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('num_of_bathrooms', '>=', $request->bathrooms);
+                });
+            }
+
+            // Guests
+            if ($request->has('guests')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('maximum_guests', '>=', $request->guests);
+                });
+            }
+
+            // Amenities
+            if ($request->has('amenities') && !empty($request->amenities)) {
+                $amenities = is_array($request->amenities) ? $request->amenities : explode(',', $request->amenities);
+                $query->whereHas('amenities', function($q) use ($amenities) {
+                    $q->whereIn('amenities.id', $amenities);
+                });
+            }
+
+            // Category
+            if ($request->has('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            // Sort by
+            if ($request->has('sort_by')) {
+                switch ($request->sort_by) {
+                    case 'price_asc':
+                        $query->whereHas('property', function($q) {
+                            $q->orderBy('price_per_night', 'asc');
+                        });
+                        break;
+                    case 'price_desc':
+                        $query->whereHas('property', function($q) {
+                            $q->orderBy('price_per_night', 'desc');
+                        });
+                        break;
+                    case 'rating':
+                        $query->withAvg('reviews', 'rating')
+                            ->orderBy('reviews_avg_rating', 'desc');
+                        break;
+                    default:
+                        $query->latest();
                 }
-            });
+            } else {
+                $query->latest();
+            }
+
+            // Pagination
+            $perPage = $request->input('per_page', 10);
+            $listings = $query->paginate($perPage);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Listings fetched successfully',
+                'data' => $listings
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to search listings',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if (!empty($propertyTypeIds)) {
-            $query->where(function ($q) use ($propertyTypeIds) {
-                foreach ($propertyTypeIds as $propertyTypeId) {
-                    $q->orWhereRaw("JSON_CONTAINS(property_type_id, '\"$propertyTypeId\"')");
-                }
-            });
-        }
-
-        if (!empty($keyword)) {
-            $query->where(function ($q) use ($keyword) {
-                $q->orWhere('title', 'LIKE', "%{$keyword}%")
-                ->orWhere('description', 'LIKE', "%{$keyword}%");
-            });
-        }
-
-        // Paginate the results, considering the page number
-        $properties = $query->paginate(10, ['*'], 'page', $page);
-
-        // Return paginated results as JSON
-        return response()->json([
-            'success' => true,
-            'data' => $properties->items(),
-            'total_results' => $properties->total(),
-            'current_page' => $properties->currentPage(),
-            'last_page' => $properties->lastPage(),
-            'per_page' => $properties->perPage(),
-        ]);
     }
 
 
@@ -361,63 +464,88 @@ class ListingController extends Controller
     public function searchListings(Request $request)
     {
         try {
-            $query = Listing::with(['host', 'propertyType', 'amenities', 'images'])
-                ->where('status', 'active');
+            $query = Listing::with(['property', 'propertyType', 'amenities', 'images', 'reviews'])
+                ->whereHas('property', function($q) {
+                    $q->where('verified', true);
+                });
 
             // Location search
             if ($request->has('location')) {
                 $location = $request->location;
-                $query->where(function($q) use ($location) {
-                    $q->where('city', 'like', "%{$location}%")
-                        ->orWhere('state', 'like', "%{$location}%")
-                        ->orWhere('country', 'like', "%{$location}%");
+                $query->whereHas('property', function($q) use ($location) {
+                    $q->where('location', 'like', "%{$location}%")
+                        ->orWhere('address', 'like', "%{$location}%")
+                        ->orWhere('country', 'like', "%{$location}%")
+                        ->orWhere('neighborhood_area', 'like', "%{$location}%")
+                        ->orWhere('city', 'like', "%{$location}%");
                 });
             }
 
             // Price range
             if ($request->has('min_price')) {
-                $query->where('price_per_night', '>=', $request->min_price);
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('price_per_night', '>=', $request->min_price);
+                });
             }
             if ($request->has('max_price')) {
-                $query->where('price_per_night', '<=', $request->max_price);
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('price_per_night', '<=', $request->max_price);
+                });
             }
 
             // Property type
             if ($request->has('property_type_id')) {
-                $query->where('property_type_id', $request->property_type_id);
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->whereRaw("JSON_CONTAINS(property_type_id, ?)", [json_encode($request->property_type_id)]);
+                });
             }
 
             // Bedrooms
             if ($request->has('bedrooms')) {
-                $query->where('bedrooms', '>=', $request->bedrooms);
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('num_of_bedrooms', '>=', $request->bedrooms);
+                });
             }
 
             // Bathrooms
             if ($request->has('bathrooms')) {
-                $query->where('bathrooms', '>=', $request->bathrooms);
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('num_of_bathrooms', '>=', $request->bathrooms);
+                });
             }
 
             // Guests
             if ($request->has('guests')) {
-                $query->where('max_guests', '>=', $request->guests);
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('maximum_guests', '>=', $request->guests);
+                });
             }
 
             // Amenities
-            if ($request->has('amenities')) {
-                $amenities = explode(',', $request->amenities);
+            if ($request->has('amenities') && !empty($request->amenities)) {
+                $amenities = is_array($request->amenities) ? $request->amenities : explode(',', $request->amenities);
                 $query->whereHas('amenities', function($q) use ($amenities) {
                     $q->whereIn('amenities.id', $amenities);
                 });
+            }
+
+            // Category
+            if ($request->has('category_id')) {
+                $query->where('category_id', $request->category_id);
             }
 
             // Sort by
             if ($request->has('sort_by')) {
                 switch ($request->sort_by) {
                     case 'price_asc':
-                        $query->orderBy('price_per_night', 'asc');
+                        $query->whereHas('property', function($q) {
+                            $q->orderBy('price_per_night', 'asc');
+                        });
                         break;
                     case 'price_desc':
-                        $query->orderBy('price_per_night', 'desc');
+                        $query->whereHas('property', function($q) {
+                            $q->orderBy('price_per_night', 'desc');
+                        });
                         break;
                     case 'rating':
                         $query->withAvg('reviews', 'rating')
@@ -430,7 +558,9 @@ class ListingController extends Controller
                 $query->latest();
             }
 
-            $listings = $query->paginate(10);
+            // Pagination
+            $perPage = $request->input('per_page', 10);
+            $listings = $query->paginate($perPage);
 
             return response()->json([
                 'status' => 'success',
@@ -453,73 +583,111 @@ class ListingController extends Controller
     {
         try {
             $request->validate([
+                'host_id' => 'required|exists:users,id',
                 'title' => 'required|string|max:255',
                 'description' => 'required|string',
-                'property_type_id' => 'required|exists:property_types,id',
-                'price_per_night' => 'required|numeric|min:0',
-                'bedrooms' => 'required|integer|min:1',
-                'bathrooms' => 'required|integer|min:1',
-                'max_guests' => 'required|integer|min:1',
                 'address' => 'required|string',
-                'city' => 'required|string',
-                'state' => 'required|string',
-                'country' => 'required|string',
-                'zip_code' => 'required|string',
+                'location' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'price_per_night' => 'required|numeric|min:0',
+                'weekend_price' => 'nullable|numeric|min:0',
+                'discount_type' => 'nullable|in:percentage,fixed',
+                'discount_value' => 'nullable|numeric|min:0',
+                'currency' => 'required|string|size:3',
                 'latitude' => 'required|numeric',
                 'longitude' => 'required|numeric',
-                'amenities' => 'array',
-                'amenities.*' => 'exists:amenities,id',
-                'place_items' => 'array',
-                'place_items.*' => 'exists:place_items,id',
-                'images' => 'array',
-                'images.*' => 'image|mimes:jpeg,png,jpg|max:2048'
+                'city' => 'required|string',
+                'country' => 'required|string',
+                'check_in_hour' => 'required|string',
+                'check_out_hour' => 'required|string',
+                'num_of_guests' => 'required|integer|min:1',
+                'num_of_children' => 'nullable|integer|min:0',
+                'maximum_guests' => 'required|integer|min:1',
+                'allow_extra_guests' => 'boolean',
+                'neighborhood_area' => 'nullable|string',
+                'show_contact_form_instead_of_booking' => 'boolean',
+                'allow_instant_booking' => 'boolean',
+                'additional_guest_price' => 'nullable|numeric|min:0',
+                'children_price' => 'nullable|numeric|min:0',
+                'amenities' => 'nullable|array',
+                'house_rules' => 'nullable|array',
+                'video_link' => 'nullable|string',
+                'property_type_id' => 'required|exists:property_types,id',
+                'category_id' => 'required|exists:categories,id',
+                'place_items' => 'nullable|array',
+                'first_reserver' => 'required|string',
+                'host_type' => 'required|in:Private Individual,Business',
+                'num_of_bedrooms' => 'required|integer|min:1',
+                'num_of_bathrooms' => 'required|integer|min:1',
+                'num_of_quarters' => 'nullable|integer|min:0',
+                'has_unallocated_rooms' => 'boolean',
+                'listing_type' => 'required|string'
             ]);
 
             DB::beginTransaction();
 
-            $listing = Listing::create([
-                'host_id' => Auth::id(),
+            // Create the property
+            $property = Property::create([
                 'title' => $request->title,
                 'description' => $request->description,
-                'property_type_id' => $request->property_type_id,
-                'price_per_night' => $request->price_per_night,
-                'bedrooms' => $request->bedrooms,
-                'bathrooms' => $request->bathrooms,
-                'max_guests' => $request->max_guests,
+                'location' => $request->location,
                 'address' => $request->address,
-                'city' => $request->city,
-                'state' => $request->state,
-                'country' => $request->country,
-                'zip_code' => $request->zip_code,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-                'status' => 'draft'
+                'check_in_hour' => $request->check_in_hour,
+                'check_out_hour' => $request->check_out_hour,
+                'num_of_guests' => $request->num_of_guests,
+                'num_of_children' => $request->num_of_children,
+                'maximum_guests' => $request->maximum_guests,
+                'allow_extra_guests' => $request->allow_extra_guests === 'true',
+                'neighborhood_area' => $request->neighborhood_area,
+                'country' => $request->country,
+                'show_contact_form_instead_of_booking' => $request->show_contact_form_instead_of_booking === 'true',
+                'allow_instant_booking' => $request->allow_instant_booking === 'true',
+                'currency' => $request->currency,
+                'price' => $request->price,
+                'price_per_night' => $request->price_per_night,
+                'additional_guest_price' => $request->additional_guest_price,
+                'children_price' => $request->children_price,
+                'amenities' => json_encode($request->amenities),
+                'house_rules' => json_encode($request->house_rules),
+                'video_link' => json_encode($request->video_link),
+                'property_type_id' => json_encode($request->property_type_id),
+                'category_id' => json_encode($request->category_id),
+                'place_items' => json_encode($request->place_items),
+                'verified' => $request->verified === '1',
+                'about_place' => $request->about_place,
+                'host_type' => $request->host_type,
+                'num_of_bedrooms' => $request->num_of_bedrooms,
+                'num_of_bathrooms' => $request->num_of_bathrooms,
+                'num_of_quarters' => $request->num_of_quarters,
+                'has_unallocated_rooms' => $request->has_unallocated_rooms === '1',
+                'first_reserver' => $request->first_reserver
             ]);
 
-            if ($request->has('amenities')) {
-                $listing->amenities()->attach($request->amenities);
-            }
-
-            if ($request->has('place_items')) {
-                $listing->placeItems()->attach($request->place_items);
-            }
-
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $image) {
-                    $path = $image->store('listings', 'public');
-                    $listing->images()->create([
-                        'image_path' => $path
-                    ]);
-                }
-            }
+            // Create the listing with all required fields
+            $listing = Listing::create([
+                'host_id' => $request->host_id,
+                'title' => $request->title,
+                'property_id' => $property->id,
+                'category_id' => $request->category_id[0], // Since it's an array in the request
+                'status' => false,
+                'published_at' => now(),
+                'cancellation_policy' => false,
+                'is_completed' => false
+            ]);
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Listing created successfully',
-                'data' => $listing->load(['amenities', 'placeItems', 'images'])
+                'data' => [
+                    'property' => $property,
+                    'listing' => $listing
+                ]
             ], 201);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -535,6 +703,7 @@ class ListingController extends Controller
      */
     public function updateHostListing(Request $request, $listingId)
     {
+
         try {
             $listing = Listing::where('host_id', Auth::id())
                 ->findOrFail($listingId);
@@ -542,59 +711,106 @@ class ListingController extends Controller
             $request->validate([
                 'title' => 'sometimes|string|max:255',
                 'description' => 'sometimes|string',
-                'property_type_id' => 'sometimes|exists:property_types,id',
-                'price_per_night' => 'sometimes|numeric|min:0',
-                'bedrooms' => 'sometimes|integer|min:1',
-                'bathrooms' => 'sometimes|integer|min:1',
-                'max_guests' => 'sometimes|integer|min:1',
                 'address' => 'sometimes|string',
-                'city' => 'sometimes|string',
-                'state' => 'sometimes|string',
-                'country' => 'sometimes|string',
-                'zip_code' => 'sometimes|string',
+                'location' => 'sometimes|string',
+                'price' => 'sometimes|numeric|min:0',
+                'price_per_night' => 'sometimes|numeric|min:0',
+                'weekend_price' => 'nullable|numeric|min:0',
+                'discount_type' => 'nullable|in:percentage,fixed',
+                'discount_value' => 'nullable|numeric|min:0',
+                'currency' => 'sometimes|string|size:3',
                 'latitude' => 'sometimes|numeric',
                 'longitude' => 'sometimes|numeric',
-                'status' => 'sometimes|in:draft,active,inactive',
-                'amenities' => 'sometimes|array',
-                'amenities.*' => 'exists:amenities,id',
-                'place_items' => 'sometimes|array',
-                'place_items.*' => 'exists:place_items,id',
-                'images' => 'sometimes|array',
-                'images.*' => 'image|mimes:jpeg,png,jpg|max:2048'
+                'city' => 'sometimes|string',
+                'country' => 'sometimes|string',
+                'check_in_hour' => 'sometimes|string',
+                'check_out_hour' => 'sometimes|string',
+                'num_of_guests' => 'sometimes|integer|min:1',
+                'num_of_children' => 'nullable|integer|min:0',
+                'maximum_guests' => 'sometimes|integer|min:1',
+                'allow_extra_guests' => 'boolean',
+                'neighborhood_area' => 'nullable|string',
+                'show_contact_form_instead_of_booking' => 'boolean',
+                'allow_instant_booking' => 'boolean',
+                'additional_guest_price' => 'nullable|numeric|min:0',
+                'children_price' => 'nullable|numeric|min:0',
+                'amenities' => 'nullable|array',
+                'house_rules' => 'nullable|array',
+                'video_link' => 'nullable|string',
+                'property_type_id' => 'sometimes|exists:property_types,id',
+                'category_id' => 'sometimes|exists:categories,id',
+                'place_items' => 'nullable|array',
+                'first_reserver' => 'sometimes|string',
+                'host_type' => 'sometimes|in:Private Individual,Business',
+                'num_of_bedrooms' => 'sometimes|integer|min:1',
+                'num_of_bathrooms' => 'sometimes|integer|min:1',
+                'num_of_quarters' => 'nullable|integer|min:0',
+                'has_unallocated_rooms' => 'boolean',
+                'status' => 'sometimes|boolean',
+                'cancellation_policy' => 'sometimes|boolean'
             ]);
 
             DB::beginTransaction();
 
-            $listing->update($request->only([
-                'title', 'description', 'property_type_id', 'price_per_night',
-                'bedrooms', 'bathrooms', 'max_guests', 'address', 'city',
-                'state', 'country', 'zip_code', 'latitude', 'longitude', 'status'
-            ]));
+            // Update the property
+            $property = Property::findOrFail($listing->property_id);
+            $property->update([
+                'title' => $request->input('title', $property->title),
+                'description' => $request->input('description', $property->description),
+                'location' => $request->input('location', $property->location),
+                'address' => $request->input('address', $property->address),
+                'latitude' => $request->input('latitude', $property->latitude),
+                'longitude' => $request->input('longitude', $property->longitude),
+                'check_in_hour' => $request->input('check_in_hour', $property->check_in_hour),
+                'check_out_hour' => $request->input('check_out_hour', $property->check_out_hour),
+                'num_of_guests' => $request->input('num_of_guests', $property->num_of_guests),
+                'num_of_children' => $request->input('num_of_children', $property->num_of_children),
+                'maximum_guests' => $request->input('maximum_guests', $property->maximum_guests),
+                'allow_extra_guests' => $request->has('allow_extra_guests') ? $request->allow_extra_guests === 'true' : $property->allow_extra_guests,
+                'neighborhood_area' => $request->input('neighborhood_area', $property->neighborhood_area),
+                'country' => $request->input('country', $property->country),
+                'show_contact_form_instead_of_booking' => $request->has('show_contact_form_instead_of_booking') ? $request->show_contact_form_instead_of_booking === 'true' : $property->show_contact_form_instead_of_booking,
+                'allow_instant_booking' => $request->has('allow_instant_booking') ? $request->allow_instant_booking === 'true' : $property->allow_instant_booking,
+                'currency' => $request->input('currency', $property->currency),
+                'price' => $request->input('price', $property->price),
+                'price_per_night' => $request->input('price_per_night', $property->price_per_night),
+                'additional_guest_price' => $request->input('additional_guest_price', $property->additional_guest_price),
+                'children_price' => $request->input('children_price', $property->children_price),
+                'amenities' => $request->has('amenities') ? json_encode($request->amenities) : $property->amenities,
+                'house_rules' => $request->has('house_rules') ? json_encode($request->house_rules) : $property->house_rules,
+                'video_link' => $request->has('video_link') ? json_encode($request->video_link) : $property->video_link,
+                'property_type_id' => $request->has('property_type_id') ? json_encode($request->property_type_id) : $property->property_type_id,
+                'category_id' => $request->has('category_id') ? json_encode($request->category_id) : $property->category_id,
+                'place_items' => $request->has('place_items') ? json_encode($request->place_items) : $property->place_items,
+                'verified' => $request->has('verified') ? $request->verified === '1' : $property->verified,
+                'about_place' => $request->input('about_place', $property->about_place),
+                'host_type' => $request->input('host_type', $property->host_type),
+                'num_of_bedrooms' => $request->input('num_of_bedrooms', $property->num_of_bedrooms),
+                'num_of_bathrooms' => $request->input('num_of_bathrooms', $property->num_of_bathrooms),
+                'num_of_quarters' => $request->input('num_of_quarters', $property->num_of_quarters),
+                'has_unallocated_rooms' => $request->has('has_unallocated_rooms') ? $request->has_unallocated_rooms === '1' : $property->has_unallocated_rooms,
+                'first_reserver' => $request->input('first_reserver', $property->first_reserver)
+            ]);
 
-            if ($request->has('amenities')) {
-                $listing->amenities()->sync($request->amenities);
-            }
-
-            if ($request->has('place_items')) {
-                $listing->placeItems()->sync($request->place_items);
-            }
-
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $image) {
-                    $path = $image->store('listings', 'public');
-                    $listing->images()->create([
-                        'image_path' => $path
-                    ]);
-                }
-            }
+            // Update the listing
+            $listing->update([
+                'title' => $request->input('title', $listing->title),
+                'category_id' => $request->has('category_id') ? $request->category_id[0] : $listing->category_id,
+                'status' => $request->has('status') ? $request->status : $listing->status,
+                'cancellation_policy' => $request->has('cancellation_policy') ? $request->cancellation_policy : $listing->cancellation_policy
+            ]);
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Listing updated successfully',
-                'data' => $listing->load(['amenities', 'placeItems', 'images'])
+                'data' => [
+                    'property' => $property,
+                    'listing' => $listing
+                ]
             ], 200);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -606,14 +822,46 @@ class ListingController extends Controller
     }
 
     /**
-     * Fetch all listings for a host
+     * Fetch all listings for a host with pagination and filters
      */
-    public function fetchHostListings()
+    public function fetchHostListings(Request $request)
     {
         try {
-            $listings = Listing::where('host_id', Auth::id())
-                ->with(['propertyType', 'amenities', 'images', 'reviews'])
-                ->get();
+            $query = Listing::where('host_id', Auth::id())
+                ->with([
+                    'propertyType',
+                    'amenities',
+                    'images',
+                    'reviews',
+                    'property' // Add property relationship
+                ]);
+
+            // Add status filter if provided
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Add search filter if provided
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhereHas('property', function($q) use ($search) {
+                          $q->where('address', 'like', "%{$search}%")
+                            ->orWhere('city', 'like', "%{$search}%")
+                            ->orWhere('country', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            // Add sorting
+            $sortBy = $request->input('sort_by', 'created_at');
+            $sortOrder = $request->input('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Paginate results
+            $perPage = $request->input('per_page', 10);
+            $listings = $query->paginate($perPage);
 
             return response()->json([
                 'status' => 'success',
@@ -630,30 +878,59 @@ class ListingController extends Controller
     }
 
     /**
-     * Delete a host's listing
+     * Delete a host's listing and all related data
      */
     public function deleteHostListing($listingId)
     {
         try {
             $listing = Listing::where('host_id', Auth::id())
+                ->with(['property', 'bookings']) // Eager load relationships
                 ->findOrFail($listingId);
+
+            // Check if there are any active bookings
+            $activeBookings = $listing->bookings()
+                ->whereIn('booking_status', ['pending', 'confirmed'])
+                ->exists();
+
+            if ($activeBookings) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot delete listing with active bookings'
+                ], 400);
+            }
 
             DB::beginTransaction();
 
-            // Delete related records
-            $listing->amenities()->detach();
-            $listing->placeItems()->detach();
-            $listing->images()->delete();
-            $listing->delete();
+            try {
+                // Delete related records
+                $listing->amenities()->detach();
+                $listing->placeItems()->detach();
+                $listing->images()->delete();
+                
+                // Delete associated property
+                if ($listing->property) {
+                    $listing->property->delete();
+                }
 
-            DB::commit();
+                // Delete the listing
+                $listing->delete();
 
+                DB::commit();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Listing and all related data deleted successfully'
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Listing deleted successfully'
-            ], 200);
+                'status' => 'error',
+                'message' => 'Listing not found'
+            ], 404);
         } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete listing',

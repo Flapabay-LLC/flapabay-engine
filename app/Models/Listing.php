@@ -20,6 +20,7 @@ class Listing extends Model
         'host_id',
         'title',
         'description',
+        'property_id',
         'property_type_id',
         'price_per_night',
         'bedrooms',
@@ -37,7 +38,10 @@ class Listing extends Model
         'cancellation_policy',
         'house_rules',
         'check_in_time',
-        'check_out_time'
+        'check_out_time',
+        'category_id',
+        'published_at',
+        'is_completed'
     ];
 
     /**
@@ -49,7 +53,11 @@ class Listing extends Model
         'price_per_night' => 'decimal:2',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
-        'is_instant_bookable' => 'boolean'
+        'is_instant_bookable' => 'boolean',
+        'status' => 'boolean',
+        'cancellation_policy' => 'boolean',
+        'is_completed' => 'boolean',
+        'published_at' => 'datetime'
     ];
 
     /**
@@ -58,6 +66,14 @@ class Listing extends Model
     public function host()
     {
         return $this->belongsTo(User::class, 'host_id');
+    }
+
+    /**
+     * Get the property associated with the listing.
+     */
+    public function property()
+    {
+        return $this->belongsTo(Property::class);
     }
 
     /**
