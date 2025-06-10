@@ -24,6 +24,9 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PlaceItemController;
 use App\Http\Controllers\PropertyTypeController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\CoHostController;
+use App\Http\Controllers\SupportController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -64,6 +67,8 @@ Route::prefix('v1')->group(function () {
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
 
 
+    //Supported Languages
+    Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
     
     Route::get('system/amenities', [ListingController::class, 'getSystemAmenities']);
     Route::get('system/favorites', [ListingController::class, 'getSystemFavorites']);
@@ -99,7 +104,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     // Listing routes
     Route::get('listings/search', [ListingController::class, 'searchListings']);
     Route::post('listings', [ListingController::class, 'createNewListing']);
-    Route::put('listings/{listingId}', [ListingController::class, 'updateHostListing']);
+    Route::post('listings/{listingId}', [ListingController::class, 'updateHostListing']);
     Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
 
@@ -116,7 +121,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
 
     // Property search filtering routes
-    Route::post('filter-listings', [ListingController::class, 'search']);
+    Route::post('search', [ListingController::class, 'search']);
 
     // Property Rating & Reviews
     Route::get('/reviews', [PropertyReviewController::class, 'index']);
@@ -168,7 +173,6 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('/stripe/refunds', [StripeController::class, 'allRefunds']);
 
     //Supported Languages
-    Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
     Route::post('/supported-lang', [LanguageController::class, 'addSupportedLang']);
     Route::post('/set-user-default-supported-lang', [LanguageController::class, 'setUserDefaultLang']);
     Route::get('/translations', [LanguageController::class, 'getTranslationsWithPluralization']);
@@ -195,6 +199,25 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/system/amenities', [ListingController::class, 'createSystemAmenity']);
     Route::post('/system/favorites', [ListingController::class, 'createSystemFavorite']);
     Route::post('/system/property-types', [ListingController::class, 'createSystemPropertyType']);
+
+    // Reservation routes
+    Route::post('reservations', [ReservationController::class, 'create']);
+    Route::get('reservations', [ReservationController::class, 'index']);
+    Route::get('reservations/{id}', [ReservationController::class, 'show']);
+    Route::post('reservations/{id}/cancel', [ReservationController::class, 'cancel']);
+
+    // Co-host routes
+    Route::post('co-hosts/whitelist', [CoHostController::class, 'addPropertyToWhitelist']);
+    Route::post('co-hosts/signup', [CoHostController::class, 'signUpAsCoHost']);
+    Route::get('co-hosts/properties', [CoHostController::class, 'getPropertiesManagedByCoHost']);
+    Route::get('co-hosts/members', [CoHostController::class, 'getHostCoHostMembers']);
+
+    // Support routes
+    Route::post('support/tickets', [SupportController::class, 'submitSupportTicket']);
+    Route::get('support/tickets', [SupportController::class, 'viewSupportTickets']);
+    Route::get('support/ticket/{ticketId}', [SupportController::class, 'getTicketDetails']);
+    Route::post('support/ticket/{ticketId}/responses', [SupportController::class, 'addTicketResponse']);
+    Route::get('support/faqs', [SupportController::class, 'fetchFaqs']);
 
 });
 

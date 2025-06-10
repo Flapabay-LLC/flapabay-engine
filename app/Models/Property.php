@@ -241,4 +241,9 @@ class Property extends Model
     {
         return $this->hasMany(Favorite::class);
     }
+
+    public function coHosts()
+    {
+        return $this->hasMany(CoHost::class);
+    }
 }
