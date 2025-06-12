@@ -273,4 +273,76 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Complete user details with additional profile information
+     *
+     * @param Request $request
+     * @param int $user_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function completeUserDetails(Request $request, $user_id)
+    {
+        try {
+            // Validate the request
+            $validator = Validator::make($request->all(), [
+                'my_interests' => 'nullable|array',
+                'know_where_been' => 'nullable|string|max:255',
+                'boi_title' => 'nullable|string|max:255',
+                'am_obessed_with' => 'nullable|array',
+                'most_useles_skill' => 'nullable|array',
+                'spend_time_in' => 'nullable|array',
+                'favourite_songs' => 'nullable|array',
+                'shools_went_to' => 'nullable|array',
+                'show_decade_born' => 'nullable|string|max:255',
+                'pets' => 'nullable|array',
+                'my_fun_fact' => 'nullable|string',
+                'favourite_place' => 'nullable|string|max:255',
+                'my_work' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Find the user
+            $user = User::find($user_id);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Find or create user details
+            $userDetail = UserDetail::firstOrCreate(['user_id' => $user_id]);
+
+            // Update user details
+            $userDetail->update($request->all());
+
+            // Update user's profile_complete status
+            $user->profile_complete = true;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User details completed successfully',
+                'data' => [
+                    'user' => $user,
+                    'user_details' => $userDetail
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to complete user details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
