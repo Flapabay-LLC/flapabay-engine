@@ -27,6 +27,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
+            'host_id' => 1020,
             'fname' => 'Sarah',
             'lname' => 'Kovac',
             'email' => 'skovac234@example.com',
@@ -40,6 +41,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
+            'host_id' => 1320,
             'fname' => 'Daniel',
             'lname' => 'Phiri',
             'email' => 'danp10@example.com',
