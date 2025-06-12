@@ -1174,7 +1174,7 @@ class ListingController extends Controller
                     'is_favorite' => in_array($listing->property_id, $userFavorites),
                     'images' => $images,
                     'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
-                    'property_type' => $property->propertyType ? $property->propertyType->name : null,
+                    'property_type' => $property->propertyType ? $property->propertyType : null,
                     'listing_type' => $listing->listing_type ? $listing->listing_type : null,
                     'host' => $listing->host ? [
                         'id' => $listing->host->id,
