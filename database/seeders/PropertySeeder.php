@@ -49,7 +49,7 @@ class PropertySeeder extends Seeder
                     'verified' => true,
                     'tags' => json_encode(['beach', 'luxury', 'family-friendly']),
                     'category_id' => json_encode([1, 2]),
-                    'property_type_id' => json_encode([1, 3]),
+                    'property_type_id' => 1,
                 ],
                 [
                     'title'=> 'Studio Apartment',
@@ -85,7 +85,7 @@ class PropertySeeder extends Seeder
                     'verified' => false,
                     'tags' => json_encode(['city-center', 'budget']),
                     'category_id' => json_encode([2, 4]),
-                    'property_type_id' => json_encode([2]),
+                    'property_type_id' => 2,
                 ],
                 // Add more sample properties as needed
             ];

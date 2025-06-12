@@ -58,7 +58,7 @@ class ListingSeeder extends Seeder
                     'amenities' => json_encode($faker->randomElements(['WiFi', 'Kitchen', 'Pool', 'Parking', 'Air Conditioning'], 3)),
                     'house_rules' => json_encode($faker->randomElements(['No smoking', 'No pets', 'No parties'], 2)),
                     'video_link' => json_encode(['url' => 'https://www.youtube.com/watch?v=' . $faker->uuid]),
-                    'property_type_id' => json_encode([$faker->numberBetween(1, 5)]),
+                    'property_type_id' => $faker->numberBetween(1, 5),
                     'category_id' => json_encode([$faker->numberBetween(1, 5)]),
                     'place_items' => json_encode($faker->randomElements(['Bed', 'TV', 'Sofa', 'Table'], 3)),
                     'verified' => true,
