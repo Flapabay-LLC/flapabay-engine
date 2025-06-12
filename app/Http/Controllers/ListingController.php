@@ -22,6 +22,8 @@ use App\Models\PlaceItem;
 use App\Models\PropertyType;
 use Illuminate\Support\Facades\Auth;
 use App\Models\SystemFavourite;
+use App\Helpers\CurrencyHelper;
+use App\Helpers\GeoLocationHelper;
 
 class ListingController extends Controller
 {
@@ -1055,25 +1057,63 @@ class ListingController extends Controller
 
             // Get user's favorite listings if user is authenticated
             $userFavorites = [];
+            $userCurrency = 'USD'; // Default currency
+
             if (auth()->check()) {
                 $userFavorites = Favorite::where('user_id', auth()->id())
                     ->pluck('property_id')
                     ->toArray();
+                
+                // Get user's preferred currency
+                $userCurrency = auth()->user()->currency ?? 'USD';
+            } else {
+                
+                // For non-authenticated users, determine currency based on IP
+                $userCurrency = \App\Helpers\GeoLocationHelper::getCurrencyFromIP();
             }
 
             // Transform the response
-            $listings = $listings->map(function ($listing) use ($userFavorites) {
+            $listings = $listings->map(function ($listing) use ($userFavorites, $userCurrency) {
+                $property = $listing->property;
+                
+                // Convert prices if property exists and has a different currency
+                $price = $property ? $property->price : null;
+                $pricePerNight = $property ? $property->price_per_night : null;
+                $additionalGuestPrice = $property ? $property->additional_guest_price : null;
+                $childrenPrice = $property ? $property->children_price : null;
+                $propertyCurrency = $property ? $property->currency : 'USD';
+
+                // Store original prices before conversion
+                $originalPrices = null;
+                if ($property && $propertyCurrency !== $userCurrency) {
+                    $originalPrices = [
+                        'price' => $price,
+                        'price_per_night' => $pricePerNight,
+                        'additional_guest_price' => $additionalGuestPrice,
+                        'children_price' => $childrenPrice,
+                        'currency' => $propertyCurrency
+                    ];
+
+                    $price = \App\Helpers\CurrencyHelper::convert($price, $propertyCurrency, $userCurrency);
+                    $pricePerNight = \App\Helpers\CurrencyHelper::convert($pricePerNight, $propertyCurrency, $userCurrency);
+                    $additionalGuestPrice = \App\Helpers\CurrencyHelper::convert($additionalGuestPrice, $propertyCurrency, $userCurrency);
+                    $childrenPrice = \App\Helpers\CurrencyHelper::convert($childrenPrice, $propertyCurrency, $userCurrency);
+                }
+
                 return [
                     'id' => $listing->id,
                     'title' => $listing->title,
-                    'description' => $listing->property ? $listing->property->description : null,
-                    'location' => $listing->property ? $listing->property->location : null,
-                    'price' => $listing->property ? $listing->property->price : null,
-                    'price_per_night' => $listing->property ? $listing->property->price_per_night : null,
-                    'currency' => $listing->property ? $listing->property->currency : null,
-                    'maximum_guests' => $listing->property ? $listing->property->maximum_guests : null,
-                    'rating' => $listing->property ? $listing->property->rating : null,
-                    'verified' => $listing->property ? $listing->property->verified : false,
+                    'description' => $property ? $property->description : null,
+                    'location' => $property ? $property->location : null,
+                    'price' => $price,
+                    'price_per_night' => $pricePerNight,
+                    'additional_guest_price' => $additionalGuestPrice,
+                    'children_price' => $childrenPrice,
+                    'currency' => $userCurrency,
+                    'original_prices' => $originalPrices,
+                    'maximum_guests' => $property ? $property->maximum_guests : null,
+                    'rating' => $property ? $property->rating : null,
+                    'verified' => $property ? $property->verified : false,
                     'is_favorite' => in_array($listing->property_id, $userFavorites),
                     'images' => $listing->images ? $listing->images->pluck('image_url') : [],
                     'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
