@@ -19,7 +19,8 @@ class ListingImage extends Model
         'image_url',
         'image_type',
         'display_order',
-        'is_active'
+        'is_active',
+        'is_primary'
     ];
 
     /**

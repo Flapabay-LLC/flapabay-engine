@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('listing_images', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('listing_id')->constrained('listings')->onDelete('cascade');
+            $table->foreignId('listing_id')->constrained()->onDelete('cascade');
             $table->string('image_url');
-            $table->string('image_type')->nullable(); // e.g., 'main', 'thumbnail', 'gallery'
-            $table->integer('display_order')->default(0);
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_primary')->default(false);
             $table->timestamps();
         });
     }

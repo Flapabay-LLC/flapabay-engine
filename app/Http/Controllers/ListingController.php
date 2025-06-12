@@ -623,7 +623,9 @@ class ListingController extends Controller
                 'num_of_bathrooms' => 'required|integer|min:1',
                 'num_of_quarters' => 'nullable|integer|min:0',
                 'has_unallocated_rooms' => 'boolean',
-                'listing_type' => 'required|string'
+                'listing_type' => 'required|string',
+                'images' => 'nullable|array',
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
 
             DB::beginTransaction();
@@ -667,17 +669,65 @@ class ListingController extends Controller
                 'first_reserver' => $request->first_reserver
             ]);
 
-            // Create the listing with all required fields
+            // Handle image uploads
+            $imagePaths = [];
+            if ($request->hasFile('images')) {
+                // Setup Wasabi S3 client
+                $endpoint = 'https://s3.us-west-1.wasabisys.com';
+                $bucketName = 'flapapic';
+                $region = 'us-west-1';
+                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+                $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
+
+                $s3Client = new S3Client([
+                    'region'     => $region,
+                    'version'    => 'latest',
+                    'endpoint'   => $endpoint,
+                    'credentials' => [
+                        'key'    => $accessKey,
+                        'secret' => $secretKey,
+                    ],
+                ]);
+
+                foreach ($request->file('images') as $image) {
+                    if ($image->isValid()) {
+                        $fileName = time() . '_' . $image->getClientOriginalName();
+                        
+                        $result = $s3Client->putObject([
+                            'Bucket'     => $bucketName,
+                            'Key'        => 'properties/' . $fileName,
+                            'SourceFile' => $image->getPathname(),
+                        ]);
+
+                        if (isset($result['ObjectURL'])) {
+                            $imagePaths[] = $result['ObjectURL'];
+                        }
+                    }
+                }
+            }
+
+            // Create the listing
             $listing = Listing::create([
                 'host_id' => $request->host_id,
                 'title' => $request->title,
                 'property_id' => $property->id,
-                'category_id' => $request->category_id[0], // Since it's an array in the request
+                'category_id' => $request->category_id[0],
                 'status' => false,
                 'published_at' => now(),
                 'cancellation_policy' => false,
-                'is_completed' => false
+                'is_completed' => false,
+                'listing_type' => $request->listing_type
             ]);
+
+            // Save images to the listing_images table
+            if (!empty($imagePaths)) {
+                foreach ($imagePaths as $imagePath) {
+                    $listing->images()->create([
+                        'image_url' => $imagePath,
+                        'is_primary' => false
+                    ]);
+                }
+            }
 
             DB::commit();
 
@@ -686,7 +736,7 @@ class ListingController extends Controller
                 'message' => 'Listing created successfully',
                 'data' => [
                     'property' => $property,
-                    'listing' => $listing
+                    'listing' => $listing->load('images')
                 ]
             ], 201);
 
@@ -1067,7 +1117,6 @@ class ListingController extends Controller
                 // Get user's preferred currency
                 $userCurrency = auth()->user()->currency ?? 'USD';
             } else {
-                
                 // For non-authenticated users, determine currency based on IP
                 $userCurrency = \App\Helpers\GeoLocationHelper::getCurrencyFromIP();
             }
@@ -1100,6 +1149,14 @@ class ListingController extends Controller
                     $childrenPrice = \App\Helpers\CurrencyHelper::convert($childrenPrice, $propertyCurrency, $userCurrency);
                 }
 
+                // Get primary image and other images
+                $images = $listing->images->map(function($image) {
+                    return [
+                        'url' => $image->image_url,
+                        'is_primary' => $image->is_primary
+                    ];
+                });
+
                 return [
                     'id' => $listing->id,
                     'title' => $listing->title,
@@ -1115,7 +1172,7 @@ class ListingController extends Controller
                     'rating' => $property ? $property->rating : null,
                     'verified' => $property ? $property->verified : false,
                     'is_favorite' => in_array($listing->property_id, $userFavorites),
-                    'images' => $listing->images ? $listing->images->pluck('image_url') : [],
+                    'images' => $images,
                     'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
                     'property_type' => $listing->propertyType ? $listing->propertyType->name : null,
                     'listing_type' => $listing->listing_type ? $listing->listing_type : null,

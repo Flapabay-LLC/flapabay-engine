@@ -73,6 +73,9 @@ Route::prefix('v1')->group(function () {
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
 
+    //property types
+    Route::get('property-types', [PropertyTypeController::class, 'index']);
+
 
     //Supported Languages
     Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
@@ -227,6 +230,9 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('support/ticket/{ticketId}', [SupportController::class, 'getTicketDetails']);
     Route::post('support/ticket/{ticketId}/responses', [SupportController::class, 'addTicketResponse']);
     Route::get('support/faqs', [SupportController::class, 'fetchFaqs']);
+
+    // Property Type routes
+    Route::post('property-types', [PropertyTypeController::class, 'store']);
 
 });
 
