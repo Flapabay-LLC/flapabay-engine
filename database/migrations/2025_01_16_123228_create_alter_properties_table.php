@@ -15,7 +15,7 @@ return new class extends Migration
             $table->json('tags')->nullable();
             $table->json('category_id')->nullable();
             $table->renameColumn('property_type', 'property_type_id');
-            $table->json('property_type_id')->change()->nullable();
+            $table->integer('property_type_id')->change()->nullable();
         });
     }
 
