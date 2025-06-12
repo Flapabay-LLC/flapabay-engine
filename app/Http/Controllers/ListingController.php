@@ -1034,4 +1034,82 @@ class ListingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Fetch all listings with their relationships and favorite status
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function fetchAllListings()
+    {
+        try {
+            // Fetch all listings with their relationships
+            $listings = Listing::with([
+                'property',
+                'images',
+                'amenities',
+                'propertyType',
+                'host',
+                'reviews'
+            ])->get();
+
+            // Get user's favorite listings if user is authenticated
+            $userFavorites = [];
+            if (auth()->check()) {
+                $userFavorites = Favorite::where('user_id', auth()->id())
+                    ->pluck('property_id')
+                    ->toArray();
+            }
+
+            // Transform the response
+            $listings = $listings->map(function ($listing) use ($userFavorites) {
+                return [
+                    'id' => $listing->id,
+                    'title' => $listing->title,
+                    'description' => $listing->property ? $listing->property->description : null,
+                    'location' => $listing->property ? $listing->property->location : null,
+                    'price' => $listing->property ? $listing->property->price : null,
+                    'price_per_night' => $listing->property ? $listing->property->price_per_night : null,
+                    'currency' => $listing->property ? $listing->property->currency : null,
+                    'maximum_guests' => $listing->property ? $listing->property->maximum_guests : null,
+                    'rating' => $listing->property ? $listing->property->rating : null,
+                    'verified' => $listing->property ? $listing->property->verified : false,
+                    'is_favorite' => in_array($listing->property_id, $userFavorites),
+                    'images' => $listing->images ? $listing->images->pluck('image_url') : [],
+                    'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
+                    'property_type' => $listing->propertyType ? $listing->propertyType->name : null,
+                    'listing_type' => $listing->listing_type ? $listing->listing_type : null,
+                    'host' => $listing->host ? [
+                        'id' => $listing->host->id,
+                        'name' => $listing->host->fname . ' ' . $listing->host->lname,
+                        'email' => $listing->host->email,
+                        'phone' => $listing->host->phone
+                    ] : null,
+                    'reviews' => $listing->reviews ? $listing->reviews->map(function ($review) {
+                        return [
+                            'id' => $review->id,
+                            'rating' => $review->rating,
+                            'comment' => $review->comment,
+                            'created_at' => $review->created_at
+                        ];
+                    }) : [],
+                    'created_at' => $listing->created_at,
+                    'updated_at' => $listing->updated_at,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Listings fetched successfully',
+                'data' => $listings
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch listings',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

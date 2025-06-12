@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             AmenitySeeder::class,
             // FavoriteSeeder::class,
             PlaceItemSeeder::class,
+            ListingSeeder::class,
         ]);
     }
 }

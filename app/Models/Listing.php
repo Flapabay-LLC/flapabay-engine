@@ -34,6 +34,7 @@ class Listing extends Model
         'latitude',
         'longitude',
         'status',
+        'listing_type',
         'is_instant_bookable',
         'cancellation_policy',
         'house_rules',

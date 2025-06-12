@@ -54,6 +54,10 @@ Route::prefix('v1')->group(function () {
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
+
+    //Listings
+    Route::get('listings', [ListingController::class, 'fetchAllListings']);
+
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);
 
@@ -107,6 +111,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // Listing routes
     Route::get('listings/search', [ListingController::class, 'searchListings']);
+    // Route::get('listings', [ListingController::class, 'fetchAllListings']);
     Route::post('listings', [ListingController::class, 'createNewListing']);
     Route::post('listings/{listingId}', [ListingController::class, 'updateHostListing']);
     Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
