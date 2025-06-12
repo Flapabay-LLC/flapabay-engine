@@ -54,6 +54,9 @@ Route::prefix('v1')->group(function () {
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
+    // Property routes
+    Route::get('properties', [PropertyController::class, 'getProperties']);
+
     //Google & Facebook Auth
     // Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
     Route::post('google/signin', [GoogleAuthController::class, 'googleSignIn']);
@@ -83,6 +86,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('users/{user_id}', [UserController::class, 'show']);
     Route::post('users/{user_id}', [UserController::class, 'update']);
     Route::post('users/{user_id}/profile-picture', [UserController::class, 'updateProfilePicture']);
+    Route::post('users/{user_id}/complete-details', [UserController::class, 'completeUserDetails']);
     Route::get('users/{user_id}/reviews', [UserReviewController::class, 'userReview']);
 
     // Favorites routes
@@ -109,7 +113,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
 
     // Property routes
-    Route::get('properties', [PropertyController::class, 'getProperties']);
+    // Route::get('properties', [PropertyController::class, 'getProperties']);
     Route::post('properties', [PropertyController::class, 'createProperties']);
     Route::post('update-properties', [PropertyController::class, 'updateProperties']);
     Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);

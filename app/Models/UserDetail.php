@@ -30,7 +30,20 @@ class UserDetail extends Model
         'twitter',
         'linkedin',
         'youtube',
-        'dob'
+        'dob',
+        'my_interests',
+        'know_where_been',
+        'boi_title',
+        'am_obessed_with',
+        'most_useles_skill',
+        'spend_time_in',
+        'favourite_songs',
+        'shools_went_to',
+        'show_decade_born',
+        'pets',
+        'my_fun_fact',
+        'favourite_place',
+        'my_work'
     ];
 
 
@@ -41,6 +54,13 @@ class UserDetail extends Model
      */
     protected $casts = [
         'languages' => 'array', // Cast languages as an array
+        'my_interests' => 'array',
+        'am_obessed_with' => 'array',
+        'most_useles_skill' => 'array',
+        'spend_time_in' => 'array',
+        'favourite_songs' => 'array',
+        'shools_went_to' => 'array',
+        'pets' => 'array'
     ];
 
     /**

@@ -93,6 +93,8 @@ class AuthenticatorController extends Controller
 
     public function getEmailPhoneOtp(Request $request)
     {
+
+        // dd($request->phone);
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
             'code' => 'nullable|string', // Only needed if phone is used
@@ -107,10 +109,7 @@ class AuthenticatorController extends Controller
         // Step 2: Ensure at least one contact method is provided
         if (!$request->phone && !$request->email) {
             return response()->json(['error' => 'Either phone or email is required.'], 422);
-        }        
-        if (!$request->email) {
-            return response()->json(['error' => 'Either phone or email is required.'], 422);
-        }
+        }  
     
         // Step 3: Determine identifier and find user
         $user = null;
@@ -298,7 +297,6 @@ class AuthenticatorController extends Controller
                 'message' => 'User not found'
             ], 404);
         }
-
         // Step 5: Check if user has complete records
         $requiredFields = ['fname', 'lname', 'email', 'phone', 'password'];
         $isProfileComplete = true;
@@ -309,6 +307,10 @@ class AuthenticatorController extends Controller
                 break;
             }
         }
+
+        // Update the profile_complete status in the database
+        $user->profile_complete = $isProfileComplete;
+        $user->save();
 
         // Step 6: If profile is complete, authenticate and return token
         if ($isProfileComplete) {
@@ -474,6 +476,10 @@ class AuthenticatorController extends Controller
             }
         }
 
+        // Update the profile_complete status in the database
+        $user->profile_complete = $isProfileComplete;
+        $user->save();
+
         // Step 6: If profile is complete, authenticate and return token
         if ($isProfileComplete) {
             $token = JWTAuth::fromUser($user);
@@ -541,6 +547,10 @@ class AuthenticatorController extends Controller
                 break;
             }
         }
+
+        // Update the profile_complete status in the database
+        $user->profile_complete = $isProfileComplete;
+        $user->save();
 
         // Step 6: If profile is complete, authenticate and return token
         if ($isProfileComplete) {
