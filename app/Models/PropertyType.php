@@ -18,8 +18,12 @@ class PropertyType extends Model
      */
     protected $fillable = [
         'name',
-        'icon',
+        'black_icon',
+        'white_icon',
         'description',
+        'bg_color',
+        'color',
+        'type'
     ];
 
     /**
@@ -28,9 +32,13 @@ class PropertyType extends Model
      * @var array
      */
     protected $casts = [
-        'name' => 'string', // Cast name as a string
-        'icon' => 'string', // Cast icon as a string
-        'description' => 'string', // Cast description as a string
+        'name' => 'string',
+        'black_icon' => 'string',
+        'white_icon' => 'string',
+        'description' => 'string',
+        'bg_color' => 'string',
+        'color' => 'string',
+        'type' => 'string'
     ];
 
     /**
