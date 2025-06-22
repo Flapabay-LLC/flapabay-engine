@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayoutOption;
-use App\Http\Requests\StorePayoutOptionRequest;
-use App\Http\Requests\UpdatePayoutOptionRequest;
+use Illuminate\Http\Request;
 
 class PayoutOptionController extends Controller
 {
@@ -13,23 +12,35 @@ class PayoutOptionController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $options = PayoutOption::all();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'message' => 'Payout options fetched successfully',
+            'data' => $options
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePayoutOptionRequest $request)
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'icon' => 'nullable|string',
+            'icon_alt' => 'nullable|string',
+            'currency' => 'required|string|max:10',
+        ]);
+
+        $option = PayoutOption::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payout option created successfully',
+            'data' => $option
+        ]);
     }
 
     /**
@@ -37,23 +48,32 @@ class PayoutOptionController extends Controller
      */
     public function show(PayoutOption $payoutOption)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(PayoutOption $payoutOption)
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'data' => $payoutOption
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdatePayoutOptionRequest $request, PayoutOption $payoutOption)
+    public function update(Request $request, PayoutOption $payoutOption)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'icon' => 'nullable|string',
+            'icon_alt' => 'nullable|string',
+            'currency' => 'sometimes|string|max:10',
+        ]);
+
+        $payoutOption->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payout option updated successfully',
+            'data' => $payoutOption
+        ]);
     }
 
     /**
@@ -61,6 +81,11 @@ class PayoutOptionController extends Controller
      */
     public function destroy(PayoutOption $payoutOption)
     {
-        //
+        $payoutOption->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payout option deleted successfully'
+        ]);
     }
 }

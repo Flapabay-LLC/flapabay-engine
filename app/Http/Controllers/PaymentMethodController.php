@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PaymentMethod;
+use Illuminate\Http\Request;
 use App\Http\Requests\StorePaymentMethodRequest;
 use App\Http\Requests\UpdatePaymentMethodRequest;
 
@@ -13,15 +14,13 @@ class PaymentMethodController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $methods = PaymentMethod::with('user')->latest()->get();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment methods fetched successfully',
+            'data' => $methods
+        ]);
     }
 
     /**
@@ -29,7 +28,13 @@ class PaymentMethodController extends Controller
      */
     public function store(StorePaymentMethodRequest $request)
     {
-        //
+        $paymentMethod = PaymentMethod::create($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment method created successfully',
+            'data' => $paymentMethod
+        ]);
     }
 
     /**
@@ -37,15 +42,11 @@ class PaymentMethodController extends Controller
      */
     public function show(PaymentMethod $paymentMethod)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(PaymentMethod $paymentMethod)
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment method fetched successfully',
+            'data' => $paymentMethod->load('user')
+        ]);
     }
 
     /**
@@ -53,7 +54,13 @@ class PaymentMethodController extends Controller
      */
     public function update(UpdatePaymentMethodRequest $request, PaymentMethod $paymentMethod)
     {
-        //
+        $paymentMethod->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment method updated successfully',
+            'data' => $paymentMethod
+        ]);
     }
 
     /**
@@ -61,6 +68,11 @@ class PaymentMethodController extends Controller
      */
     public function destroy(PaymentMethod $paymentMethod)
     {
-        //
+        $paymentMethod->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment method deleted successfully'
+        ]);
     }
 }

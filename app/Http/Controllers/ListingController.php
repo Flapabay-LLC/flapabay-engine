@@ -196,7 +196,16 @@ class ListingController extends Controller
      */
     public function create()
     {
-        //
+         return response()->json([
+        'success' => true,
+        'message' => 'Form data fetched for creating a listing',
+        'data' => [
+            'property_types' => \App\Models\PropertyType::all(),
+            'amenities' => \App\Models\Amenity::all(),
+            'place_items' => \App\Models\PlaceItem::all(),
+        ]
+    ]);
+    
     }
 
     /**
@@ -348,7 +357,12 @@ class ListingController extends Controller
      */
     public function show(Listing $listing)
     {
-        //
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Listing fetched successfully',
+            'data' => $listing->load(['property', 'propertyType', 'amenities', 'images', 'reviews'])
+        ], 200);
+
     }
 
     /**
@@ -356,7 +370,11 @@ class ListingController extends Controller
      */
     public function edit(Listing $listing)
     {
-        //
+         // Typically for web UI. You can return JSON for API:
+        return response()->json([
+            'success' => true,
+            'data' => $listing
+        ]);
     }
 
     /**
@@ -364,7 +382,13 @@ class ListingController extends Controller
      */
     public function update(UpdateListingRequest $request, Listing $listing)
     {
-        //
+        $listing->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Listing updated successfully',
+            'data' => $listing
+        ]);
     }
 
     /**
@@ -373,6 +397,12 @@ class ListingController extends Controller
     public function destroy(Listing $listing)
     {
         //
+        $listing->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Listing deleted successfully'
+        ]);
     }
 
     /**
