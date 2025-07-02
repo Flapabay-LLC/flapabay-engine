@@ -22,8 +22,6 @@ use App\Models\PlaceItem;
 use App\Models\PropertyType;
 use Illuminate\Support\Facades\Auth;
 use App\Models\SystemFavourite;
-use App\Helpers\CurrencyHelper;
-use App\Helpers\GeoLocationHelper;
 
 class ListingController extends Controller
 {
@@ -196,16 +194,7 @@ class ListingController extends Controller
      */
     public function create()
     {
-         return response()->json([
-        'success' => true,
-        'message' => 'Form data fetched for creating a listing',
-        'data' => [
-            'property_types' => \App\Models\PropertyType::all(),
-            'amenities' => \App\Models\Amenity::all(),
-            'place_items' => \App\Models\PlaceItem::all(),
-        ]
-    ]);
-    
+        //
     }
 
     /**
@@ -357,12 +346,7 @@ class ListingController extends Controller
      */
     public function show(Listing $listing)
     {
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Listing fetched successfully',
-            'data' => $listing->load(['property', 'propertyType', 'amenities', 'images', 'reviews'])
-        ], 200);
-
+        //
     }
 
     /**
@@ -370,11 +354,7 @@ class ListingController extends Controller
      */
     public function edit(Listing $listing)
     {
-         // Typically for web UI. You can return JSON for API:
-        return response()->json([
-            'success' => true,
-            'data' => $listing
-        ]);
+        //
     }
 
     /**
@@ -382,13 +362,7 @@ class ListingController extends Controller
      */
     public function update(UpdateListingRequest $request, Listing $listing)
     {
-        $listing->update($request->validated());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Listing updated successfully',
-            'data' => $listing
-        ]);
+        //
     }
 
     /**
@@ -397,12 +371,6 @@ class ListingController extends Controller
     public function destroy(Listing $listing)
     {
         //
-        $listing->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Listing deleted successfully'
-        ]);
     }
 
     /**
@@ -653,9 +621,7 @@ class ListingController extends Controller
                 'num_of_bathrooms' => 'required|integer|min:1',
                 'num_of_quarters' => 'nullable|integer|min:0',
                 'has_unallocated_rooms' => 'boolean',
-                'listing_type' => 'required|string',
-                'images' => 'nullable|array',
-                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+                'listing_type' => 'required|string'
             ]);
 
             DB::beginTransaction();
@@ -699,65 +665,17 @@ class ListingController extends Controller
                 'first_reserver' => $request->first_reserver
             ]);
 
-            // Handle image uploads
-            $imagePaths = [];
-            if ($request->hasFile('images')) {
-                // Setup Wasabi S3 client
-                $endpoint = 'https://s3.us-west-1.wasabisys.com';
-                $bucketName = 'flapapic';
-                $region = 'us-west-1';
-                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
-                $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
-
-                $s3Client = new S3Client([
-                    'region'     => $region,
-                    'version'    => 'latest',
-                    'endpoint'   => $endpoint,
-                    'credentials' => [
-                        'key'    => $accessKey,
-                        'secret' => $secretKey,
-                    ],
-                ]);
-
-                foreach ($request->file('images') as $image) {
-                    if ($image->isValid()) {
-                        $fileName = time() . '_' . $image->getClientOriginalName();
-                        
-                        $result = $s3Client->putObject([
-                            'Bucket'     => $bucketName,
-                            'Key'        => 'properties/' . $fileName,
-                            'SourceFile' => $image->getPathname(),
-                        ]);
-
-                        if (isset($result['ObjectURL'])) {
-                            $imagePaths[] = $result['ObjectURL'];
-                        }
-                    }
-                }
-            }
-
-            // Create the listing
+            // Create the listing with all required fields
             $listing = Listing::create([
                 'host_id' => $request->host_id,
                 'title' => $request->title,
                 'property_id' => $property->id,
-                'category_id' => $request->category_id[0],
+                'category_id' => $request->category_id[0], // Since it's an array in the request
                 'status' => false,
                 'published_at' => now(),
                 'cancellation_policy' => false,
-                'is_completed' => false,
-                'listing_type' => $request->listing_type
+                'is_completed' => false
             ]);
-
-            // Save images to the listing_images table
-            if (!empty($imagePaths)) {
-                foreach ($imagePaths as $imagePath) {
-                    $listing->images()->create([
-                        'image_url' => $imagePath,
-                        'is_primary' => false
-                    ]);
-                }
-            }
 
             DB::commit();
 
@@ -766,7 +684,7 @@ class ListingController extends Controller
                 'message' => 'Listing created successfully',
                 'data' => [
                     'property' => $property,
-                    'listing' => $listing->load('images')
+                    'listing' => $listing
                 ]
             ], 201);
 
@@ -1112,129 +1030,6 @@ class ListingController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create property type',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Fetch all listings with their relationships and favorite status
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function fetchAllListings()
-    {
-        try {
-            // Fetch all listings with their relationships
-            $listings = Listing::with([
-                'property',
-                'images',
-                'amenities',
-                'propertyType',
-                'host',
-                'reviews'
-            ])->get();
-
-            // Get user's favorite listings if user is authenticated
-            $userFavorites = [];
-            $userCurrency = 'USD'; // Default currency
-
-            if (auth()->check()) {
-                $userFavorites = Favorite::where('user_id', auth()->id())
-                    ->pluck('property_id')
-                    ->toArray();
-                
-                // Get user's preferred currency
-                $userCurrency = auth()->user()->currency ?? 'USD';
-            } else {
-                // For non-authenticated users, determine currency based on IP
-                $userCurrency = \App\Helpers\GeoLocationHelper::getCurrencyFromIP();
-            }
-
-            // Transform the response
-            $listings = $listings->map(function ($listing) use ($userFavorites, $userCurrency) {
-                $property = $listing->property;
-                
-                // Convert prices if property exists and has a different currency
-                $price = $property ? $property->price : null;
-                $pricePerNight = $property ? $property->price_per_night : null;
-                $additionalGuestPrice = $property ? $property->additional_guest_price : null;
-                $childrenPrice = $property ? $property->children_price : null;
-                $propertyCurrency = $property ? $property->currency : 'USD';
-
-                // Store original prices before conversion
-                $originalPrices = null;
-                if ($property && $propertyCurrency !== $userCurrency) {
-                    $originalPrices = [
-                        'price' => $price,
-                        'price_per_night' => $pricePerNight,
-                        'additional_guest_price' => $additionalGuestPrice,
-                        'children_price' => $childrenPrice,
-                        'currency' => $propertyCurrency
-                    ];
-
-                    $price = \App\Helpers\CurrencyHelper::convert($price, $propertyCurrency, $userCurrency);
-                    $pricePerNight = \App\Helpers\CurrencyHelper::convert($pricePerNight, $propertyCurrency, $userCurrency);
-                    $additionalGuestPrice = \App\Helpers\CurrencyHelper::convert($additionalGuestPrice, $propertyCurrency, $userCurrency);
-                    $childrenPrice = \App\Helpers\CurrencyHelper::convert($childrenPrice, $propertyCurrency, $userCurrency);
-                }
-
-                // Get primary image and other images
-                $images = $listing->images->map(function($image) {
-                    return [
-                        'url' => $image->image_url,
-                        'is_primary' => $image->is_primary
-                    ];
-                });
-
-                return [
-                    'id' => $listing->id,
-                    'title' => $listing->title,
-                    'description' => $property ? $property->description : null,
-                    'location' => $property ? $property->location : null,
-                    'price' => $price,
-                    'price_per_night' => $pricePerNight,
-                    'additional_guest_price' => $additionalGuestPrice,
-                    'children_price' => $childrenPrice,
-                    'currency' => $userCurrency,
-                    'original_prices' => $originalPrices,
-                    'maximum_guests' => $property ? $property->maximum_guests : null,
-                    'rating' => $property ? $property->rating : null,
-                    'verified' => $property ? $property->verified : false,
-                    'is_favorite' => in_array($listing->property_id, $userFavorites),
-                    'images' => $images,
-                    'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
-                    'property_type' => $property->propertyType ? $property->propertyType : null,
-                    'listing_type' => $listing->listing_type ? $listing->listing_type : null,
-                    'host' => $listing->host ? [
-                        'id' => $listing->host->id,
-                        'name' => $listing->host->fname . ' ' . $listing->host->lname,
-                        'email' => $listing->host->email,
-                        'phone' => $listing->host->phone
-                    ] : null,
-                    'reviews' => $listing->reviews ? $listing->reviews->map(function ($review) {
-                        return [
-                            'id' => $review->id,
-                            'rating' => $review->rating,
-                            'comment' => $review->comment,
-                            'created_at' => $review->created_at
-                        ];
-                    }) : [],
-                    'created_at' => $listing->created_at,
-                    'updated_at' => $listing->updated_at,
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Listings fetched successfully',
-                'data' => $listings
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch listings',
                 'error' => $e->getMessage()
             ], 500);
         }

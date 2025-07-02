@@ -5,33 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\PropertyType;
 use App\Http\Requests\StorePropertyTypeRequest;
 use App\Http\Requests\UpdatePropertyTypeRequest;
-use Illuminate\Http\Request;
 
 class PropertyTypeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
         try {
-            $query = PropertyType::query();
-
-            if ($request->has('type')) {
-                $query->where('type', $request->type);
-            }
-
-            $propertyTypes = $query->get();
-
+            $placeItems = PropertyType::all();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Property types fetched successfully',
-                'data' => $propertyTypes
+                'data' => $placeItems
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch property types',
+                'message' => 'Failed to fetch Property types',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -50,21 +42,7 @@ class PropertyTypeController extends Controller
      */
     public function store(StorePropertyTypeRequest $request)
     {
-        try {
-            $propertyType = PropertyType::create($request->validated());
-            
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Property type created successfully',
-                'data' => $propertyType
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to create property type',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**

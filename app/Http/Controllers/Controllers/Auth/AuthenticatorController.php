@@ -93,9 +93,8 @@ class AuthenticatorController extends Controller
 
     public function getEmailPhoneOtp(Request $request)
     {
-
-        // dd($request->phone);
         // Step 1: Validate the request
+        log::info('🔐 OTP Request Received iam in getEmailPhoneOpt: ' . json_encode($request->all()));
         $validator = Validator::make($request->all(), [
             'code' => 'nullable|string', // Only needed if phone is used
             'phone' => 'nullable|digits_between:7,15',
@@ -109,7 +108,10 @@ class AuthenticatorController extends Controller
         // Step 2: Ensure at least one contact method is provided
         if (!$request->phone && !$request->email) {
             return response()->json(['error' => 'Either phone or email is required.'], 422);
-        }  
+        }        
+        if (!$request->email) {
+            return response()->json(['error' => 'Either phone or email is required.'], 422);
+        }
     
         // Step 3: Determine identifier and find user
         $user = null;
@@ -270,65 +272,75 @@ class AuthenticatorController extends Controller
         }
     }
 
+
     public function registerUserDetails(Request $request)
     {
+    try {
         // Step 1: Validate input
         $validator = Validator::make($request->all(), [
             'fname' => 'required|string|max:255',
             'lname' => 'required|string|max:255',
-            'email' => 'required|email:dns,',
-            'phone' => 'required|digits_between:7,15|unique:users,phone,',
+            'email' => 'required|email',
+            'phone' => 'required|digits_between:7,15',
             'dob' => 'required|date',
             'password' => 'required|min:6',
         ]);
-    
+
         if ($validator->fails()) {
+            Log::error('❌ Validation Failed: ' . json_encode($validator->errors()));
             return response()->json([
                 'error' => $validator->errors()
             ], 422);
         }
-    
-        // Step 2: Find or create/update user
+
         $user = User::orWhere('phone', $request->phone)->orWhere('email', $request->email)->first();
-    
+
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found'
-            ], 404);
-        }
-        // Step 5: Check if user has complete records
-        $requiredFields = ['fname', 'lname', 'email', 'phone', 'password'];
-        $isProfileComplete = true;
+            Log::info('🆕 User not found, creating new user');
+            $user = User::create([
+                'fname' => $request->fname,
+                'lname' => $request->lname,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->password),
+            ]);
+        } else {
+            // Step 3: Check if user has complete records
+            $requiredFields = ['fname', 'lname', 'email', 'phone', 'password'];
+            $isProfileComplete = true;
 
-        foreach ($requiredFields as $field) {
-            if (empty($user->$field)) {
-                $isProfileComplete = false;
-                break;
+            foreach ($requiredFields as $field) {
+                if (empty($user->$field)) {
+                    $isProfileComplete = false;
+                    break;
+                }
             }
+
+            // Step 4: If profile is complete, return message
+            if ($isProfileComplete) {
+
+                log::info('🔄 User already registered with complete profile: ' . json_encode($user));
+
+                return response()->json([
+                    'success' => true,
+                    'alreadyRegistered' => true,
+                    'message' => 'User already registered. Proceed to OTP.',
+                    'data' => [
+                        'user' => $user
+                    ]
+            ], 200);
+            }
+
+            // Step 5: Update user
+            $user->update([
+                'fname' => $request->fname,
+                'lname' => $request->lname,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
         }
 
-        // Update the profile_complete status in the database
-        $user->profile_complete = $isProfileComplete;
-        $user->save();
-
-        // Step 6: If profile is complete, authenticate and return token
-        if ($isProfileComplete) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User already registered'
-            ], 404);
-        }
-
-        // Update user
-        $user->update([
-            'fname' => $request->fname,
-            'lname' => $request->lname,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-    
-        // Step 3: Create or update user details
+        // Step 6: Create or update user details
         UserDetail::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -336,19 +348,32 @@ class AuthenticatorController extends Controller
                 'dob' => $request->dob ?? null,
             ]
         );
-    
-        // Step 4: Generate a JWT token
+
+        // Step 7: Generate a JWT token
+
         $token = JWTAuth::fromUser($user);
-    
-        // Step 5: Return response
+  
+
+        // Step 8: Return response
+        Log::info('✅ User successfully registered or updated: ' . json_encode($user));
         return response()->json([
-            'message' => 'User successfully updated!',
+            'success' => true,
+            'message' => 'User successfully registered or updated!',
             'data' => [
                 'user' => $user,
                 'token' => $token
             ]
-        ], 200);
+        ], 201);
+
+    } catch (\Exception $e) {
+        Log::error('❌ Registration failed: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'An unexpected error occurred during registration.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
     
 
     /**
@@ -356,7 +381,11 @@ class AuthenticatorController extends Controller
      */
     public function getPhoneOtp(Request $request)
     {
+
         // Step 1: Validate the request
+        Log::info('🔐 Phone OTP Request Received: ' . json_encode($request->all()));
+    
+
         $validator = Validator::make($request->all(), [
             'code' => 'required', // Validate country code like +254, +1, +91
             'phone' => 'required|digits_between:7,15', // Validate phone digits only
@@ -402,18 +431,24 @@ class AuthenticatorController extends Controller
     /**
      * Handle the generation and sending of an OTP.
      */
+
     public function getEmailOtp(Request $request)
     {
-        // Step 1: Validate the request
+        Log::info('🔐 Email OTP Request Received:'. json_encode($request->all()));
+
         $validator = Validator::make($request->all(), [
             'email' => 'required|email:dns|string'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
+            Log::error('❌ Email OTP Validation Failed: ' . json_encode($validator->errors()));
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'error' => $validator->errors()
+            ], 400);
         }
 
-        // Step 2: Check if the user exists
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
@@ -423,18 +458,32 @@ class AuthenticatorController extends Controller
             ]);
         }
 
-        // Step 3: Generate the OTP
         $otp = $this->generate_otp($user, $request);
 
-        // Step 6: Store the OTP in the cache for quick retrieval
         Cache::put('otp_' . $request->email, $otp);
 
-        // Step 7: Send the OTP via email
-        Mail::to($request->email)->send(new GetOTPEmail($otp));
+        try {
+            Mail::to($request->email)->send(new GetOTPEmail($otp));
 
-        // Step 5: Return a response
-        return response()->json(['message' => 'OTP sent to your email!, Please check your mail'], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP sent to your email!, Please check your mail'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Failed to send OTP email: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send OTP',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
+
+
+
 
     public function verifyOtpByPhone(Request $request)
     {
@@ -476,10 +525,6 @@ class AuthenticatorController extends Controller
             }
         }
 
-        // Update the profile_complete status in the database
-        $user->profile_complete = $isProfileComplete;
-        $user->save();
-
         // Step 6: If profile is complete, authenticate and return token
         if ($isProfileComplete) {
             $token = JWTAuth::fromUser($user);
@@ -511,7 +556,7 @@ class AuthenticatorController extends Controller
     {
         // Step 1: Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email:dns|string',
+            'email' => 'required|email',
             'otp' => 'required|numeric',
         ]);
 
@@ -547,10 +592,6 @@ class AuthenticatorController extends Controller
                 break;
             }
         }
-
-        // Update the profile_complete status in the database
-        $user->profile_complete = $isProfileComplete;
-        $user->save();
 
         // Step 6: If profile is complete, authenticate and return token
         if ($isProfileComplete) {
