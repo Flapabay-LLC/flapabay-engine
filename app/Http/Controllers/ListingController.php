@@ -387,10 +387,14 @@ class ListingController extends Controller
             if ($request->has('keyword')) {
                 $keyword = $request->keyword;
                 $query->where(function($q) use ($keyword) {
-                    $q->whereHas('property', function($q2) use ($keyword) {
-                        $q2->where('title', 'like', "%{$keyword}%")
-                            ->orWhere('description', 'like', "%{$keyword}%");
-                    });
+                    // Search in Listing fields
+                    $q->where('title', 'like', "%{$keyword}%")
+                      ->orWhere('description', 'like', "%{$keyword}%")
+                      // Search in related Property fields
+                      ->orWhereHas('property', function($q2) use ($keyword) {
+                          $q2->where('title', 'like', "%{$keyword}%")
+                              ->orWhere('description', 'like', "%{$keyword}%");
+                      });
                 });
             }
 
