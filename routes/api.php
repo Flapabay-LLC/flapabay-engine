@@ -56,6 +56,7 @@ Route::prefix('v1')->group(function () {
 
 
     //Listings
+    Route::post('listings/search', [ListingController::class, 'searchListings']);
     Route::get('listings', [ListingController::class, 'fetchAllListings']);
 
     // Property routes
@@ -79,7 +80,8 @@ Route::prefix('v1')->group(function () {
 
     //Supported Languages
     Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
-    
+
+    //System Items
     Route::get('system/amenities', [ListingController::class, 'getSystemAmenities']);
     Route::get('system/favorites', [ListingController::class, 'getSystemFavorites']);
     Route::get('system/place-items', [ListingController::class, 'getSystemPlaceItems']);
@@ -113,7 +115,6 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::delete('chats/message/{messageId}/both', [ChatController::class, 'deleteMessageForBoth']);
 
     // Listing routes
-    Route::get('listings/search', [ListingController::class, 'searchListings']);
     // Route::get('listings', [ListingController::class, 'fetchAllListings']);
     Route::post('listings', [ListingController::class, 'createNewListing']);
     Route::post('listings/{listingId}', [ListingController::class, 'updateHostListing']);
@@ -132,9 +133,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
 
-    // Property search filtering routes
-    Route::post('search', [ListingController::class, 'search']);
-
+    
     // Property Rating & Reviews
     Route::get('/reviews', [PropertyReviewController::class, 'index']);
     Route::post('/create-review', [PropertyReviewController::class, 'store']);

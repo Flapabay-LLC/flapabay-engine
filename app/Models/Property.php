@@ -70,7 +70,12 @@ class Property extends Model
         'bedrooms',
         'bathrooms',
         'max_guests',
-        'status'
+        'status',
+        'square_feet',
+        'children_guests',
+        'infant_guests',
+        'adult_guests',
+        'pet_guests'
     ];
 
     /**
@@ -245,5 +250,13 @@ class Property extends Model
     public function coHosts()
     {
         return $this->hasMany(CoHost::class);
+    }
+
+    /**
+     * Get the availabilities for the property.
+     */
+    public function availabilities()
+    {
+        return $this->hasMany(\App\Models\Availability::class);
     }
 }
