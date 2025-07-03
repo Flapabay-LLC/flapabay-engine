@@ -18,6 +18,9 @@
       <a href="#get-user" class="block hover:text-black">Get User Details</a>
       <a href="#update-user" class="block hover:text-black">Update User</a>
       <a href="#supported-languages" class="block hover:text-black">Supported Languages</a>
+      <a href="#system-items" class="block hover:text-black">System Items</a>
+      <a href="#listings" class="block hover:text-black">Listings</a>
+      <a href="#property-types" class="block hover:text-black">Property Types</a>
     </nav>
   </aside>
 
@@ -32,6 +35,8 @@
         <option value="#get-user">Get User Details</option>
         <option value="#update-user">Update User</option>
         <option value="#supported-languages">Supported Languages</option>
+        <option value="#system-items">System Items</option>
+        <option value="#listings">Listings</option>
         <option value="#property-types">Property Types</option>
       </select>
     </div>
@@ -43,6 +48,8 @@
     @include('documentation.sections.get-user')
     @include('documentation.sections.update-user')
     @include('documentation.sections.supported-languages')
+    @include('documentation.sections.system-items')
+    @include('documentation.sections.listings')
     @include('documentation.sections.property-types')
 
     <footer class="mt-20 text-sm text-center text-gray-500">
