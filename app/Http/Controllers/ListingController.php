@@ -34,161 +34,6 @@ class ListingController extends Controller
     {
 
     }
-    /**
-     * Display a listing of the resource.
-     */
-    public function search(Request $request)
-    {
-        try {
-            // Validate request
-            $validator = Validator::make($request->all(), [
-                'keyword' => 'nullable|string',
-                'location' => 'nullable|string',
-                'min_price' => 'nullable|numeric|min:0',
-                'max_price' => 'nullable|numeric|min:0',
-                'property_type_id' => 'nullable|integer',
-                'bedrooms' => 'nullable|integer|min:0',
-                'bathrooms' => 'nullable|integer|min:0',
-                'guests' => 'nullable|integer|min:1',
-                'amenities' => 'nullable|array',
-                'category_id' => 'nullable|integer',
-                'sort_by' => 'nullable|in:price_asc,price_desc,rating',
-                'per_page' => 'nullable|integer|min:1'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $query = Listing::with(['property', 'propertyType', 'amenities', 'images', 'reviews'])
-                ->whereHas('property', function($q) {
-                    $q->where('verified', true);
-                });
-
-            // Keyword search
-            if ($request->has('keyword')) {
-                $keyword = $request->keyword;
-                $query->where(function($q) use ($keyword) {
-                    $q->where('title', 'like', "%{$keyword}%")
-                      ->orWhereHas('property', function($q) use ($keyword) {
-                          $q->where('description', 'like', "%{$keyword}%")
-                            ->orWhere('title', 'like', "%{$keyword}%");
-                      });
-                });
-            }
-
-            // Location search
-            if ($request->has('location')) {
-                $location = $request->location;
-                $query->whereHas('property', function($q) use ($location) {
-                    $q->where('location', 'like', "%{$location}%")
-                        ->orWhere('address', 'like', "%{$location}%")
-                        ->orWhere('country', 'like', "%{$location}%")
-                        ->orWhere('neighborhood_area', 'like', "%{$location}%")
-                        ->orWhere('city', 'like', "%{$location}%");
-                });
-            }
-
-            // Price range
-            if ($request->has('min_price')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('price_per_night', '>=', $request->min_price);
-                });
-            }
-            if ($request->has('max_price')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('price_per_night', '<=', $request->max_price);
-                });
-            }
-
-            // Property type
-            if ($request->has('property_type_id')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->whereRaw("JSON_CONTAINS(property_type_id, ?)", [json_encode($request->property_type_id)]);
-                });
-            }
-
-            // Bedrooms
-            if ($request->has('bedrooms')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('num_of_bedrooms', '>=', $request->bedrooms);
-                });
-            }
-
-            // Bathrooms
-            if ($request->has('bathrooms')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('num_of_bathrooms', '>=', $request->bathrooms);
-                });
-            }
-
-            // Guests
-            if ($request->has('guests')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('maximum_guests', '>=', $request->guests);
-                });
-            }
-
-            // Amenities
-            if ($request->has('amenities') && !empty($request->amenities)) {
-                $amenities = is_array($request->amenities) ? $request->amenities : explode(',', $request->amenities);
-                $query->whereHas('amenities', function($q) use ($amenities) {
-                    $q->whereIn('amenities.id', $amenities);
-                });
-            }
-
-            // Category
-            if ($request->has('category_id')) {
-                $query->where('category_id', $request->category_id);
-            }
-
-            // Sort by
-            if ($request->has('sort_by')) {
-                switch ($request->sort_by) {
-                    case 'price_asc':
-                        $query->whereHas('property', function($q) {
-                            $q->orderBy('price_per_night', 'asc');
-                        });
-                        break;
-                    case 'price_desc':
-                        $query->whereHas('property', function($q) {
-                            $q->orderBy('price_per_night', 'desc');
-                        });
-                        break;
-                    case 'rating':
-                        $query->withAvg('reviews', 'rating')
-                            ->orderBy('reviews_avg_rating', 'desc');
-                        break;
-                    default:
-                        $query->latest();
-                }
-            } else {
-                $query->latest();
-            }
-
-            // Pagination
-            $perPage = $request->input('per_page', 10);
-            $listings = $query->paginate($perPage);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Listings fetched successfully',
-                'data' => $listings
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to search listings',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-
 
 
     /**
@@ -465,6 +310,8 @@ class ListingController extends Controller
      */
     public function searchListings(Request $request)
     {
+
+        // dd($request);
         try {
             $query = Listing::with(['property', 'propertyType', 'amenities', 'images', 'reviews'])
                 ->whereHas('property', function($q) {
@@ -534,6 +381,70 @@ class ListingController extends Controller
             // Category
             if ($request->has('category_id')) {
                 $query->where('category_id', $request->category_id);
+            }
+
+            // Keyword search (title/description)
+            if ($request->has('keyword')) {
+                $keyword = $request->keyword;
+                $query->where(function($q) use ($keyword) {
+                    $q->whereHas('property', function($q2) use ($keyword) {
+                        $q2->where('title', 'like', "%{$keyword}%")
+                            ->orWhere('description', 'like', "%{$keyword}%");
+                    });
+                });
+            }
+
+            // Dates search (availability)
+            if ($request->has('dates') && !empty($request->dates)) {
+                // Assuming 'dates' is an array of date ranges or single dates
+                $dates = is_array($request->dates) ? $request->dates : [$request->dates];
+                $query->whereHas('property.availabilities', function($q) use ($dates) {
+                    foreach ($dates as $date) {
+                        $q->whereJsonContains('date_range', $date);
+                    }
+                });
+            }
+
+            // Children guests
+            if ($request->has('children_guests')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('children_guests', '>=', $request->children_guests);
+                });
+            }
+            // Infant guests
+            if ($request->has('infant_guests')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('infant_guests', '>=', $request->infant_guests);
+                });
+            }
+            // Adult guests
+            if ($request->has('adult_guests')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('adult_guests', '>=', $request->adult_guests);
+                });
+            }
+            // Pet guests
+            if ($request->has('pet_guests')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('pet_guests', '>=', $request->pet_guests);
+                });
+            }
+            // Square feet
+            if ($request->has('min_square_feet')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('square_feet', '>=', $request->min_square_feet);
+                });
+            }
+            if ($request->has('max_square_feet')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('square_feet', '<=', $request->max_square_feet);
+                });
+            }
+            // Property ID
+            if ($request->has('property_id')) {
+                $query->whereHas('property', function($q) use ($request) {
+                    $q->where('id', $request->property_id);
+                });
             }
 
             // Sort by
