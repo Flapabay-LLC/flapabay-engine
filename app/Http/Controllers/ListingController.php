@@ -911,7 +911,7 @@ class ListingController extends Controller
     public function deleteHostListing($listingId)
     {
         try {
-            $listing = Listing::where('host_id', Auth::id())
+            $listing = Listing::where('host_id', auth()->user()->host_id)
                 ->with(['property', 'bookings']) // Eager load relationships
                 ->findOrFail($listingId);
 
