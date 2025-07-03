@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\SystemFavourite;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\GeoLocationHelper;
+use Illuminate\Support\Facades\Storage;
 
 class ListingController extends Controller
 {
@@ -508,7 +509,7 @@ class ListingController extends Controller
     {
         try {
             $request->validate([
-                'host_id' => 'required|exists:users,id',
+                'host_id' => 'required|exists:users,host_id',
                 'title' => 'required|string|max:255',
                 'description' => 'required|string',
                 'address' => 'required|string',
@@ -579,8 +580,8 @@ class ListingController extends Controller
                 'amenities' => json_encode($request->amenities),
                 'house_rules' => json_encode($request->house_rules),
                 'video_link' => json_encode($request->video_link),
-                'property_type_id' => json_encode($request->property_type_id),
-                'category_id' => json_encode($request->category_id),
+                'property_type_id' => $request->property_type_id,
+                'category_id' => $request->category_id,
                 'place_items' => json_encode($request->place_items),
                 'verified' => $request->verified === '1',
                 'about_place' => $request->about_place,
@@ -615,15 +616,23 @@ class ListingController extends Controller
                 foreach ($request->file('images') as $image) {
                     if ($image->isValid()) {
                         $fileName = time() . '_' . $image->getClientOriginalName();
-                        
-                        $result = $s3Client->putObject([
-                            'Bucket'     => $bucketName,
-                            'Key'        => 'properties/' . $fileName,
-                            'SourceFile' => $image->getPathname(),
-                        ]);
+                        try {
+                            $result = $s3Client->putObject([
+                                'Bucket'     => $bucketName,
+                                'Key'        => 'properties/' . $fileName,
+                                'SourceFile' => $image->getPathname(),
+                            ]);
 
-                        if (isset($result['ObjectURL'])) {
-                            $imagePaths[] = $result['ObjectURL'];
+                            if (isset($result['ObjectURL'])) {
+                                $imagePaths[] = $result['ObjectURL'];
+                            } else {
+                                throw new \Exception('Object URL not returned from Wasabi');
+                            }
+                        } catch (\Exception $e) {
+                            // Fallback to local storage
+                            $localPath = $image->storeAs('properties', $fileName, 'public');
+                            $localUrl = \Storage::disk('public')->url($localPath);
+                            $imagePaths[] = $localUrl;
                         }
                     }
                 }
@@ -766,6 +775,50 @@ class ListingController extends Controller
                 'has_unallocated_rooms' => $request->has('has_unallocated_rooms') ? $request->has_unallocated_rooms === '1' : $property->has_unallocated_rooms,
                 'first_reserver' => $request->input('first_reserver', $property->first_reserver)
             ]);
+
+            // Handle image uploads if new images are provided
+            $imagePaths = [];
+            if ($request->hasFile('images')) {
+                $endpoint = 'https://s3.us-west-1.wasabisys.com';
+                $bucketName = 'flapapic';
+                $region = 'us-west-1';
+                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+                $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
+
+                $s3Client = new S3Client([
+                    'region'     => $region,
+                    'version'    => 'latest',
+                    'endpoint'   => $endpoint,
+                    'credentials' => [
+                        'key'    => $accessKey,
+                        'secret' => $secretKey,
+                    ],
+                ]);
+
+                foreach ($request->file('images') as $image) {
+                    if ($image->isValid()) {
+                        $fileName = time() . '_' . $image->getClientOriginalName();
+                        try {
+                            $result = $s3Client->putObject([
+                                'Bucket'     => $bucketName,
+                                'Key'        => 'properties/' . $fileName,
+                                'SourceFile' => $image->getPathname(),
+                            ]);
+
+                            if (isset($result['ObjectURL'])) {
+                                $imagePaths[] = $result['ObjectURL'];
+                            } else {
+                                throw new \Exception('Object URL not returned from Wasabi');
+                            }
+                        } catch (\Exception $e) {
+                            // Fallback to local storage
+                            $localPath = $image->storeAs('properties', $fileName, 'public');
+                            $localUrl = \Storage::disk('public')->url($localPath);
+                            $imagePaths[] = $localUrl;
+                        }
+                    }
+                }
+            }
 
             // Update the listing
             $listing->update([

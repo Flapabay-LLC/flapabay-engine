@@ -5,14 +5,16 @@
     Retrieve lists of system-wide items such as amenities, favorites, place items, and property types. These endpoints are public and help populate dropdowns, filters, and other UI elements.
   </p>
   <div class="mb-4 space-y-2">
-    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET {base_url}/system/amenities</span>
+    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/amenities</span>
     <p class="mb-4 text-base text-gray-700">Include the amenity 'name' in the <b>amenities[]</b> array Input Field when creating a new listing.</p>
-    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET {base_url}/system/favorites</span>
+    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/favorites</span>
     <p class="mb-4 text-base text-gray-700">Include the favorite 'name' in the <b>favorites[]</b> array Input Field when creating a new listing.</p>
-    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET {base_url}/system/place-items</span>
+    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/place-items</span>
     <p class="mb-4 text-base text-gray-700">Include the place item 'name' in the <b>place_items[]</b> array Input Field when creating a new listing.</p>
-    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET {base_url}/system/property-types</span>
-    <p class="mb-4 text-base text-gray-700">Set the property type 'name' in the <b>property_type_id</b> field when creating a new listing.</p>
+    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/property-types</span>
+    <p class="mb-4 text-base text-gray-700">Set the property type 'Id' in the <b>property_type_id</b> field when creating a new listing.</p>
+    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/categories</span>
+    <p class="mb-4 text-base text-gray-700">Include the category 'Id' in the <b>category_id</b> array Input Field when creating a new listing.</p>
   </div>
   <h3 class="mb-2 text-lg font-semibold text-orange-500">Request</h3>
   <ul class="mb-4 ml-6 list-disc text-gray-700">
