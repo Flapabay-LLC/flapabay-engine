@@ -855,7 +855,7 @@ class ListingController extends Controller
     public function fetchHostListings(Request $request)
     {
         try {
-            $query = Listing::where('host_id', Auth::id())
+            $query = Listing::where('host_id', auth()->user()->host_id)
                 ->with([
                     'propertyType',
                     'amenities',
