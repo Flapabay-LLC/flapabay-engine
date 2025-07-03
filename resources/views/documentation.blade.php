@@ -37,9 +37,9 @@
     </div>
 
     <!-- Sections -->
-    {{-- @include('documentation.sections.new-signin')
+    @include('documentation.sections.new-signin')
     @include('documentation.sections.normal-signin')
-    @include('documentation.sections.normal-signup') --}}
+    @include('documentation.sections.normal-signup')
     @include('documentation.sections.get-user')
     @include('documentation.sections.update-user')
     @include('documentation.sections.supported-languages')
