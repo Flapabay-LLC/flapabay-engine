@@ -396,12 +396,15 @@ class ListingController extends Controller
 
             // Dates search (availability)
             if ($request->has('dates') && !empty($request->dates)) {
-                // Assuming 'dates' is an array of date ranges or single dates
                 $dates = is_array($request->dates) ? $request->dates : [$request->dates];
-                $query->whereHas('property.availabilities', function($q) use ($dates) {
-                    foreach ($dates as $date) {
-                        $q->whereJsonContains('date_range', $date);
-                    }
+                $query->where(function($q) use ($dates) {
+                    $q->whereHas('property.availabilities', function($q2) use ($dates) {
+                        foreach ($dates as $date) {
+                            $q2->whereJsonContains('date_range', $date);
+                        }
+                    })
+                    // If property has no availabilities, treat as available
+                    ->orWhereDoesntHave('property.availabilities');
                 });
             }
 
@@ -445,6 +448,11 @@ class ListingController extends Controller
                 $query->whereHas('property', function($q) use ($request) {
                     $q->where('id', $request->property_id);
                 });
+            }
+
+            // Listing type
+            if ($request->has('listing_type')) {
+                $query->where('listing_type', $request->listing_type);
             }
 
             // Sort by
