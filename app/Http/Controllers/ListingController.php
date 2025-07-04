@@ -341,7 +341,7 @@ class ListingController extends Controller
      */
     public function createNewListing(Request $request)
     {
-        dd($request);
+        // dd($request);
         try {
             // Require host_id in every request
             $hostId = $request->input('host_id');
@@ -455,7 +455,8 @@ class ListingController extends Controller
             $property->is_draft = true;
             $property->save();
 
-            // 4. Handle image uploads (Wasabi/local) and save to property_images table
+            // 4. Handle image uploads (Wasabi/local) and save URLs to images JSON column
+            $imagePaths = [];
             if ($request->hasFile('images')) {
                 $endpoint = 'https://s3.us-west-1.wasabisys.com';
                 $bucketName = 'flapapic';
@@ -473,9 +474,10 @@ class ListingController extends Controller
                     ],
                 ]);
 
-                foreach ($request->file('images') as $idx => $image) {
+                foreach ($request->file('images') as $image) {
                     if ($image->isValid()) {
                         $fileName = time() . '_' . $image->getClientOriginalName();
+                        $imageUrl = null;
                         try {
                             $result = $s3Client->putObject([
                                 'Bucket'     => $bucketName,
@@ -492,14 +494,14 @@ class ListingController extends Controller
                             $localPath = $image->storeAs('properties', $fileName, 'public');
                             $imageUrl = \Storage::disk('public')->url($localPath);
                         }
-                        // Save to property_images table
-                        \App\Models\PropertyImage::create([
-                            'property_id' => $property->id,
-                            'image_url' => $imageUrl,
-                            'is_primary' => $idx === 0, // First image is primary
-                        ]);
+                        $imagePaths[] = $imageUrl;
                     }
                 }
+            }
+
+            if (!empty($imagePaths)) {
+                $property->images = json_encode($imagePaths);
+                $property->save();
             }
 
             // 5. If this is the final step, validate all required fields and mark as complete
@@ -548,11 +550,17 @@ class ListingController extends Controller
                 }
                 $property->is_draft = false;
                 $property->save();
-                return response()->json(['success' => true, 'property' => $property]);
+                $images = $property->images ? json_decode($property->images, true) : [];
+                return response()->json(['success' => true, 'property' => $property->toArray() + ['images' => $images]]);
             }
 
             // 6. Return the draft ID for the next step
-            return response()->json(['draft_id' => $property->id, 'property' => $property]);
+            // Return images as array (decode JSON)
+            $images = $property->images ? json_decode($property->images, true) : [];
+            return response()->json([
+                'draft_id' => $property->id,
+                'property' => $property->toArray() + ['images' => $images],
+            ]);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
