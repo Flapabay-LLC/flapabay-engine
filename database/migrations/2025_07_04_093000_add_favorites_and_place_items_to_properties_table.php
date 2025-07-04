@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::table('properties', function (Blueprint $table) {
             $table->json('favorites')->nullable()->after('house_rules');
-            $table->json('place_items')->nullable()->after('favorites');
         });
     }
 
