@@ -116,7 +116,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // Listing routes
     // Route::get('listings', [ListingController::class, 'fetchAllListings']);
-    Route::post('listings', [ListingController::class, 'createNewListing']);
+    Route::post('wizard-listings', [ListingController::class, 'createNewListing']);
     Route::post('listings/{listingId}', [ListingController::class, 'updateHostListing']);
     Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);

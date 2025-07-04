@@ -311,171 +311,138 @@ class ListingController extends Controller
      */
     public function searchListings(Request $request)
     {
-
-        // dd($request);
         try {
-            $query = Listing::with(['property', 'propertyType', 'amenities', 'images', 'reviews'])
-                ->whereHas('property', function($q) {
-                    $q->where('verified', true);
-                });
+            $query = \App\Models\Property::with([
+                'listing',
+                'propertyType',
+                'amenities',
+                'images',
+                'reviews'
+            ]);
 
-            // Location search
-            if ($request->has('location')) {
+            // Keyword search (title/description)
+            if ($request->filled('keyword')) {
+                $keyword = $request->keyword;
+                $query->where(function($q) use ($keyword) {
+                    $q->where('title', 'like', "%{$keyword}%")
+                      ->orWhere('description', 'like', "%{$keyword}%");
+                });
+            }
+
+            // Location
+            if ($request->filled('location')) {
                 $location = $request->location;
-                $query->whereHas('property', function($q) use ($location) {
+                $query->where(function($q) use ($location) {
                     $q->where('location', 'like', "%{$location}%")
-                        ->orWhere('address', 'like', "%{$location}%")
-                        ->orWhere('country', 'like', "%{$location}%")
-                        ->orWhere('neighborhood_area', 'like', "%{$location}%")
-                        ->orWhere('city', 'like', "%{$location}%");
+                      ->orWhere('address', 'like', "%{$location}%")
+                      ->orWhere('country', 'like', "%{$location}%")
+                      ->orWhere('neighborhood_area', 'like', "%{$location}%")
+                      ->orWhere('city', 'like', "%{$location}%");
                 });
             }
 
             // Price range
-            if ($request->has('min_price')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('price_per_night', '>=', $request->min_price);
-                });
+            if ($request->filled('min_price')) {
+                $query->where('price_per_night', '>=', $request->min_price);
             }
-            if ($request->has('max_price')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('price_per_night', '<=', $request->max_price);
-                });
+            if ($request->filled('max_price')) {
+                $query->where('price_per_night', '<=', $request->max_price);
             }
 
             // Property type
-            if ($request->has('property_type_id')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->whereRaw("JSON_CONTAINS(property_type_id, ?)", [json_encode($request->property_type_id)]);
-                });
+            if ($request->filled('property_type_id')) {
+                $query->where('property_type_id', $request->property_type_id);
             }
 
             // Bedrooms
-            if ($request->has('bedrooms')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('num_of_bedrooms', '>=', $request->bedrooms);
-                });
+            if ($request->filled('bedrooms')) {
+                $query->where('num_of_bedrooms', '>=', $request->bedrooms);
             }
 
             // Bathrooms
-            if ($request->has('bathrooms')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('num_of_bathrooms', '>=', $request->bathrooms);
-                });
+            if ($request->filled('bathrooms')) {
+                $query->where('num_of_bathrooms', '>=', $request->bathrooms);
             }
 
             // Guests
-            if ($request->has('guests')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('maximum_guests', '>=', $request->guests);
-                });
+            if ($request->filled('children_guests')) {
+                $query->where('children_guests', '>=', $request->children_guests);
+            }
+            if ($request->filled('infant_guests')) {
+                $query->where('infant_guests', '>=', $request->infant_guests);
+            }
+            if ($request->filled('adult_guests')) {
+                $query->where('adult_guests', '>=', $request->adult_guests);
+            }
+            if ($request->filled('pet_guests')) {
+                $query->where('pet_guests', '>=', $request->pet_guests);
             }
 
-            // Amenities
-            if ($request->has('amenities') && !empty($request->amenities)) {
-                $amenities = is_array($request->amenities) ? $request->amenities : explode(',', $request->amenities);
-                $query->whereHas('amenities', function($q) use ($amenities) {
-                    $q->whereIn('amenities.id', $amenities);
-                });
-            }
-
-            // Category
-            if ($request->has('category_id')) {
-                $query->where('category_id', $request->category_id);
-            }
-
-            // Keyword search (title/description)
-            if ($request->has('keyword')) {
-                $keyword = $request->keyword;
-                $query->where(function($q) use ($keyword) {
-                    // Search in Listing fields
-                    $q->where('title', 'like', "%{$keyword}%")
-                      ->orWhere('description', 'like', "%{$keyword}%")
-                      // Search in related Property fields
-                      ->orWhereHas('property', function($q2) use ($keyword) {
-                          $q2->where('title', 'like', "%{$keyword}%")
-                              ->orWhere('description', 'like', "%{$keyword}%");
-                      });
-                });
-            }
-
-            // Dates search (availability)
-            if ($request->has('dates') && !empty($request->dates)) {
-                $dates = is_array($request->dates) ? $request->dates : [$request->dates];
-                $query->where(function($q) use ($dates) {
-                    $q->whereHas('property.availabilities', function($q2) use ($dates) {
-                        foreach ($dates as $date) {
-                            $q2->whereJsonContains('date_range', $date);
-                        }
-                    })
-                    // If property has no availabilities, treat as available
-                    ->orWhereDoesntHave('property.availabilities');
-                });
-            }
-
-            // Children guests
-            if ($request->has('children_guests')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('children_guests', '>=', $request->children_guests);
-                });
-            }
-            // Infant guests
-            if ($request->has('infant_guests')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('infant_guests', '>=', $request->infant_guests);
-                });
-            }
-            // Adult guests
-            if ($request->has('adult_guests')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('adult_guests', '>=', $request->adult_guests);
-                });
-            }
-            // Pet guests
-            if ($request->has('pet_guests')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('pet_guests', '>=', $request->pet_guests);
-                });
-            }
             // Square feet
-            if ($request->has('min_square_feet')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('square_feet', '>=', $request->min_square_feet);
-                });
+            if ($request->filled('min_square_feet')) {
+                $query->where('square_feet', '>=', $request->min_square_feet);
             }
-            if ($request->has('max_square_feet')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('square_feet', '<=', $request->max_square_feet);
-                });
+            if ($request->filled('max_square_feet')) {
+                $query->where('square_feet', '<=', $request->max_square_feet);
             }
+
             // Property ID
-            if ($request->has('property_id')) {
-                $query->whereHas('property', function($q) use ($request) {
-                    $q->where('id', $request->property_id);
+            if ($request->filled('property_id')) {
+                $query->where('id', $request->property_id);
+            }
+
+            // Listing type (via relationship)
+            if ($request->filled('listing_type')) {
+                $query->whereHas('listing', function($q) use ($request) {
+                    $q->where('listing_type', $request->listing_type);
                 });
             }
 
-            // Listing type
-            if ($request->has('listing_type')) {
-                $query->where('listing_type', $request->listing_type);
+            // JSON fields: amenities, house_rules, favorites, place_items
+            foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
+                if ($request->filled($jsonField)) {
+                    $values = $request->input($jsonField);
+                    if (is_array($values) && count($values) === 1 && is_string($values[0]) && $this->isJson($values[0])) {
+                        $values = json_decode($values[0], true);
+                    }
+                    if (is_array($values)) {
+                        foreach ($values as $val) {
+                            $query->whereJsonContains($jsonField, $val);
+                        }
+                    } else if (is_string($values) && $this->isJson($values)) {
+                        $decoded = json_decode($values, true);
+                        if (is_array($decoded)) {
+                            foreach ($decoded as $val) {
+                                $query->whereJsonContains($jsonField, $val);
+                            }
+                        }
+                    } else if (!empty($values)) {
+                        $query->whereJsonContains($jsonField, $values);
+                    }
+                }
             }
 
-            // Sort by
-            if ($request->has('sort_by')) {
+            // Dates (decode if needed)
+            if ($request->filled('dates')) {
+                $dates = $request->dates;
+                if (is_array($dates)) {
+                    $dates = json_decode($dates[0], true) ?: $dates;
+                }
+                $query->whereHas('availabilities', function($q) use ($dates) {
+                    foreach ($dates as $date) {
+                        $q->whereJsonContains('date_range', $date);
+                    }
+                });
+            }
+
+            // Sorting
+            if ($request->filled('sort_by')) {
                 switch ($request->sort_by) {
                     case 'price_asc':
-                        $query->whereHas('property', function($q) {
-                            $q->orderBy('price_per_night', 'asc');
-                        });
+                        $query->orderBy('price_per_night', 'asc');
                         break;
                     case 'price_desc':
-                        $query->whereHas('property', function($q) {
-                            $q->orderBy('price_per_night', 'desc');
-                        });
-                        break;
-                    case 'rating':
-                        $query->withAvg('reviews', 'rating')
-                            ->orderBy('reviews_avg_rating', 'desc');
+                        $query->orderBy('price_per_night', 'desc');
                         break;
                     default:
                         $query->latest();
@@ -486,20 +453,28 @@ class ListingController extends Controller
 
             // Pagination
             $perPage = $request->input('per_page', 10);
-            $listings = $query->paginate($perPage);
+            $properties = $query->paginate($perPage);
 
+            // Format the response as needed
             return response()->json([
                 'status' => 'success',
-                'message' => 'Listings fetched successfully',
-                'data' => $listings
+                'message' => 'Properties fetched successfully',
+                'data' => $properties
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to search listings',
+                'message' => 'Failed to search properties',
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    // Helper to check if a string is JSON (if not already present)
+    private function isJson($string)
+    {
+        json_decode($string);
+        return (json_last_error() == JSON_ERROR_NONE);
     }
 
     /**
@@ -508,27 +483,79 @@ class ListingController extends Controller
     public function createNewListing(Request $request)
     {
         try {
-            $request->validate([
+            // Require host_id in every request
+            $hostId = $request->input('host_id');
+            if (!$hostId) {
+                return response()->json(['errors' => ['host_id' => ['The host_id field is required.']]], 422);
+            }
+            // Validate host_id exists
+            $hostValidator = Validator::make(['host_id' => $hostId], [
                 'host_id' => 'required|exists:users,host_id',
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'address' => 'required|string',
-                'location' => 'required|string',
-                'price' => 'required|numeric|min:0',
-                'price_per_night' => 'required|numeric|min:0',
+            ]);
+            if ($hostValidator->fails()) {
+                return response()->json(['errors' => $hostValidator->errors()], 422);
+            }
+
+            // 1. Find or create a draft property for this host
+            $draftId = $request->input('draft_id');
+            $property = null;
+            if ($draftId) {
+                $property = Property::where('id', $draftId)
+                    ->where('host_id', $hostId)
+                    ->where('is_draft', true)
+                    ->first();
+            }
+            if (!$property) {
+                // If no draft_id, try to find an existing draft for this host
+                $property = Property::where('host_id', $hostId)
+                    ->where('is_draft', true)
+                    ->first();
+            }
+            if (!$property) {
+                // Only create a new draft if none exists for this host
+                $property = new Property(['is_draft' => true, 'host_id' => $hostId]);
+                $property->save();
+            }
+
+            // Handle array fields: amenities, house_rules, favorites, place_items
+            foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
+                if ($request->has($jsonField)) {
+                    $value = $request->input($jsonField);
+                    // If it's a string and is valid JSON, decode it
+                    if (is_string($value) && $this->isJson($value)) {
+                        $value = json_decode($value, true);
+                    }
+                    // If it's an array with a single JSON string, decode it
+                    if (is_array($value) && count($value) === 1 && is_string($value[0]) && $this->isJson($value[0])) {
+                        $value = json_decode($value[0], true);
+                    }
+                    // Always encode as JSON for storage in the property field
+                    $property->$jsonField = json_encode($value);
+                    $property->save();
+                }
+            }
+
+            // 2. Only validate fields present in the request
+            $rules = [
+                'title' => 'string|max:255',
+                'description' => 'string',
+                'address' => 'string',
+                'location' => 'string',
+                'price' => 'numeric|min:0',
+                'price_per_night' => 'numeric|min:0',
                 'weekend_price' => 'nullable|numeric|min:0',
                 'discount_type' => 'nullable|in:percentage,fixed',
                 'discount_value' => 'nullable|numeric|min:0',
-                'currency' => 'required|string|size:3',
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'city' => 'required|string',
-                'country' => 'required|string',
-                'check_in_hour' => 'required|string',
-                'check_out_hour' => 'required|string',
-                'num_of_guests' => 'required|integer|min:1',
+                'currency' => 'string|size:3',
+                'latitude' => 'numeric',
+                'longitude' => 'numeric',
+                'city' => 'string',
+                'country' => 'string',
+                'check_in_hour' => 'string',
+                'check_out_hour' => 'string',
+                'num_of_guests' => 'integer|min:1',
                 'num_of_children' => 'nullable|integer|min:0',
-                'maximum_guests' => 'required|integer|min:1',
+                'maximum_guests' => 'integer|min:1',
                 'allow_extra_guests' => 'boolean',
                 'neighborhood_area' => 'nullable|string',
                 'show_contact_form_instead_of_booking' => 'boolean',
@@ -537,148 +564,90 @@ class ListingController extends Controller
                 'children_price' => 'nullable|numeric|min:0',
                 'amenities' => 'nullable|array',
                 'house_rules' => 'nullable|array',
+                'favorites' => 'nullable|array',
                 'video_link' => 'nullable|string',
-                'property_type_id' => 'required|exists:property_types,id',
-                'category_id' => 'required|exists:categories,id',
+                'property_type_id' => 'exists:property_types,id',
+                'category_id' => 'exists:categories,id',
                 'place_items' => 'nullable|array',
-                'first_reserver' => 'required|string',
-                'host_type' => 'required|in:Private Individual,Business',
-                'num_of_bedrooms' => 'required|integer|min:1',
-                'num_of_bathrooms' => 'required|integer|min:1',
+                'first_reserver' => 'string',
+                'host_type' => 'in:Private Individual,Business',
+                'num_of_bedrooms' => 'integer|min:1',
+                'num_of_bathrooms' => 'integer|min:1',
                 'num_of_quarters' => 'nullable|integer|min:0',
                 'has_unallocated_rooms' => 'boolean',
-                'listing_type' => 'required|string',
+                'listing_type' => 'string',
                 'images' => 'nullable|array',
-                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-            ]);
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'verified' => 'boolean',
+                'about_place' => 'nullable|string',
+            ];
+            $fieldsToValidate = array_intersect_key($rules, $request->all());
+            $validator = Validator::make($request->all(), array_intersect_key($rules, $fieldsToValidate));
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
 
-            DB::beginTransaction();
+            // 3. Update the draft with the new fields and host_id if not set
+            $property->fill($request->only(array_keys($fieldsToValidate)));
+            if (!$property->host_id) {
+                $property->host_id = $hostId;
+            }
+            $property->is_draft = true;
+            $property->save();
 
-            // Create the property
-            $property = Property::create([
-                'title' => $request->title,
-                'description' => $request->description,
-                'location' => $request->location,
-                'address' => $request->address,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-                'check_in_hour' => $request->check_in_hour,
-                'check_out_hour' => $request->check_out_hour,
-                'num_of_guests' => $request->num_of_guests,
-                'num_of_children' => $request->num_of_children,
-                'maximum_guests' => $request->maximum_guests,
-                'allow_extra_guests' => $request->allow_extra_guests === 'true',
-                'neighborhood_area' => $request->neighborhood_area,
-                'country' => $request->country,
-                'show_contact_form_instead_of_booking' => $request->show_contact_form_instead_of_booking === 'true',
-                'allow_instant_booking' => $request->allow_instant_booking === 'true',
-                'currency' => $request->currency,
-                'price' => $request->price,
-                'price_per_night' => $request->price_per_night,
-                'additional_guest_price' => $request->additional_guest_price,
-                'children_price' => $request->children_price,
-                'amenities' => json_encode($request->amenities),
-                'house_rules' => json_encode($request->house_rules),
-                'video_link' => json_encode($request->video_link),
-                'property_type_id' => $request->property_type_id,
-                'category_id' => $request->category_id,
-                'place_items' => json_encode($request->place_items),
-                'verified' => $request->verified === '1',
-                'about_place' => $request->about_place,
-                'host_type' => $request->host_type,
-                'num_of_bedrooms' => $request->num_of_bedrooms,
-                'num_of_bathrooms' => $request->num_of_bathrooms,
-                'num_of_quarters' => $request->num_of_quarters,
-                'has_unallocated_rooms' => $request->has_unallocated_rooms === '1',
-                'first_reserver' => $request->first_reserver
-            ]);
-
-            // Handle image uploads
-            $imagePaths = [];
-            if ($request->hasFile('images')) {
-                // Setup Wasabi S3 client
-                $endpoint = 'https://s3.us-west-1.wasabisys.com';
-                $bucketName = 'flapapic';
-                $region = 'us-west-1';
-                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
-                $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
-
-                $s3Client = new S3Client([
-                    'region'     => $region,
-                    'version'    => 'latest',
-                    'endpoint'   => $endpoint,
-                    'credentials' => [
-                        'key'    => $accessKey,
-                        'secret' => $secretKey,
-                    ],
-                ]);
-
-                foreach ($request->file('images') as $image) {
-                    if ($image->isValid()) {
-                        $fileName = time() . '_' . $image->getClientOriginalName();
-                        try {
-                            $result = $s3Client->putObject([
-                                'Bucket'     => $bucketName,
-                                'Key'        => 'properties/' . $fileName,
-                                'SourceFile' => $image->getPathname(),
-                            ]);
-
-                            if (isset($result['ObjectURL'])) {
-                                $imagePaths[] = $result['ObjectURL'];
-                            } else {
-                                throw new \Exception('Object URL not returned from Wasabi');
-                            }
-                        } catch (\Exception $e) {
-                            // Fallback to local storage
-                            $localPath = $image->storeAs('properties', $fileName, 'public');
-                            $localUrl = \Storage::disk('public')->url($localPath);
-                            $imagePaths[] = $localUrl;
+            // 4. If this is the final step, validate all required fields and mark as complete
+            if ($request->input('finalize')) {
+                $property->fill($request->all());
+                foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
+                    if ($request->has($jsonField)) {
+                        $value = $request->input($jsonField);
+                        if (is_string($value) && $this->isJson($value)) {
+                            $value = json_decode($value, true);
                         }
+                        if (is_array($value) && count($value) === 1 && is_string($value[0]) && $this->isJson($value[0])) {
+                            $value = json_decode($value[0], true);
+                        }
+                        $property->$jsonField = json_encode($value);
                     }
                 }
-            }
-
-            // Create the listing
-            $listing = Listing::create([
-                'host_id' => $request->host_id,
-                'title' => $request->title,
-                'property_id' => $property->id,
-                'category_id' => $request->category_id[0],
-                'status' => false,
-                'published_at' => now(),
-                'cancellation_policy' => false,
-                'is_completed' => false,
-                'listing_type' => $request->listing_type
-            ]);
-
-            // Save images to the listing_images table
-            if (!empty($imagePaths)) {
-                foreach ($imagePaths as $imagePath) {
-                    $listing->images()->create([
-                        'image_url' => $imagePath,
-                        'is_primary' => false
-                    ]);
+                $finalRules = [
+                    'title' => 'required|string|max:255',
+                    'description' => 'required|string',
+                    'address' => 'required|string',
+                    'location' => 'required|string',
+                    'price' => 'required|numeric|min:0',
+                    'price_per_night' => 'required|numeric|min:0',
+                    'currency' => 'required|string|size:3',
+                    'latitude' => 'required|numeric',
+                    'longitude' => 'required|numeric',
+                    'city' => 'required|string',
+                    'country' => 'required|string',
+                    'check_in_hour' => 'required|string',
+                    'check_out_hour' => 'required|string',
+                    'num_of_guests' => 'required|integer|min:1',
+                    'maximum_guests' => 'required|integer|min:1',
+                    'property_type_id' => 'required|exists:property_types,id',
+                    'category_id' => 'required|exists:categories,id',
+                    'host_type' => 'required|in:Private Individual,Business',
+                    'num_of_bedrooms' => 'required|integer|min:1',
+                    'num_of_bathrooms' => 'required|integer|min:1',
+                    'first_reserver' => 'required|string',
+                    'listing_type' => 'nullable|string',
+                    'host_id' => 'required|exists:users,host_id',
+                ];
+                $validator = Validator::make($property->toArray(), $finalRules);
+                if ($validator->fails()) {
+                    return response()->json(['errors' => $validator->errors(), 'draft_id' => $property->id], 422);
                 }
+                $property->is_draft = false;
+                $property->save();
+                return response()->json(['success' => true, 'property' => $property]);
             }
 
-            DB::commit();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Listing created successfully',
-                'data' => [
-                    'property' => $property,
-                    'listing' => $listing->load('images')
-                ]
-            ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to create listing',
-                'error' => $e->getMessage()
-            ], 500);
+            // 5. Return the draft ID for the next step
+            return response()->json(['draft_id' => $property->id, 'property' => $property]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()], 500);
         }
     }
 

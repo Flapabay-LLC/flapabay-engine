@@ -1,5 +1,52 @@
 <!-- Listings Section -->
 <section id="listings" class="mb-12">
+  <section class="p-4 mb-8 text-white bg-gray-900 rounded-lg border-l-4 border-orange-400 shadow">
+    <span class="inline-block px-2 py-1 mb-4 font-mono text-sm text-white bg-black rounded">POST {base_url}/listings/create-new</span>
+    <h3 class="mb-2 text-lg font-bold text-orange-300">Create New Listing (Wizard API)</h3>
+    <p class="mb-2">
+      The <code class="px-1 bg-gray-800 rounded">createNewListing</code> API allows hosts to create a property listing step-by-step (wizard style). Only <strong>one draft</strong> is allowed per host at a time. Each step updates the same draft record using the <code class="px-1 bg-gray-800 rounded">draft_id</code> and <code class="px-1 bg-gray-800 rounded">host_id</code> as keys. When all required fields are provided and <code class="px-1 bg-gray-800 rounded">finalize=1</code> is sent, the draft is finalized and a new draft can be started for that host.
+    </p>
+    <ul class="mb-2 ml-6 list-disc">
+      <li><strong>host_id</strong> is required in every request.</li>
+      <li>On the first step, omit <code class="px-1 bg-gray-800 rounded">draft_id</code> to create a new draft (if none exists for the host).</li>
+      <li>On subsequent steps, send <code class="px-1 bg-gray-800 rounded">draft_id</code> to update the same draft.</li>
+      <li>Each step can send any subset of fields (including arrays for amenities, house_rules, etc.).</li>
+      <li>When <code class="px-1 bg-gray-800 rounded">finalize=1</code> is sent, all required fields must be present (either in the draft or the request).</li>
+      <li>After finalization, a new draft can be started for the host.</li>
+    </ul>
+    <div class="mb-2">
+      <strong class="text-orange-200">Example: Step Request</strong>
+      <pre class="overflow-x-auto p-2 text-xs text-orange-200 bg-gray-800 rounded">POST /api/listings/create-listings
+{
+  "host_id": "1111",
+  "title": "Perfect Apartment Home"
+}
+// Response:
+{
+  "draft_id": 42,
+  "property": { ... }
+}</pre>
+    </div>
+    <div class="mb-2">
+      <strong class="text-orange-200">Example: Finalize Request</strong>
+      <pre class="overflow-x-auto p-2 text-xs text-orange-200 bg-gray-800 rounded">POST /api/listings/create-listings
+{
+  "host_id": "1111",
+  "draft_id": 42,
+  ... // all required fields
+  "finalize": 1
+}
+// Response:
+{
+  "success": true,
+  "property": { ... }
+}</pre>
+    </div>
+    <p class="text-sm text-orange-200">If a required field is missing at finalize, the API will return a 422 error with details and the <code class="px-1 bg-gray-800 rounded">draft_id</code> for further updates.</p>
+  </section>
+  <div class="p-4 mb-6 bg-orange-100 border-l-4 border-orange-500">
+    <strong>Note:</strong> <code>host_id</code> is required in every request to create a new listing. Only hosts can create listings, and the <code>host_id</code> must be valid and present in every step of the listing creation wizard.
+  </div>
   <h2 class="mb-4 text-2xl font-bold text-orange-600">Fetch All Listings</h2>
   <p class="mb-4 text-base text-gray-700">
     Retrieve a list of all available listings. This endpoint is public and returns a paginated array of listings with their details.

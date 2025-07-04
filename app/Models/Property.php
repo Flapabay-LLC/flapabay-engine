@@ -75,7 +75,8 @@ class Property extends Model
         'children_guests',
         'infant_guests',
         'adult_guests',
-        'pet_guests'
+        'pet_guests',
+        'place_items',
     ];
 
     /**
@@ -151,7 +152,7 @@ class Property extends Model
      */
     public function listing()
     {
-        // return $this->hasMany(Listing::class, 'property_id');
+        return $this->hasOne(\App\Models\Listing::class, 'property_id');
     }
 
     /**
