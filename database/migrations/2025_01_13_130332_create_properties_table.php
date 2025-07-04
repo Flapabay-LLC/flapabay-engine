@@ -53,6 +53,8 @@ return new class extends Migration
             $table->boolean('verified')->default(false);
             $table->enum('property_type', ['Featured', 'Guest Favorite', 'Others'])->nullable();
 
+            $table->boolean('is_draft')->nullable()->default(true);
+
             $table->timestamps();
         });
     }
