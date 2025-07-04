@@ -76,6 +76,7 @@ Route::prefix('v1')->group(function () {
 
     //property types
     Route::get('property-types', [PropertyTypeController::class, 'index']);
+    Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
 
 
     //Supported Languages
@@ -125,7 +126,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     // Route::get('properties', [PropertyController::class, 'getProperties']);
     Route::post('properties', [PropertyController::class, 'createProperties']);
     Route::post('update-properties', [PropertyController::class, 'updateProperties']);
-    Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
+    // Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
     Route::delete('properties/{propertyId}', [PropertyController::class, 'deleteProperty']);
     Route::get('properties/{propertyId}/reviews', [PropertyController::class, 'getPropertyReviews']);
     Route::get('properties/{propertyId}/description', [PropertyController::class, 'getPropertyDescription']);
