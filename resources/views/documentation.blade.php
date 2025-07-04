@@ -42,6 +42,23 @@
     </div>
 
     <!-- Sections -->
+    <section class="mb-8 p-4 bg-gray-900 text-white rounded-lg border-l-4 border-orange-500 shadow">
+      <h2 class="mb-2 text-xl font-bold text-orange-300">Authentication</h2>
+      <p class="mb-2">
+        Most API endpoints require authentication. You must obtain an access token by logging in (see <a href="#new-signin" class="text-orange-400 underline">New Signin</a> or <a href="#normal-signin" class="text-orange-400 underline">Normal Signin</a>), or by using OTP-based authentication.
+      </p>
+      <ul class="mb-2 list-disc ml-6">
+        <li>Include your token in the <code class="bg-gray-800 px-1 rounded">Authorization</code> header for all authenticated requests.</li>
+        <li>Format: <code class="bg-gray-800 px-1 rounded">Authorization: Bearer &lt;token&gt;</code></li>
+        <li>Tokens are required for creating, updating, or deleting resources, and for accessing user-specific data.</li>
+      </ul>
+      <div class="mb-2">
+        <strong class="text-orange-200">Example: Authenticated Request</strong>
+        <pre class="bg-gray-800 text-orange-200 p-2 rounded text-xs overflow-x-auto">GET /api/user/profile
+Authorization: Bearer &lt;your_token_here&gt;</pre>
+      </div>
+      <p class="text-sm text-orange-200">If you do not provide a valid token, you will receive a 401 Unauthorized error.</p>
+    </section>
     @include('documentation.sections.new-signin')
     @include('documentation.sections.normal-signin')
     @include('documentation.sections.normal-signup')

@@ -17,15 +17,15 @@
     <div class="mb-2">
       <strong class="text-orange-200">Example: Step Request</strong>
       <pre class="overflow-x-auto p-2 text-xs text-orange-200 bg-gray-800 rounded">POST /api/listings/create-listings
-{
-  "host_id": "1111",
-  "title": "Perfect Apartment Home"
-}
-// Response:
-{
-  "draft_id": 42,
-  "property": { ... }
-}</pre>
+      {
+        "host_id": "1111",
+        "title": "Perfect Apartment Home"
+      }
+      // Response:
+      {
+        "draft_id": 42,
+        "property": { ... }
+      }</pre>
     </div>
     <div class="mb-2">
       <strong class="text-orange-200">Example: Finalize Request</strong>
