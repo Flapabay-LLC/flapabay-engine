@@ -68,7 +68,7 @@ class AuthenticatorController extends Controller
                 'password' => Hash::make($request->password), // Hash the password
             ]
         );
-
+        log::info('🔐 User registered or updated: ' . json_encode($user));
         // Step 3: Create or update user details based on user_id
         UserDetail::updateOrCreate(
             ['user_id' => $user->id], // search condition
@@ -98,30 +98,30 @@ class AuthenticatorController extends Controller
         $validator = Validator::make($request->all(), [
             'code' => 'nullable|string', // Only needed if phone is used
             'phone' => 'nullable|digits_between:7,15',
-            'email' => 'nullable|email:dns|string',
+            'email' => 'nullable|email|string',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors(), 'code' => 400], 400);
         }
-    
+
         // Step 2: Ensure at least one contact method is provided
         if (!$request->phone && !$request->email) {
             return response()->json(['error' => 'Either phone or email is required.'], 422);
-        }        
+        }
         if (!$request->email) {
             return response()->json(['error' => 'Either phone or email is required.'], 422);
         }
-    
+
         // Step 3: Determine identifier and find user
         $user = null;
         $identifier = null;
-    
+
         if ($request->phone) {
             if (!$request->code) {
                 return response()->json(['error' => 'Country code is required for phone number.'], 422);
             }
-    
+
             $fullPhone = $request->code . $request->phone;
             $user = User::where('phone', $fullPhone)->first();
             $identifier = $fullPhone;
@@ -129,16 +129,16 @@ class AuthenticatorController extends Controller
             $user = User::where('email', $request->email)->first();
             $identifier = $request->email;
         }
-    
+
         // Step 4: Return error if user not found
         if (!$user) {
             return response()->json(['error' => 'User not found', 'code' => 404], 404);
         }
-    
+
         // Step 5: Generate OTP and store in cache
         $otp = $this->generate_otp($user, $request);
         Cache::put('otp_' . $identifier, $otp, now()->addMinutes(10));
-    
+
         // Step 6: Send OTP
         try {
             // if (isset($fullPhone)) {
@@ -148,13 +148,13 @@ class AuthenticatorController extends Controller
             //         'body' => "Your OTP is: $otp"
             //     ]);
             // }
-    
+
             if ($request->email) {
                 Mail::to($request->email)->send(new GetOTPEmail($otp));
             }
-    
+
             return response()->json(['message' => 'OTP has been sent.'], 200);
-    
+
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to send OTP. ' . $e->getMessage()], 500);
         }
@@ -170,43 +170,43 @@ class AuthenticatorController extends Controller
                 'email' => 'nullable|email:dns|string',
                 'code' => 'nullable|string', // Required if phone is used
             ]);
-    
+
             if ($validator->fails()) {
                 return response()->json(['status' => false, 'error' => $validator->errors()], 400);
             }
-    
+
             // dd('here');
             if (empty($request->phone) && empty($request->email)) {
                 return response()->json(['status' => false, 'error' => 'Phone or email is required'], 422);
             }
-    
+
             // Step 2: Identify and find user
             $user = null;
             $cacheKey = null;
-    
+
             if (!empty($request->phone)) {
                 if (empty($request->code)) {
                     return response()->json(['status' => false, 'error' => 'Country code is required for phone'], 422);
                 }
-    
+
                 $fullPhone = $request->code . $request->phone;
                 $user = User::where('phone', $fullPhone)->first();
                 $cacheKey = 'otp_' . $fullPhone;
-    
+
             } elseif (!empty($request->email)) {
                 $user = User::where('email', $request->email)->first();
                 $cacheKey = 'otp_' . $request->email;
             }
-    
+
             if (!$user) {
                 return response()->json(['status' => false, 'error' => 'User not found'], 404);
             }
-    
-            // Step 3: Compare OTP 
+
+            // Step 3: Compare OTP
             if ($request->otp != $user->otp) {
                 return response()->json(['status' => false, 'error' => 'Invalid OTP'], 400);
             }
-    
+
             // Step 4: Generate JWT Token
             $token = JWTAuth::fromUser($user);
             return response()->json([
@@ -217,28 +217,32 @@ class AuthenticatorController extends Controller
                     'user' => $user
                 ]
             ], 200);
-    
+
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'error' => 'Server error', 'details' => $e->getMessage()], 500);
         }
     }
-    
+
 
 
     public function login(Request $request)
     {
         try {
             // Validation
+            log::info('🔐 Login Request Received: ' . json_encode($request->all()));
             $this->validate($request, [
-                'email' => 'required|email:dns|string',
-                'password' => 'required|string|min:8',
+                'email' => 'required|email|string',
+                'password' => 'required|string|min:6',
             ]);
 
             // Check if user exists
             $user = User::orWhere('email', $request->email)
                         ->orWhere('phone', $request->email)->first();
 
+            log::info('🔐 User found: ' . json_encode($user));
+
             if (!$user) {
+                log::error('❌ User not found: ' . $request->email);
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid credentials, user not found'
@@ -255,6 +259,14 @@ class AuthenticatorController extends Controller
 
             // Generate JWT token
             $token = JWTAuth::fromUser($user);
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to generate token'
+                ], 500);
+            }
+
+            log::info('✅ User successfully logged in: ' . json_encode($user));
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
@@ -262,6 +274,7 @@ class AuthenticatorController extends Controller
                     'user' => $user,
                     'token' => $token
                 ]
+
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -352,7 +365,7 @@ class AuthenticatorController extends Controller
         // Step 7: Generate a JWT token
 
         $token = JWTAuth::fromUser($user);
-  
+
 
         // Step 8: Return response
         Log::info('✅ User successfully registered or updated: ' . json_encode($user));
@@ -374,7 +387,7 @@ class AuthenticatorController extends Controller
         ], 500);
     }
 }
-    
+
 
     /**
      * Handle the generation and sending of an OTP.
@@ -384,7 +397,7 @@ class AuthenticatorController extends Controller
 
         // Step 1: Validate the request
         Log::info('🔐 Phone OTP Request Received: ' . json_encode($request->all()));
-    
+
 
         $validator = Validator::make($request->all(), [
             'code' => 'required', // Validate country code like +254, +1, +91
@@ -572,11 +585,11 @@ class AuthenticatorController extends Controller
         }
 
         // Step 3: Check if OTP is expired
-        
+
         if (Carbon::now()->format('Y-m-d H:i:s') > $user->otp_expires_at) {
             return response()->json(['error' => 'OTP has expired', 'status' => false], 400);
         }
-        
+
         // Step 4: Check if OTP matches
         if ($user->otp != $request->otp) {
             return response()->json(['error' => 'Invalid OTP', 'status' => false], 400);
