@@ -311,157 +311,160 @@ class ListingController extends Controller
      */
     public function searchListings(Request $request)
     {
+        // dd($request);
         try {
             $query = \App\Models\Property::with([
                 'listing',
                 'propertyType',
-                'amenities',
                 'images',
                 'reviews'
             ]);
 
-            // Keyword search (title/description)
-            if ($request->filled('keyword')) {
-                $keyword = $request->keyword;
-                $query->where(function($q) use ($keyword) {
-                    $q->where('title', 'like', "%{$keyword}%")
+            $query->where(function($q) use ($request) {
+                // Keyword
+                if ($request->filled('keyword')) {
+                    $keyword = $request->keyword;
+                    $q->orWhere('title', 'like', "%{$keyword}%")
                       ->orWhere('description', 'like', "%{$keyword}%");
-                });
-            }
+                }
 
-            // Location
-            if ($request->filled('location')) {
-                $location = $request->location;
-                $query->where(function($q) use ($location) {
-                    $q->where('location', 'like', "%{$location}%")
+                // Location
+                if ($request->filled('location')) {
+                    $location = $request->location;
+                    $q->orWhere('location', 'like', "%{$location}%")
                       ->orWhere('address', 'like', "%{$location}%")
                       ->orWhere('country', 'like', "%{$location}%")
                       ->orWhere('neighborhood_area', 'like', "%{$location}%")
                       ->orWhere('city', 'like', "%{$location}%");
-                });
-            }
+                }
 
-            // Price range
-            if ($request->filled('min_price')) {
-                $query->where('price_per_night', '>=', $request->min_price);
-            }
-            if ($request->filled('max_price')) {
-                $query->where('price_per_night', '<=', $request->max_price);
-            }
+                // Price range
+                if ($request->filled('min_price')) {
+                    $q->orWhere('price_per_night', '>=', $request->min_price);
+                }
+                if ($request->filled('max_price')) {
+                    $q->orWhere('price_per_night', '<=', $request->max_price);
+                }
 
-            // Property type
-            if ($request->filled('property_type_id')) {
-                $query->where('property_type_id', $request->property_type_id);
-            }
+                // Property type
+                if ($request->filled('property_type_id')) {
+                    $q->orWhere('property_type_id', $request->property_type_id);
+                }
 
-            // Bedrooms
-            if ($request->filled('bedrooms')) {
-                $query->where('num_of_bedrooms', '>=', $request->bedrooms);
-            }
+                // Bedrooms
+                if ($request->filled('bedrooms')) {
+                    $q->orWhere('num_of_bedrooms', '>=', $request->bedrooms);
+                }
 
-            // Bathrooms
-            if ($request->filled('bathrooms')) {
-                $query->where('num_of_bathrooms', '>=', $request->bathrooms);
-            }
+                // Bathrooms
+                if ($request->filled('bathrooms')) {
+                    $q->orWhere('num_of_bathrooms', '>=', $request->bathrooms);
+                }
 
-            // Guests
-            if ($request->filled('children_guests')) {
-                $query->where('children_guests', '>=', $request->children_guests);
-            }
-            if ($request->filled('infant_guests')) {
-                $query->where('infant_guests', '>=', $request->infant_guests);
-            }
-            if ($request->filled('adult_guests')) {
-                $query->where('adult_guests', '>=', $request->adult_guests);
-            }
-            if ($request->filled('pet_guests')) {
-                $query->where('pet_guests', '>=', $request->pet_guests);
-            }
+                // Guests
+                if ($request->filled('children_guests')) {
+                    $q->orWhere('children_guests', '>=', $request->children_guests);
+                }
+                if ($request->filled('infant_guests')) {
+                    $q->orWhere('infant_guests', '>=', $request->infant_guests);
+                }
+                if ($request->filled('adult_guests')) {
+                    $q->orWhere('adult_guests', '>=', $request->adult_guests);
+                }
+                if ($request->filled('pet_guests')) {
+                    $q->orWhere('pet_guests', '>=', $request->pet_guests);
+                }
 
-            // Square feet
-            if ($request->filled('min_square_feet')) {
-                $query->where('square_feet', '>=', $request->min_square_feet);
-            }
-            if ($request->filled('max_square_feet')) {
-                $query->where('square_feet', '<=', $request->max_square_feet);
-            }
+                // Square feet
+                if ($request->filled('min_square_feet')) {
+                    $q->orWhere('square_feet', '>=', $request->min_square_feet);
+                }
+                if ($request->filled('max_square_feet')) {
+                    $q->orWhere('square_feet', '<=', $request->max_square_feet);
+                }
 
-            // Property ID
-            if ($request->filled('property_id')) {
-                $query->where('id', $request->property_id);
-            }
+                // Property ID
+                if ($request->filled('property_id')) {
+                    $q->orWhere('id', $request->property_id);
+                }
 
-            // Listing type (via relationship)
-            if ($request->filled('listing_type')) {
-                $query->whereHas('listing', function($q) use ($request) {
-                    $q->where('listing_type', $request->listing_type);
-                });
-            }
+                // Listing type (via relationship)
+                if ($request->filled('listing_type')) {
+                    $q->orWhereHas('listing', function($subQ) use ($request) {
+                        $subQ->where('listing_type', $request->listing_type);
+                    });
+                }
 
-            // JSON fields: amenities, house_rules, favorites, place_items
-            foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
-                if ($request->filled($jsonField)) {
-                    $values = $request->input($jsonField);
-                    if (is_array($values) && count($values) === 1 && is_string($values[0]) && $this->isJson($values[0])) {
-                        $values = json_decode($values[0], true);
-                    }
-                    if (is_array($values)) {
-                        foreach ($values as $val) {
-                            $query->whereJsonContains($jsonField, $val);
+                // JSON fields: amenities, house_rules, favorites, place_items (search by name, not ID)
+                foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
+                    if ($request->filled($jsonField)) {
+                        $values = $request->input($jsonField);
+                        if (is_string($values) && $this->isJson($values)) {
+                            $values = json_decode($values, true);
                         }
-                    } else if (is_string($values) && $this->isJson($values)) {
-                        $decoded = json_decode($values, true);
-                        if (is_array($decoded)) {
-                            foreach ($decoded as $val) {
-                                $query->whereJsonContains($jsonField, $val);
+                        foreach ((array)$values as $val) {
+                            $q->orWhereJsonContains($jsonField, $val);
+                        }
+                    }
+                }
+
+                // Dates filter with date_search_type logic
+                if ($request->filled('dates')) {
+                    $dateType = $request->input('date_search_type', 'range');
+                    $dates = $request->input('dates');
+                    if (is_array($dates) && count($dates) === 1 && is_string($dates[0]) && $this->isJson($dates[0])) {
+                        $dates = json_decode($dates[0], true);
+                    }
+                    if ($dateType === 'range' && is_array($dates) && count($dates) === 2) {
+                        $start = $dates[0];
+                        $end = $dates[1];
+                        $q->orWhereHas('availabilities', function($subQ) use ($start, $end) {
+                            $subQ->where(function($subSubQ) use ($start, $end) {
+                                $subSubQ->where('start_date', '<=', $end)
+                                         ->where('end_date', '>=', $start);
+                            });
+                        });
+                    } elseif ($dateType === 'month' && is_numeric($dates)) {
+                        $monthsFromNow = (int)$dates;
+                        $targetMonth = now()->addMonths($monthsFromNow)->format('m');
+                        $targetYear = now()->addMonths($monthsFromNow)->format('Y');
+                        $q->orWhereHas('availabilities', function($subQ) use ($targetMonth, $targetYear) {
+                            $subQ->whereMonth('start_date', $targetMonth)
+                                 ->whereYear('start_date', $targetYear);
+                        });
+                    } elseif ($dateType === 'flexible' && is_string($dates)) {
+                        $flexValue = $request->input('which_flexible_value');
+                        $flexMonth = $request->input('which_flexible_month');
+                        $q->orWhereHas('availabilities', function($subQ) use ($flexValue, $flexMonth) {
+                            if ($flexValue) {
+                                $subQ->where('flexible_type', $flexValue);
                             }
-                        }
-                    } else if (!empty($values)) {
-                        $query->whereJsonContains($jsonField, $values);
+                            if ($flexMonth) {
+                                $subQ->whereMonth('start_date', $flexMonth);
+                            }
+                        });
+                    } else {
+                        $q->orWhereHas('availabilities', function($subQ) use ($dates) {
+                            foreach ((array)$dates as $date) {
+                                $subQ->whereJsonContains('date_range', $date);
+                            }
+                        });
                     }
                 }
-            }
+            });
 
-            // Dates (decode if needed)
-            if ($request->filled('dates')) {
-                $dates = $request->dates;
-                if (is_array($dates)) {
-                    $dates = json_decode($dates[0], true) ?: $dates;
-                }
-                $query->whereHas('availabilities', function($q) use ($dates) {
-                    foreach ($dates as $date) {
-                        $q->whereJsonContains('date_range', $date);
-                    }
-                });
-            }
-
-            // Sorting
-            if ($request->filled('sort_by')) {
-                switch ($request->sort_by) {
-                    case 'price_asc':
-                        $query->orderBy('price_per_night', 'asc');
-                        break;
-                    case 'price_desc':
-                        $query->orderBy('price_per_night', 'desc');
-                        break;
-                    default:
-                        $query->latest();
-                }
-            } else {
-                $query->latest();
-            }
-
-            // Pagination
+            // Sorting, pagination, and response
             $perPage = $request->input('per_page', 10);
             $properties = $query->paginate($perPage);
 
-            // Format the response as needed
             return response()->json([
                 'status' => 'success',
                 'message' => 'Properties fetched successfully',
                 'data' => $properties
             ], 200);
         } catch (\Exception $e) {
+
+            // dd($e);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to search properties',
@@ -595,7 +598,54 @@ class ListingController extends Controller
             $property->is_draft = true;
             $property->save();
 
-            // 4. If this is the final step, validate all required fields and mark as complete
+            // 4. Handle image uploads (Wasabi/local) and save to property_images table
+            if ($request->hasFile('images')) {
+                $endpoint = 'https://s3.us-west-1.wasabisys.com';
+                $bucketName = 'flapapic';
+                $region = 'us-west-1';
+                $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+                $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
+
+                $s3Client = new \Aws\S3\S3Client([
+                    'region'     => $region,
+                    'version'    => 'latest',
+                    'endpoint'   => $endpoint,
+                    'credentials' => [
+                        'key'    => $accessKey,
+                        'secret' => $secretKey,
+                    ],
+                ]);
+
+                foreach ($request->file('images') as $idx => $image) {
+                    if ($image->isValid()) {
+                        $fileName = time() . '_' . $image->getClientOriginalName();
+                        try {
+                            $result = $s3Client->putObject([
+                                'Bucket'     => $bucketName,
+                                'Key'        => 'properties/' . $fileName,
+                                'SourceFile' => $image->getPathname(),
+                            ]);
+                            if (isset($result['ObjectURL'])) {
+                                $imageUrl = $result['ObjectURL'];
+                            } else {
+                                throw new \Exception('Object URL not returned from Wasabi');
+                            }
+                        } catch (\Exception $e) {
+                            // Fallback to local storage
+                            $localPath = $image->storeAs('properties', $fileName, 'public');
+                            $imageUrl = \Storage::disk('public')->url($localPath);
+                        }
+                        // Save to property_images table
+                        \App\Models\PropertyImage::create([
+                            'property_id' => $property->id,
+                            'image_url' => $imageUrl,
+                            'is_primary' => $idx === 0, // First image is primary
+                        ]);
+                    }
+                }
+            }
+
+            // 5. If this is the final step, validate all required fields and mark as complete
             if ($request->input('finalize')) {
                 $property->fill($request->all());
                 foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
@@ -644,7 +694,7 @@ class ListingController extends Controller
                 return response()->json(['success' => true, 'property' => $property]);
             }
 
-            // 5. Return the draft ID for the next step
+            // 6. Return the draft ID for the next step
             return response()->json(['draft_id' => $property->id, 'property' => $property]);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
