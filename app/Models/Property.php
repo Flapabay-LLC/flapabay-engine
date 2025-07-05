@@ -77,6 +77,9 @@ class Property extends Model
         'adult_guests',
         'pet_guests',
         'place_items',
+        'nights',
+        'check_in_date',
+        'check_out_date',
     ];
 
     /**
@@ -253,11 +256,5 @@ class Property extends Model
         return $this->hasMany(CoHost::class);
     }
 
-    /**
-     * Get the availabilities for the property.
-     */
-    public function availabilities()
-    {
-        return $this->hasMany(\App\Models\Availability::class);
-    }
+
 }

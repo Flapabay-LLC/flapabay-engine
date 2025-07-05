@@ -561,39 +561,47 @@ class PropertyController extends Controller
     }
 
 
-    public function getAvailabilityDates($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
-
+    /**
+     * Get property availability dates based on check_in_date and check_out_date
+     */
+    public function getPropertyAvailabilityDates($propertyId) {
         try {
-            // Step 2: Retrieve availability records for the specified property
-            $availabilityRecords = Availability::where('property_id', $propertyId)->get();
-
-            // Step 3: Extract available dates
-            $availableDates = [];
-            foreach ($availabilityRecords as $record) {
-                // Assuming 'availability' is an array of dates
-                if (isset($record->availability)) {
-                    $availableDates = array_merge($availableDates, $record->availability);
-                }
+            // Validate the property ID
+            if (!is_numeric($propertyId) || $propertyId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid property ID',
+                ], 400);
             }
 
-            // Step 4: Return the available dates
+            // Retrieve the property
+            $property = Property::select(['id', 'title', 'check_in_date', 'check_out_date'])
+                ->find($propertyId);
+
+            if (!$property) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Property not found',
+                ], 404);
+            }
+
+            // Return availability information
             return response()->json([
                 'success' => true,
-                'message' => 'Availability dates retrieved successfully',
-                'available_dates' => array_unique($availableDates), // Remove duplicates
+                'message' => 'Property availability dates retrieved successfully',
+                'data' => [
+                    'property_id' => $property->id,
+                    'title' => $property->title,
+                    'check_in_date' => $property->check_in_date,
+                    'check_out_date' => $property->check_out_date,
+                    'is_available' => !is_null($property->check_in_date) && !is_null($property->check_out_date)
+                ]
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve availability dates',
+                'message' => 'Failed to retrieve property availability dates',
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -216,7 +216,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/system/property-types', [ListingController::class, 'createSystemPropertyType']);
 
     // Reservation routes
-    Route::post('reservations', [ReservationController::class, 'create']);
+    Route::post('reserve', [ReservationController::class, 'create']);
     Route::get('reservations', [ReservationController::class, 'index']);
     Route::get('reservations/{id}', [ReservationController::class, 'show']);
     Route::post('reservations/{id}/cancel', [ReservationController::class, 'cancel']);

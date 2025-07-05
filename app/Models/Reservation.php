@@ -12,18 +12,22 @@ class Reservation extends Model
 
     protected $fillable = [
         'user_id',
-        'listing_id',
+        'property_id',
         'check_in_date',
         'check_out_date',
         'number_of_guests',
         'number_of_children',
+        'number_of_infants',
+        'number_of_pets',
         'total_price',
         'currency',
         'status',
         'special_requests',
         'cancellation_reason',
         'cancelled_at',
-        'is_instant_booking'
+        'is_instant_booking',
+        'guest_phone',
+        'guest_email'
     ];
 
     protected $casts = [
@@ -43,11 +47,11 @@ class Reservation extends Model
     }
 
     /**
-     * Get the listing that was reserved.
+     * Get the property that was reserved.
      */
-    public function listing()
+    public function property()
     {
-        return $this->belongsTo(Listing::class);
+        return $this->belongsTo(Property::class);
     }
 
     /**
