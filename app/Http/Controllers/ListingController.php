@@ -6,7 +6,7 @@ use App\Models\Listing;
 use App\Http\Requests\StoreListingRequest;
 use App\Http\Requests\UpdateListingRequest;
 use Illuminate\Http\Request;
-use App\Models\Availability;
+
 use App\Models\Booking;
 use App\Models\Property;
 use App\Models\UserReview;
@@ -271,41 +271,75 @@ class ListingController extends Controller
                     if (is_array($dates) && count($dates) === 1 && is_string($dates[0]) && $this->isJson($dates[0])) {
                         $dates = json_decode($dates[0], true);
                     }
+                    
                     if ($dateType === 'range' && is_array($dates) && count($dates) === 2) {
                         $start = $dates[0];
                         $end = $dates[1];
-                        $q->orWhereHas('availabilities', function($subQ) use ($start, $end) {
-                            $subQ->where(function($subSubQ) use ($start, $end) {
-                                $subSubQ->where('start_date', '<=', $end)
-                                         ->where('end_date', '>=', $start);
-                            });
+                        $q->orWhere(function($subQ) use ($start, $end) {
+                            $subQ->whereNull('check_in_date')
+                                 ->orWhere(function($subSubQ) use ($start, $end) {
+                                     $subSubQ->where('check_in_date', '<=', $start)
+                                            ->where('check_out_date', '>=', $end);
+                                 });
                         });
                     } elseif ($dateType === 'month' && is_numeric($dates)) {
                         $monthsFromNow = (int)$dates;
                         $targetMonth = now()->addMonths($monthsFromNow)->format('m');
                         $targetYear = now()->addMonths($monthsFromNow)->format('Y');
-                        $q->orWhereHas('availabilities', function($subQ) use ($targetMonth, $targetYear) {
-                            $subQ->whereMonth('start_date', $targetMonth)
-                                 ->whereYear('start_date', $targetYear);
+                        $q->orWhere(function($subQ) use ($targetMonth, $targetYear) {
+                            $subQ->whereNull('check_in_date')
+                                 ->orWhere(function($subSubQ) use ($targetMonth, $targetYear) {
+                                     $subSubQ->whereMonth('check_in_date', $targetMonth)
+                                            ->whereYear('check_in_date', $targetYear);
+                                 });
                         });
                     } elseif ($dateType === 'flexible' && is_string($dates)) {
-                        $flexValue = $request->input('which_flexible_value');
-                        $flexMonth = $request->input('which_flexible_month');
-                        $q->orWhereHas('availabilities', function($subQ) use ($flexValue, $flexMonth) {
-                            if ($flexValue) {
-                                $subQ->where('flexible_type', $flexValue);
-                            }
+                        $flexValue = $request->input('which_flexible_value'); // this will be either week, weekend, or month
+                        $flexMonth = $request->input('which_flexible_month'); // this will be either January, February ...etc
+                        
+                        $q->orWhere(function($subQ) use ($flexValue, $flexMonth) {
+                            $subSubQ = $subQ->whereNull('check_in_date');
+                            
                             if ($flexMonth) {
-                                $subQ->whereMonth('start_date', $flexMonth);
+                                $monthNumber = $this->getMonthNumber($flexMonth);
+                                if ($monthNumber) {
+                                    $subSubQ->orWhere(function($subSubSubQ) use ($monthNumber, $flexValue) {
+                                        $subSubSubQ->whereMonth('check_in_date', $monthNumber);
+                                        
+                                        if ($flexValue === 'week') {
+                                            $subSubSubQ->whereRaw('DAY(check_in_date) BETWEEN 1 AND 7');
+                                        } elseif ($flexValue === 'weekend') {
+                                            $subSubSubQ->whereRaw('DAYOFWEEK(check_in_date) IN (1, 7)'); // Sunday = 1, Saturday = 7
+                                        } elseif ($flexValue === 'month') {
+                                            // Already filtered by month
+                                        }
+                                    });
+                                }
                             }
                         });
                     } else {
-                        $q->orWhereHas('availabilities', function($subQ) use ($dates) {
+                        // Default date range search
+                        $q->orWhere(function($subQ) use ($dates) {
+                            $subSubQ = $subQ->whereNull('check_in_date');
                             foreach ((array)$dates as $date) {
-                                $subQ->whereJsonContains('date_range', $date);
+                                $subSubQ->orWhere(function($subSubSubQ) use ($date) {
+                                    $subSubSubQ->where('check_in_date', '<=', $date)
+                                              ->where('check_out_date', '>=', $date);
+                                });
                             }
                         });
                     }
+                }
+
+                // Direct check_in_date and check_out_date filtering
+                if ($request->has('check_in_date') && $request->has('check_out_date')) {
+                    $q->orWhere(function($q2) use ($request) {
+                        $q2->whereNull('check_in_date')
+                           ->orWhere(function($q3) use ($request) {
+                               $q3->where('check_in_date', '<=', $request->check_in_date)
+                                  ->where('check_out_date', '>=', $request->check_out_date);
+                           });
+                    });
                 }
             });
 
@@ -334,6 +368,18 @@ class ListingController extends Controller
     {
         json_decode($string);
         return (json_last_error() == JSON_ERROR_NONE);
+    }
+
+    // Helper to convert month name to number
+    private function getMonthNumber($monthName)
+    {
+        $months = [
+            'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
+            'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
+            'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12
+        ];
+        
+        return $months[strtolower($monthName)] ?? null;
     }
 
     /**
@@ -436,6 +482,9 @@ class ListingController extends Controller
                 'num_of_quarters' => 'nullable|integer|min:0',
                 'has_unallocated_rooms' => 'boolean',
                 'listing_type' => 'string',
+                'nights' => 'nullable|integer|min:1',
+                'check_in_date' => 'nullable|date',
+                'check_out_date' => 'nullable|date|after_or_equal:check_in_date',
                 'images' => 'nullable|array',
                 'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'verified' => 'boolean',
@@ -540,6 +589,9 @@ class ListingController extends Controller
                     'host_type' => 'required|in:Private Individual,Business',
                     'num_of_bedrooms' => 'required|integer|min:1',
                     'num_of_bathrooms' => 'required|integer|min:1',
+                    'nights' => 'nullable|integer|min:1',
+                    'check_in_date' => 'nullable|date',
+                    'check_out_date' => 'nullable|date|after_or_equal:check_in_date',
                     'first_reserver' => 'required|string',
                     'listing_type' => 'nullable|string',
                     'host_id' => 'required|exists:users,host_id',
