@@ -12,7 +12,8 @@ class Favorite extends Model
 
     protected $fillable = [
         'user_id',
-        'property_id'
+        'property_id',
+        'wishlist_id',
     ];
 
     public function user()
@@ -23,5 +24,10 @@ class Favorite extends Model
     public function property()
     {
         return $this->belongsTo(Property::class);
+    }
+
+    public function wishlist()
+    {
+        return $this->belongsTo(Wishlist::class);
     }
 }

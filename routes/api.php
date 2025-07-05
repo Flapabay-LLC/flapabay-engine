@@ -62,7 +62,7 @@ Route::prefix('v1')->group(function () {
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);
 
-    //Google & Facebook Auth
+    // Google & Facebook Auth
     // Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
     Route::post('google/signin', [GoogleAuthController::class, 'googleSignIn']);
     // Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
@@ -87,6 +87,9 @@ Route::prefix('v1')->group(function () {
     Route::get('system/favorites', [ListingController::class, 'getSystemFavorites']);
     Route::get('system/place-items', [ListingController::class, 'getSystemPlaceItems']);
     Route::get('system/property-types', [ListingController::class, 'getSystemPropertyTypes']);
+
+    // Wishlist routes
+    Route::post('wishlists', [FavoriteController::class, 'createWishlist']);
 });
 
 // Protected routes with JWT api authentication
@@ -101,7 +104,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // Favorites routes
     Route::get('favorites', [FavoriteController::class, 'index']);
-    Route::get('favorites/user/{userId}', [FavoriteController::class, 'getUserFavorites']);
+    Route::get('favorites/user', [FavoriteController::class, 'getUserFavorites']);
     Route::post('favorites', [FavoriteController::class, 'store']);
     Route::delete('favorites', [FavoriteController::class, 'destroy']);
 
