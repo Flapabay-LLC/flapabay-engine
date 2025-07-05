@@ -54,7 +54,7 @@
       </ul>
       <div class="mb-2">
         <strong class="text-orange-200">Example: Authenticated Request</strong>
-        <pre class="bg-gray-800 text-orange-200 p-2 rounded text-xs overflow-x-auto">GET /api/user/profile
+        <pre class="bg-gray-800 text-orange-200 p-2 rounded text-xs overflow-x-auto">
 Authorization: Bearer &lt;your_token_here&gt;</pre>
       </div>
       <p class="text-sm text-orange-200">If you do not provide a valid token, you will receive a 401 Unauthorized error.</p>
