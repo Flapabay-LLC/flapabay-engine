@@ -252,6 +252,8 @@ class FavoriteController extends Controller
                 'data' => $wishlists
             ], 200);
         } catch (\Exception $e) {
+
+            // dd($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch wishlists',
