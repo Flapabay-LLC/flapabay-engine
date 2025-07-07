@@ -106,7 +106,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('favorites', [FavoriteController::class, 'index']);
     Route::get('favorites/user', [FavoriteController::class, 'getUserFavorites']);
     Route::post('favorites', [FavoriteController::class, 'store']);
-    Route::delete('favorites', [FavoriteController::class, 'destroy']);
+    Route::delete('/favorites', [FavoriteController::class, 'destroy']);
 
     // Chat routes
     Route::get('chats', [ChatController::class, 'getAllMyChats']);

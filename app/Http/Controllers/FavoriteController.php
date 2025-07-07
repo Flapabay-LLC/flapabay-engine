@@ -204,15 +204,16 @@ class FavoriteController extends Controller
      */
     public function destroy(Request $request)
     {
+        
         try {
             $request->validate([
-                'property_id' => 'required|exists:properties,id',
-                'wishlist_id' => 'required|exists:wishlists,id'
+                'property_id' => 'required',
+                'wslist' => 'required',
             ]);
-
+            
             $favorite = Favorite::where('user_id', auth()->user()->id)
                 ->where('property_id', $request->property_id)
-                ->where('wishlist_id', $request->wishlist_id)
+                ->where('wishlist_id', $request->wslist)
                 ->first();
 
             if (!$favorite) {
@@ -229,6 +230,7 @@ class FavoriteController extends Controller
                 'message' => 'Property removed from wishlist successfully'
             ], 200);
         } catch (\Exception $e) {
+            dd($e);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to remove property from wishlist',
