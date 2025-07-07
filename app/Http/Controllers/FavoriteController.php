@@ -97,7 +97,7 @@ class FavoriteController extends Controller
                 'is_default' => 'nullable|boolean',
             ]);
 
-            $userId = $user->id;
+            $userId = auth()->user()->id;
             $isDefault = $request->boolean('is_default');
 
             // If is_default is true, unset all other default wishlists for this user
@@ -146,13 +146,13 @@ class FavoriteController extends Controller
         $user = $request->user();
 
         // 1. Try to find the user's default wishlist
-        $wishlist = \App\Models\Wishlist::where('user_id', $user->id)
+        $wishlist = \App\Models\Wishlist::where('user_id', auth()->user()->id)
             ->where('is_default', true)
             ->first();
 
         // 2. If no default, check if the user has exactly one wishlist
         if (!$wishlist) {
-            $wishlists = \App\Models\Wishlist::where('user_id', $user->id)->get();
+            $wishlists = \App\Models\Wishlist::where('user_id', auth()->user()->id)->get();
             if ($wishlists->count() === 1) {
                 $wishlist = $wishlists->first();
                 $wishlist->is_default = true;
@@ -170,7 +170,7 @@ class FavoriteController extends Controller
         }
 
         // Check if favorite already exists in this wishlist
-        $existingFavorite = \App\Models\Favorite::where('user_id', $user->id)
+        $existingFavorite = \App\Models\Favorite::where('user_id', auth()->user()->id)
             ->where('property_id', $request->property_id)
             ->where('wishlist_id', $wishlist->id)
             ->first();
@@ -183,7 +183,7 @@ class FavoriteController extends Controller
         }
 
         $favorite = \App\Models\Favorite::create([
-            'user_id' => $user->id,
+            'user_id' => auth()->user()->id,
             'property_id' => $request->property_id,
             'wishlist_id' => $wishlist->id,
         ]);
@@ -265,7 +265,7 @@ class FavoriteController extends Controller
         $user = $request->user();
         try {
             $wishlists = \App\Models\Wishlist::with(['favorites.property.listing'])
-                ->where('user_id', $user->id)
+                ->where('user_id', auth()->user()->id)
                 ->get();
 
             return response()->json([
@@ -280,5 +280,46 @@ class FavoriteController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Set a user's default wishlist (overriding any current default)
+     */
+    public function setDefaultWishlist(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $request->validate([
+            'wishlist_id' => 'required|integer|exists:wishlists,id',
+        ]);
+
+        $wishlist = Wishlist::where('id', $request->wishlist_id)
+            ->where('user_id', auth()->user()->id)
+            ->first();
+
+        if (!$wishlist) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Wishlist not found or does not belong to user',
+            ], 404);
+        }
+
+        // Unset all user's default wishlists
+        Wishlist::where('user_id', auth()->user()->id)->update(['is_default' => false]);
+        // Set the selected wishlist as default
+        $wishlist->is_default = true;
+        $wishlist->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Default wishlist set successfully',
+            'wishlist' => $wishlist,
+        ]);
     }
 }
