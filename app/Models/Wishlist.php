@@ -12,6 +12,7 @@ class Wishlist extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'is_default',
     ];
 
     public function user()
