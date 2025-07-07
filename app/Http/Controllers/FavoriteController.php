@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Favorite;
+use App\Models\Wishlist;
 use App\Http\Requests\StoreFavoriteRequest;
 use App\Http\Requests\UpdateFavoriteRequest;
 use Illuminate\Http\Request;
@@ -80,27 +81,41 @@ class FavoriteController extends Controller
      */
     public function createWishlist(Request $request)
     {
-        // dd('here');
+        // dd($request);
         try {
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
             $request->validate([
-                'user_id' => 'required|exists:users,id',
-                'name' => 'required|string|max:255|unique:wishlists,name,NULL,id,user_id,' . $request->user_id,
-                'property_ids' => 'nullable|array',
-                'property_ids.*' => 'nullable|exists:properties,id',
+                'name' => 'required|string|max:255',
+                'property_id' => 'nullable|integer|exists:properties,id',
+                'is_default' => 'nullable|boolean',
             ]);
 
-            $wishlist = \App\Models\Wishlist::create([
-                'user_id' => $request->user_id,
+            $userId = $user->id;
+            $isDefault = $request->boolean('is_default');
+
+            // If is_default is true, unset all other default wishlists for this user
+            if ($isDefault) {
+                Wishlist::where('user_id', $userId)->update(['is_default' => false]);
+            }
+
+            $wishlist = Wishlist::create([
+                'user_id' => $userId,
                 'name' => $request->name,
+                'is_default' => $isDefault,
             ]);
 
-            $propertyIds = array_filter($request->property_ids ?? [], function($id) {
-                return !is_null($id) && $id !== '';
-            });
-            foreach ($propertyIds as $propertyId) {
-                \App\Models\Favorite::create([
-                    'user_id' => $request->user_id,
-                    'property_id' => $propertyId,
+            // If property_id is provided, add it as a favorite
+            if ($wishlist && $request->filled('property_id')) {
+                Favorite::create([
+                    'user_id' => $userId,
+                    'property_id' => $request->property_id,
                     'wishlist_id' => $wishlist->id,
                 ]);
             }
@@ -124,16 +139,40 @@ class FavoriteController extends Controller
      */
     public function store(Request $request)
     {
-        // dd($request);
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'property_id' => 'required|exists:properties,id',
-            'wishlist_id' => 'required|exists:wishlists,id',
         ]);
 
-        // Check if favorite already exists
-        $existingFavorite = \App\Models\Favorite::where('user_id', $request->user_id)
+        $user = $request->user();
+
+        // 1. Try to find the user's default wishlist
+        $wishlist = \App\Models\Wishlist::where('user_id', $user->id)
+            ->where('is_default', true)
+            ->first();
+
+        // 2. If no default, check if the user has exactly one wishlist
+        if (!$wishlist) {
+            $wishlists = \App\Models\Wishlist::where('user_id', $user->id)->get();
+            if ($wishlists->count() === 1) {
+                $wishlist = $wishlists->first();
+                $wishlist->is_default = true;
+                $wishlist->save();
+            }
+        }
+
+        // 3. If still no wishlist, return empty response
+        if (!$wishlist) {
+            return response()->json([
+                'status' => 'empty',
+                'message' => 'No wishlist available for this user',
+                'favorite' => null,
+            ], 200);
+        }
+
+        // Check if favorite already exists in this wishlist
+        $existingFavorite = \App\Models\Favorite::where('user_id', $user->id)
             ->where('property_id', $request->property_id)
+            ->where('wishlist_id', $wishlist->id)
             ->first();
 
         if ($existingFavorite) {
@@ -144,9 +183,9 @@ class FavoriteController extends Controller
         }
 
         $favorite = \App\Models\Favorite::create([
-            'user_id' => $request->user_id,
+            'user_id' => $user->id,
             'property_id' => $request->property_id,
-            'wishlist_id' => $request->wishlist_id,
+            'wishlist_id' => $wishlist->id,
         ]);
 
         return response()->json([
