@@ -241,6 +241,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // Wishlist routes
     Route::get('my-wishlists', [FavoriteController::class, 'myWishlists']);
+    Route::post('wishlists/set-default', [FavoriteController::class, 'setDefaultWishlist']);
 
 });
 
