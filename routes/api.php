@@ -149,9 +149,11 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('booking/{book_id}', [BookingController::class, 'getBooking']);
     Route::put('booking/{book_id}/cancel', [BookingController::class, 'cancelBooking']);
     Route::post('bookings/{booking_id}/invoice', [BookingController::class, 'generateInvoice']);
+    Route::get('my-trips', [BookingController::class, 'myTrips']);
 
     // Host routes
-    Route::get('bookings/host/{host_id}', [HostController::class, 'getHostInfo']);
+    Route::get('bookings/host', [HostController::class, 'getHostInfo']);
+    Route::get('host-info', [HostController::class, 'getHostInfo']);
     Route::post('host/signup', [UserController::class, 'registerHost']);
 
     // Payment Payout routes
@@ -236,6 +238,9 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
 
     // Property Type routes
     Route::post('property-types', [PropertyTypeController::class, 'store']);
+
+    // Wishlist routes
+    Route::get('my-wishlists', [FavoriteController::class, 'myWishlists']);
 
 });
 

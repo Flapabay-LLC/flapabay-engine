@@ -230,4 +230,64 @@ class BookingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all bookings for the authenticated host user
+     */
+    public function hostBookings(Request $request)
+    {
+        $user = $request->user();
+        if (empty($user->host_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not a host.'
+            ], 403);
+        }
+
+        try {
+            $bookings = Booking::with(['property', 'user'])
+                ->whereHas('property', function ($q) use ($user) {
+                    $q->where('host_id', $user->host_id);
+                })
+                ->orderBy('start_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Host bookings fetched successfully',
+                'data' => $bookings
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch host bookings',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all wishlists for the authenticated user, with properties and listings
+     */
+    public function myWishlists(Request $request)
+    {
+        $user = $request->user();
+        try {
+            $wishlists = \App\Models\Wishlist::with(['favorites.property.listing'])
+                ->where('user_id', $user->id)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'My wishlists fetched successfully',
+                'data' => $wishlists
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch wishlists',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
