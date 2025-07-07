@@ -28,8 +28,7 @@ return new class extends Migration
                 ->on('properties')
                 ->onDelete('cascade');
 
-            // Add unique constraint to prevent duplicate favorites
-            $table->unique(['user_id', 'property_id']);
+            // Removed unique constraint
         });
     }
 
