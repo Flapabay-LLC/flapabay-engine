@@ -23,7 +23,7 @@ class Booking extends Model
         'end_date',
         'guest_details',
         'guest_count',
-        'booking_status',
+        'booking_status', // possible: pending, rejected, confirmed, check_in, check_out, completed
         'payment_status',
         'payment_method',
         'payment_date',
@@ -31,6 +31,16 @@ class Booking extends Model
         'cancellation_date',
         'amount',
     ];
+
+    /**
+     * Booking status values:
+     * - pending
+     * - rejected
+     * - confirmed
+     * - check_in
+     * - check_out
+     * - completed
+     */
 
     /**
      * Get the property associated with the booking.
