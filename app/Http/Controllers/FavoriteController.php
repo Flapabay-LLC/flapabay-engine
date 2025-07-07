@@ -16,7 +16,7 @@ class FavoriteController extends Controller
     public function index()
     {
         try {
-            $favorites = Favorite::with(['property', 'user'])->get();
+            $favorites = Favorite::with(['property.listing', 'wishlist'])->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Favorites fetched successfully',
@@ -36,24 +36,14 @@ class FavoriteController extends Controller
      */
     public function getUserFavorites(Request $request)
     {
+        $user = auth()->user();
         try {
-            // Validate wishlist parameter if provided
-            if ($request->has('wishlist')) {
-                $request->validate([
-                    'wishlist' => 'required|exists:wishlists,id'
-                ]);
-            }
-
-            $query = Favorite::with('property')
-            ->where('user_id', auth()->user()->id);
-
-            // Filter by wishlist if provided
+            $query = Favorite::with(['property.listing', 'wishlist'])
+                ->where('user_id', $user->id);
             if ($request->has('wishlist')) {
                 $query->where('wishlist_id', $request->wishlist);
             }
-
             $favorites = $query->get();
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'User favorites fetched successfully',
@@ -140,39 +130,28 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'property_id' => 'required|exists:properties,id',
+            'property_id' => 'required',
+            'wishlist_id' => 'required',
         ]);
 
-        $user = $request->user();
+        $user = auth()->user();
 
-        // 1. Try to find the user's default wishlist
-        $wishlist = \App\Models\Wishlist::where('user_id', auth()->user()->id)
-            ->where('is_default', true)
+        // Ensure the wishlist belongs to the user
+        $wishlist = Wishlist::where('id', $request->wishlist_id)
+            ->where('user_id', $user->id)
             ->first();
 
-        // 2. If no default, check if the user has exactly one wishlist
-        if (!$wishlist) {
-            $wishlists = \App\Models\Wishlist::where('user_id', auth()->user()->id)->get();
-            if ($wishlists->count() === 1) {
-                $wishlist = $wishlists->first();
-                $wishlist->is_default = true;
-                $wishlist->save();
-            }
-        }
-
-        // 3. If still no wishlist, return empty response
         if (!$wishlist) {
             return response()->json([
-                'status' => 'empty',
-                'message' => 'No wishlist available for this user',
-                'favorite' => null,
-            ], 200);
+                'status' => 'error',
+                'message' => 'Wishlist not found or does not belong to user'
+            ], 404);
         }
 
         // Check if favorite already exists in this wishlist
-        $existingFavorite = \App\Models\Favorite::where('user_id', auth()->user()->id)
+        $existingFavorite = Favorite::where('user_id', $user->id)
             ->where('property_id', $request->property_id)
-            ->where('wishlist_id', $wishlist->id)
+            ->where('wishlist_id', $request->wishlist_id)
             ->first();
 
         if ($existingFavorite) {
@@ -182,12 +161,13 @@ class FavoriteController extends Controller
             ], 409);
         }
 
-        $favorite = \App\Models\Favorite::create([
-            'user_id' => auth()->user()->id,
+        $favorite = Favorite::create([
+            'user_id' => $user->id,
             'property_id' => $request->property_id,
-            'wishlist_id' => $wishlist->id,
+            'wishlist_id' => $request->wishlist_id,
         ]);
 
+        $favorite = Favorite::with(['property.listing', 'wishlist'])->find($favorite->id);
         return response()->json([
             'status' => 'success',
             'message' => 'Property added to favorites successfully',
@@ -227,12 +207,12 @@ class FavoriteController extends Controller
         try {
             $request->validate([
                 'property_id' => 'required|exists:properties,id',
-                'wslist' => 'required|exists:wishlists,id'
+                'wishlist_id' => 'required|exists:wishlists,id'
             ]);
 
             $favorite = Favorite::where('user_id', auth()->user()->id)
                 ->where('property_id', $request->property_id)
-                ->where('wishlist_id', $request->wslist)
+                ->where('wishlist_id', $request->wishlist_id)
                 ->first();
 
             if (!$favorite) {
@@ -262,12 +242,10 @@ class FavoriteController extends Controller
      */
     public function myWishlists(Request $request)
     {
-        $user = $request->user();
         try {
-            $wishlists = \App\Models\Wishlist::with(['favorites.property.listing'])
+            $wishlists = Wishlist::with(['favorites.property.listing'])
                 ->where('user_id', auth()->user()->id)
                 ->get();
-
             return response()->json([
                 'success' => true,
                 'message' => 'My wishlists fetched successfully',

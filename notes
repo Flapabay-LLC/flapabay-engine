@@ -54,3 +54,70 @@ host_type (How are you hosting on Flapabay)
             -Business
 
 place_items[] (External security/ Noise decibel monitor present/ Weapon(s) on the Property) - checkboxes
+
+
+
+
+    /**
+     * Store a favorite (add property to wishlist or create new favorite)
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'property_id' => 'required|exists:properties,id',
+            'wishlist_id' => 'required'
+        ]);
+
+        $user = $request->user();
+
+        // 1. Try to find the user's default wishlist
+        $wishlist = \App\Models\Wishlist::where('user_id', auth()->user()->id)
+            ->where('is_default', true)
+            ->first();
+
+        // 2. If no default, check if the user has exactly one wishlist
+        if (!$wishlist) {
+            $wishlists = \App\Models\Wishlist::where('user_id', auth()->user()->id)->get();
+            if ($wishlists->count() === 1) {
+                $wishlist = $wishlists->first();
+                $wishlist->is_default = true;
+                $wishlist->save();
+            }
+        }
+
+        // 3. If still no wishlist, return empty response
+        if (!$wishlist) {
+            return response()->json([
+                'status' => 'empty',
+                'message' => 'No wishlist available for this user',
+                'favorite' => null,
+            ], 200);
+        }
+
+        // Check if favorite already exists in this wishlist
+        $existingFavorite = \App\Models\Favorite::where('user_id', auth()->user()->id)
+            ->where('property_id', $request->property_id)
+            ->where('wishlist_id', $wishlist->id)
+            ->first();
+
+        if ($existingFavorite) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This property is already in your favorites'
+            ], 409);
+        }
+
+        $favorite = \App\Models\Favorite::create([
+            'user_id' => auth()->user()->id,
+            'property_id' => $request->property_id,
+            'wishlist_id' => $wishlist->id,
+        ]);
+
+        $favorite = Favorite::with(['property.listing', 'wishlist'])->find($favorite->id);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property added to favorites successfully',
+            'favorite' => $favorite,
+        ]);
+    }
+
