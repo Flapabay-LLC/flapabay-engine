@@ -790,11 +790,13 @@ class ListingController extends Controller
      */
     public function fetchHostListings(Request $request)
     {
+
+        // dd(auth()->user());
         try {
             $query = Listing::where('host_id', auth()->user()->host_id)
                 ->with([
                     'propertyType',
-                    'amenities',
+                    // 'amenities',
                     'images',
                     'reviews',
                     'property' // Add property relationship

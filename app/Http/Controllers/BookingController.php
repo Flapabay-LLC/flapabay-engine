@@ -204,4 +204,30 @@ class BookingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all bookings (trips) for the authenticated user, with property and listing details
+     */
+    public function myTrips(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $bookings = Booking::with(['property', 'property.listing'])
+                ->where('user_id', $user->id)
+                ->orderBy('start_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'My trips fetched successfully',
+                'data' => $bookings
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch trips',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
