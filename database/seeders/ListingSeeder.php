@@ -29,7 +29,7 @@ class ListingSeeder extends Seeder
         }
 
         // Create 30 listings
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             DB::beginTransaction();
             try {
                 // Create property
