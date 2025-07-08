@@ -1085,6 +1085,7 @@ class ListingController extends Controller
                     'maximum_guests' => $property ? $property->maximum_guests : null,
                     'rating' => $property ? $property->rating : null,
                     'verified' => $property ? $property->verified : false,
+                    'featured_status' => $property ? $property->featured_status : null,
                     'is_favorite' => in_array($listing->property_id, $userFavorites),
                     'images' => $images,
                     'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
