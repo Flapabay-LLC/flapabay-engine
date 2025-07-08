@@ -23,7 +23,6 @@ class PropertySeeder extends Seeder
                     'county'=> 'Zambia',
                     'latitude'=> '12.470039830293833',
                     'longitude'=> '12.76767754545454',
-
                     'check_out_hour' => '11:00:00',
                     'num_of_guests' => 4,
                     'num_of_children' => 1,
@@ -60,7 +59,6 @@ class PropertySeeder extends Seeder
                     'county'=> 'Zambia',
                     'latitude'=> '12.472358830293833',
                     'longitude'=> '12.76767000000454',
-
                     'check_out_hour' => '10:00:00',
                     'num_of_guests' => 2,
                     'num_of_children' => 0,
