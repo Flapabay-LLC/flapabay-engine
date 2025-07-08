@@ -27,7 +27,9 @@ class Reservation extends Model
         'cancelled_at',
         'is_instant_booking',
         'guest_phone',
-        'guest_email'
+        'guest_email',
+        'price_breakdown', // JSON field for price breakdown
+        'expires_at', // new field
     ];
 
     protected $casts = [
@@ -35,11 +37,25 @@ class Reservation extends Model
         'check_out_date' => 'date',
         'cancelled_at' => 'datetime',
         'is_instant_booking' => 'boolean',
-        'total_price' => 'decimal:2'
+        'total_price' => 'decimal:2',
+        'price_breakdown' => 'array', // Cast as array
+        'expires_at' => 'datetime', // new cast
     ];
 
     /**
-     * Get the user that made the reservation.
+     * Automatically set expires_at to 5 days from now on creation if not set.
+     */
+    protected static function booted()
+    {
+        static::creating(function ($reservation) {
+            if (empty($reservation->expires_at)) {
+                $reservation->expires_at = now()->addDays(5);
+            }
+        });
+    }
+
+    /**
+     * price_breakdown: stores the detailed price calculation as JSON/array
      */
     public function user()
     {

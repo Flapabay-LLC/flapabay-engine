@@ -13,10 +13,11 @@ use Illuminate\Support\Facades\DB;
 class ReservationController extends Controller
 {
     /**
-     * Create a new reservation (Airbnb-style)
+     * Create a new reservation 
      */
-    public function create(Request $request)
+    public function store(Request $request)
     {
+        // dd('here');
         try {
             $validator = Validator::make($request->all(), [
                 'property_id' => 'required|exists:properties,id',
@@ -45,6 +46,8 @@ class ReservationController extends Controller
 
             // Check if the property is available for the selected dates
             $isAvailable = $this->checkPropertyAvailability($property, $request->check_in_date, $request->check_out_date);
+
+            
             if (!$isAvailable) {
                 return response()->json([
                     'status' => 'error',
@@ -83,7 +86,9 @@ class ReservationController extends Controller
                 'special_requests' => $request->special_requests,
                 'is_instant_booking' => $request->is_instant_booking ?? false,
                 'guest_phone' => $request->guest_phone,
-                'guest_email' => $request->guest_email
+                'guest_email' => $request->guest_email,
+                'price_breakdown' => $priceBreakdown, // Save breakdown
+                'expires_at' => now()->addDays(5), // Set expiration
             ]);
 
             DB::commit();
