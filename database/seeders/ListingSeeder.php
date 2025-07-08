@@ -68,7 +68,8 @@ class ListingSeeder extends Seeder
                     'num_of_bathrooms' => $faker->numberBetween(1, 3),
                     'num_of_quarters' => $faker->numberBetween(0, 2),
                     'has_unallocated_rooms' => $faker->boolean,
-                    'first_reserver' => $faker->name
+                    'first_reserver' => $faker->name,
+                    'featured_status' => $faker->randomElement([null, 'guest_favourite', 'featured']),
                 ]);
 
                 // Create listing
