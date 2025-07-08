@@ -60,7 +60,13 @@ class UserDetail extends Model
         'spend_time_in' => 'array',
         'favourite_songs' => 'array',
         'shools_went_to' => 'array',
-        'pets' => 'array'
+        'pets' => 'array',
+        'show_decade_born' => 'boolean',
+        'know_where_been' => 'boolean',
+        'my_work' => 'string',
+        'favourite_place' => 'string',
+        'my_fun_fact' => 'string',
+        'boi_title' => 'string',
     ];
 
     /**

@@ -50,6 +50,7 @@ class PropertySeeder extends Seeder
                     'tags' => json_encode(['beach', 'luxury', 'family-friendly']),
                     'category_id' => json_encode([1, 2]),
                     'property_type_id' => 1,
+                    'featured_status' => null, // Not featured
                 ],
                 [
                     'title'=> 'Studio Apartment',
@@ -86,6 +87,7 @@ class PropertySeeder extends Seeder
                     'tags' => json_encode(['city-center', 'budget']),
                     'category_id' => json_encode([2, 4]),
                     'property_type_id' => 2,
+                    'featured_status' => 'guest_favourite', // Example featured status
                 ],
                 // Add more sample properties as needed
             ];

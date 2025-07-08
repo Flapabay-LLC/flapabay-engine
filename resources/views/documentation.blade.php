@@ -21,6 +21,7 @@
       <a href="#system-items" class="block hover:text-black">System Items</a>
       <a href="#listings" class="block hover:text-black">Listings</a>
       <a href="#property-types" class="block hover:text-black">Property Types</a>
+      <a href="#verification-status" class="block hover:text-black">Verification Status</a>
     </nav>
   </aside>
 
@@ -59,6 +60,7 @@ Authorization: Bearer &lt;your_token_here&gt;</pre>
       </div>
       <p class="text-sm text-orange-200">If you do not provide a valid token, you will receive a 401 Unauthorized error.</p>
     </section>
+    @include('documentation.sections.verification-status')
     @include('documentation.sections.new-signin')
     @include('documentation.sections.normal-signin')
     @include('documentation.sections.normal-signup')

@@ -741,4 +741,47 @@ class AuthenticatorController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Complete or update the authenticated user's details.
+     */
+    public function completeUserDetails(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.'
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'my_work' => 'nullable|string',
+            'favourite_place' => 'nullable|string',
+            'my_fun_fact' => 'nullable|string',
+            'pets' => 'nullable|array',
+            'show_decade_born' => 'nullable|boolean',
+            'shools_went_to' => 'nullable|array',
+            'favourite_songs' => 'nullable|array',
+            'spend_time_in' => 'nullable|array',
+            'most_useles_skill' => 'nullable|array',
+            'am_obessed_with' => 'nullable|array',
+            'boi_title' => 'nullable|string',
+            'know_where_been' => 'nullable|boolean',
+            'my_interests' => 'nullable|array',
+        ]);
+
+        $userDetail = $user->userDetail;
+        if (!$userDetail) {
+            $userDetail = $user->userDetail()->create($validated);
+        } else {
+            $userDetail->update($validated);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User details updated successfully.',
+            'data' => $userDetail->fresh()
+        ]);
+    }
 }
