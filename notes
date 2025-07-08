@@ -121,3 +121,48 @@ place_items[] (External security/ Noise decibel monitor present/ Weapon(s) on th
         ]);
     }
 
+
+<!-- save in Properties and Listing (listing details) -->
+type_of_place: (text) Specify the type of place available for guests, such as "entire_place," "room," or "shared_room_in_a_hostel."
+
+address[]: (text) Provide the location details of the place, including coordinates, state, street, postal code, province, or box address in JSON format.
+
+coordintates[]: (text) Confirm if the location pin is accurately placed on the map.
+
+guests: (text) Indicate the maximum number of guests that can stay at the place.
+
+bedrooms: (text) State the number of bedrooms available in the place.
+
+beds: (text) Mention the total number of beds available for guests.
+
+every_bedroom_has_lock: (text) Specify if each bedroom has a lock, using "1" for yes and "0" for no.
+
+kind_of_bathrooms: (text) Describe the types of bathrooms accessible to guests.
+
+who_is_there[]: (text) List who else might be present at the place, such as "me," "my family," "other guests," or "roommates."
+
+amenties[]: (text) Detail the amenities offered at the place for guests.
+
+favourites[]: (text) Highlight guest favorites related to the place.
+
+safety_items: (text) Indicate the availability of safety items like smoke alarms, first aid kits, or fire extinguishers.
+
+images[]: (text) Upload photos of the house, with a maximum of five images.
+
+title: (text) Provide a title for the house listing.
+
+features[]: (text) Describe the features of the house, such as "peaceful," "unique," "family friendly," "stylish," "central," or "spacious."
+
+description: (text) Write a detailed description of the place.
+
+host_booking_settings[]: (text) Choose the booking settings for the place.
+
+who_to_welcome_first_reservation: (text) Specify who should be welcomed for the first reservation.
+
+weekday_price: (text) Set the base price for weekdays.
+
+weekend_price: (text) Set the base price for weekends.
+
+disacouts[]: (text) Provide any discounts applicable to the booking.
+
+place_items[]: (text) Indicate if the place has specific items available for guests.

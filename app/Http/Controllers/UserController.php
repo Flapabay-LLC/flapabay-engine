@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Validator;
 use Aws\S3\S3Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Listing;
+use App\Models\Property;
 
 class UserController extends Controller
 {
@@ -234,29 +236,122 @@ class UserController extends Controller
 
     public function registerHost(Request $request)
     {
-        // Validate request
-        $this->validate($request, [
-            'user_id' => 'required', // Ensure user_id exists in the users table
-        ]);
 
-        // dd('here');
+        // dd($request);
+
         try {
-            // Generate a UUID
-            $uuid = random_int(1000, 9999);
+            // Generate a unique 4-digit host_id
+            do {
+                $uuid = str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            } while (\App\Models\User::where('host_id', $uuid)->exists());
             // Find the user by user_id
-            $user = User::where('id',$request->input('user_id'))->first();
+            $user = auth()->user();
 
             if ($user) {
                 // Update the host_id field
                 $user->host_id = $uuid;
                 $user->save();
 
+                // Handle image uploads (Wasabi/local) and save URLs to images JSON column
+                $imagePaths = [];
+                if ($request->hasFile('images')) {
+                    $endpoint = 'https://s3.us-west-1.wasabisys.com';
+                    $bucketName = 'flapapic';
+                    $region = 'us-west-1';
+                    $accessKey = 'HJG2GQM9QGBE4K6JCO2S';
+                    $secretKey = 'HkHlBtvEszE2Uh18ZWgCw3t2BXd7CBPy75mMWEnD';
+
+                    $s3Client = new \Aws\S3\S3Client([
+                        'region'     => $region,
+                        'version'    => 'latest',
+                        'endpoint'   => $endpoint,
+                        'credentials' => [
+                            'key'    => $accessKey,
+                            'secret' => $secretKey,
+                        ],
+                    ]);
+
+                    foreach ($request->file('images') as $image) {
+                        if ($image->isValid()) {
+                            $fileName = time() . '_' . $image->getClientOriginalName();
+                            $imageUrl = null;
+                            try {
+                                $result = $s3Client->putObject([
+                                    'Bucket'     => $bucketName,
+                                    'Key'        => 'properties/' . $fileName,
+                                    'SourceFile' => $image->getPathname(),
+                                ]);
+                                if (isset($result['ObjectURL'])) {
+                                    $imageUrl = $result['ObjectURL'];
+                                } else {
+                                    throw new \Exception('Object URL not returned from Wasabi');
+                                }
+                            } catch (\Exception $e) {
+                                // Fallback to local storage
+                                $localPath = $image->storeAs('properties', $fileName, 'public');
+                                $imageUrl = \Storage::disk('public')->url($localPath);
+                            }
+                            $imagePaths[] = $imageUrl;
+                        }
+                    }
+                }
+
+                // Create Property for the host
+                $propertyData = $request->only([
+                    'title', 'description', 'location', 'address', 'country', 'latitude', 'longitude',
+                    'check_in_hour', 'check_out_hour', 'num_of_guests', 'num_of_children', 'maximum_guests',
+                    'allow_extra_guests', 'neighborhood_area', 'currency', 'price_range', 'price',
+                    'price_per_night', 'additional_guest_price', 'children_price', 'amenities', 'house_rules',
+                    'video_link', 'verified', 'num_of_bedrooms', 'num_of_bathrooms', 'num_of_quarters',
+                    // Host fields
+                    'type_of_place', 'address', 'coordinates',
+                    'every_bedroom_has_lock', 'kind_of_bathrooms', 'who_is_there', 'favourites',
+                    'safety_items', 'images', 'features', 'host_booking_settings',
+                    'who_to_welcome_first_reservation', 'weekday_price', 'weekend_price', 'discounts', 'place_items',
+                ]);
+                // Map 'guests' to 'maximum_guests' if present
+                if ($request->has('guests')) {
+                    $propertyData['maximum_guests'] = $request->input('guests');
+                }
+                // Map 'bedrooms' to 'num_of_bedrooms' if present
+                if ($request->has('bedrooms')) {
+                    $propertyData['num_of_bedrooms'] = $request->input('bedrooms');
+                }
+                // Map 'bathrooms' to 'num_of_bathrooms' if present
+                if ($request->has('bathrooms')) {
+                    $propertyData['num_of_bathrooms'] = $request->input('bathrooms');
+                }
+                $propertyData['user_id'] = $user->id;
+                if (!empty($imagePaths)) {
+                    $propertyData['images'] = $imagePaths;
+                }
+                $property = Property::create($propertyData);
+
+                // Create Listing for the property
+                $listingData = [
+                    'host_id' => $user->id,
+                    'title' => $property->title,
+                    'property_id' => $property->id,
+                    'category_id' => $property->category_id ?? null,
+                    'status' => true,
+                    'published_at' => now(),
+                    'cancellation_policy' => false,
+                    'is_completed' => true,
+                    'listing_type' => $request->input('listing_type', 'stay'),
+                    'description' => $property->description,
+                    'features' => $property->features,
+                    'images' => $property->images,
+                ];
+                $listing = Listing::create($listingData);
+
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Host registered successfully',
+                    'message' => 'Host registered and property/listing created successfully',
                     'data' => [
                         'user_id' => $user->id,
                         'host_id' => $user->host_id,
+                        'property' => $property,
+                        'listing' => $listing,
                     ],
                 ], 200);
             } else {

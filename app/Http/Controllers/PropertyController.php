@@ -567,12 +567,12 @@ class PropertyController extends Controller
     public function getPropertyAvailabilityDates($propertyId) {
         try {
             // Validate the property ID
-            if (!is_numeric($propertyId) || $propertyId <= 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid property ID',
-                ], 400);
-            }
+        if (!is_numeric($propertyId) || $propertyId <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid property ID',
+            ], 400);
+        }
 
             // Retrieve the property
             $property = Property::select(['id', 'title', 'check_in_date', 'check_out_date'])

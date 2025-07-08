@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class ReservationController extends Controller
 {
     /**
-     * Create a new reservation 
+     * Create a new reservation
      */
     public function store(Request $request)
     {

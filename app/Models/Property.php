@@ -81,6 +81,53 @@ class Property extends Model
         'nights',
         'check_in_date',
         'check_out_date',
+        'type_of_place', // string
+        'address', // json
+        'coordinates', // json
+        'guests', // integer
+        'bedrooms', // integer
+        'beds', // integer
+        'every_bedroom_has_lock', // boolean
+        'kind_of_bathrooms', // string
+        'who_is_there', // json
+        'amenities', // json
+        'favourites', // json
+        'safety_items', // json
+        'images', // json
+        'title', // string
+        'features', // json
+        'description', // text
+        'host_booking_settings', // json
+        'who_to_welcome_first_reservation', // string
+        'weekday_price', // decimal
+        'weekend_price', // decimal
+        'discounts', // json
+        'place_items', // json
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'address' => 'array',
+        'coordinates' => 'array',
+        'who_is_there' => 'array',
+        'amenities' => 'array',
+        'favourites' => 'array',
+        'safety_items' => 'array',
+        'images' => 'array',
+        'features' => 'array',
+        'host_booking_settings' => 'array',
+        'discounts' => 'array',
+        'place_items' => 'array',
+        'every_bedroom_has_lock' => 'boolean',
+        'guests' => 'integer',
+        'bedrooms' => 'integer',
+        'beds' => 'integer',
+        'weekday_price' => 'decimal:2',
+        'weekend_price' => 'decimal:2',
     ];
 
     /**
