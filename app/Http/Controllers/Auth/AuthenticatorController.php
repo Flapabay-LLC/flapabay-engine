@@ -710,4 +710,35 @@ class AuthenticatorController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Refresh the user's JWT token.
+     */
+    public function refreshToken(Request $request)
+    {
+        try {
+            $newToken = JWTAuth::parseToken()->refresh();
+            return response()->json([
+                'success' => true,
+                'token' => $newToken,
+                'message' => 'Token refreshed successfully.'
+            ], 200);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid token.'
+            ], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token refresh failed.'
+            ], 401);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

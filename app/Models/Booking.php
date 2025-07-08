@@ -30,6 +30,7 @@ class Booking extends Model
         'cancellation_reason',
         'cancellation_date',
         'amount',
+        'reservation_id', // new field
     ];
 
     /**
@@ -56,5 +57,13 @@ class Booking extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the reservation associated with the booking.
+     */
+    public function reservation()
+    {
+        return $this->belongsTo(Reservation::class, 'reservation_id');
     }
 }

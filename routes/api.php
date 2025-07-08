@@ -90,6 +90,9 @@ Route::prefix('v1')->group(function () {
 
     // Wishlist routes
     Route::post('wishlists', [FavoriteController::class, 'createWishlist']);
+
+    // JWT token refresh endpoint
+    Route::middleware('auth:api')->post('auth/refresh', [\App\Http\Controllers\Auth\AuthenticatorController::class, 'refreshToken']);
 });
 
 // Protected routes with JWT api authentication
@@ -218,7 +221,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('/system/property-types', [ListingController::class, 'createSystemPropertyType']);
 
     // Reservation routes
-    Route::post('reserve', [ReservationController::class, 'create']);
+    Route::post('reserve', [ReservationController::class, 'store']);
     Route::get('reservations', [ReservationController::class, 'index']);
     Route::get('reservations/{id}', [ReservationController::class, 'show']);
     Route::post('reservations/{id}/cancel', [ReservationController::class, 'cancel']);
@@ -244,5 +247,4 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::post('wishlists/set-default', [FavoriteController::class, 'setDefaultWishlist']);
 
 });
-
 

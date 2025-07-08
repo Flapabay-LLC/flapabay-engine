@@ -60,15 +60,17 @@ class BookingController extends Controller
 
     public function createBooking(Request $request)
     {
+
+        // dd('here');
         // Step 1: Validate incoming request data
         $validatedData = Validator::make($request->all(), [
             'property_id' => 'required', // Ensure property exists
             'user_id' => 'required', // Ensure user exists
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'guest_details' => 'nullable|string',
-            'guest_count' => 'required|integer|min:1',
-            'amount' => 'required|integer|min:1',
+            // 'start_date' => 'required|date',
+            // 'end_date' => 'required|date|after:start_date',
+            // 'guest_details' => 'nullable|string',
+            // 'guest_count' => 'required|integer|min:1',
+            'reservation_id' => 'nullable|integer|exists:reservations,id',
         ]);
 
         if ($validatedData->fails()) {
@@ -82,11 +84,28 @@ class BookingController extends Controller
         try {
             DB::beginTransaction();
 
+            $amount = $request->input('amount');
+            $priceBreakdown = null;
+            $reservationId = $request->input('reservation_id');
+            if ($reservationId) {
+                $reservation = \App\Models\Reservation::find($reservationId);
+                if ($reservation) {
+                    $amount = $reservation->total_price;
+                    $priceBreakdown = [
+                        'total' => $reservation->total_price,
+                        'currency' => $reservation->currency,
+                        'check_in_date' => $reservation->check_in_date,
+                        'check_out_date' => $reservation->check_out_date,
+                        // Add more fields as needed
+                    ];
+                }
+            }
+
             // Step 2: Create the booking
             $booking = Booking::create([
                 'booking_number' => uniqid('booking_'), // Generate a unique booking number
                 'property_id' => $request->input('property_id'),
-                'amount' => $request->input('amount'),
+                'amount' => $amount,
                 'user_id' => $request->input('user_id'),
                 'start_date' => $request->input('start_date'),
                 'end_date' => $request->input('end_date'),
@@ -94,6 +113,7 @@ class BookingController extends Controller
                 'guest_count' => $request->input('guest_count'),
                 'booking_status' => 'pending', // Default status
                 'payment_status' => 'pending', // Default status
+                'reservation_id' => $reservationId,
             ]);
 
             DB::commit();
@@ -101,7 +121,8 @@ class BookingController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Booking created successfully',
-                'booking' => $booking,
+                'booking' => Booking::where('id', $booking->id)->with('reservation')->get(),
+                'price_breakdown' => $priceBreakdown,
             ], 201);
 
         } catch (\Exception $e) {
