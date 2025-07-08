@@ -246,5 +246,8 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('my-wishlists', [FavoriteController::class, 'myWishlists']);
     Route::post('wishlists/set-default', [FavoriteController::class, 'setDefaultWishlist']);
 
+    // Complete user details endpoint
+    Route::post('complete-user-details', [AuthenticatorController::class, 'completeUserDetails']);
+
 });
 

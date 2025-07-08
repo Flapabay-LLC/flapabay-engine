@@ -47,6 +47,7 @@ class Property extends Model
         'images',
         'video_link',
         'verified',
+        'featured_status', // enum: null, 'guest_favourite', 'featured'
         'property_type_id', //for filtering
         'category_id', //for filtering
         'tags', //for filtering
