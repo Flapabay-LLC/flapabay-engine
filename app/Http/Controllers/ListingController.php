@@ -1064,7 +1064,7 @@ class ListingController extends Controller
                 }
 
                 // Get primary image and other images
-                $images = $listing->images->map(function($image) {
+                $images = collect($listing->images)->map(function($image) {
                     return [
                         'url' => $image->image_url,
                         'is_primary' => $image->is_primary
@@ -1088,8 +1088,8 @@ class ListingController extends Controller
                     'featured_status' => $property ? $property->featured_status : null,
                     'is_favorite' => in_array($listing->property_id, $userFavorites),
                     'images' => $images,
-                    'amenities' => $listing->amenities ? $listing->amenities->pluck('name') : [],
-                    'property_type' => $property->propertyType ? $property->propertyType : null,
+                    'amenities' => collect($listing->amenities)->pluck('name'),
+                    'property_type' => $property && $property->propertyType ? $property->propertyType : null,
                     'listing_type' => $listing->listing_type ? $listing->listing_type : null,
                     'host' => $listing->host ? [
                         'id' => $listing->host->id,
@@ -1097,14 +1097,14 @@ class ListingController extends Controller
                         'email' => $listing->host->email,
                         'phone' => $listing->host->phone
                     ] : null,
-                    'reviews' => $listing->reviews ? $listing->reviews->map(function ($review) {
+                    'reviews' => collect($listing->reviews)->map(function ($review) {
                         return [
                             'id' => $review->id,
                             'rating' => $review->rating,
                             'comment' => $review->comment,
                             'created_at' => $review->created_at
                         ];
-                    }) : [],
+                    }),
                     'created_at' => $listing->created_at,
                     'updated_at' => $listing->updated_at,
                 ];
