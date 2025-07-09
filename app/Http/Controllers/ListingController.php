@@ -1009,11 +1009,9 @@ class ListingController extends Controller
     public function fetchAllListings()
     {
         try {
-            // Fetch all listings with their relationships
+            // Fetch all listings with their relationships (remove 'amenities' from Listing relationships)
             $listings = Listing::with([
                 'property',
-                'images',
-                'amenities',
                 'propertyType',
                 'host',
                 'reviews'
@@ -1063,10 +1061,24 @@ class ListingController extends Controller
                     $childrenPrice = \App\Helpers\CurrencyHelper::convert($childrenPrice, $propertyCurrency, $userCurrency);
                 }
 
-                // Get the images in property->images[] //json field
-                $images = $property->images;
+                // Get the images from property->images JSON field
+                $images = $property && isset($property->images) ? $property->images : [];
 
-              
+                // Get the amenities from property->amenities JSON field
+                $amenities = $property && isset($property->amenities) ? json_decode($property->amenities, true) : [];
+
+                // Get the place_items from property->place_items JSON field
+                $place_items = $property && isset($property->place_items) ? json_decode($property->place_items, true) : [];
+
+                // Get the listing_favoutites from property->favourites JSON field
+                $listing_favoutites = $property && isset($property->favourites) ? json_decode($property->favourites, true) : [];
+
+                // Get the safety_items from property->safety_items JSON field
+                $safety_items = $property && isset($property->safety_items) ? json_decode($property->safety_items, true) : [];
+
+                // Get the who_is_there from property->who_is_there JSON field
+                $who_is_there = $property && isset($property->who_is_there) ? json_decode($property->who_is_there, true) : [];
+
                 return [
                     'id' => $listing->id,
                     'title' => $listing->title,
@@ -1084,7 +1096,11 @@ class ListingController extends Controller
                     'featured_status' => $property ? $property->featured_status : null,
                     'is_favorite' => in_array($listing->property_id, $userFavorites),
                     'images' => $images,
-                    'amenities' => collect($listing->amenities)->pluck('name'),
+                    'amenities' => $amenities,
+                    'place_items' => $place_items,
+                    'listing_favoutites' => $listing_favoutites,
+                    'safety_items' => $safety_items,
+                    'who_is_there' => $who_is_there,
                     'property_type' => $property && $property->propertyType ? $property->propertyType : null,
                     'listing_type' => $listing->listing_type ? $listing->listing_type : null,
                     'host' => $listing->host ? [

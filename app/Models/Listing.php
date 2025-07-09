@@ -18,28 +18,12 @@ class Listing extends Model
      */
     protected $fillable = [
         'host_id',
-        'title',
         'description',
         'property_id',
-        'property_type_id',
-        'price_per_night',
-        'bedrooms',
-        'bathrooms',
-        'max_guests',
-        'address',
-        'city',
-        'state',
-        'country',
-        'zip_code',
-        'latitude',
-        'longitude',
         'status',
         'listing_type',
         'is_instant_bookable',
         'cancellation_policy',
-        'house_rules',
-        'check_in_time',
-        'check_out_time',
         'category_id',
         'published_at',
         'is_completed'
@@ -83,30 +67,6 @@ class Listing extends Model
     public function propertyType()
     {
         return $this->belongsTo(PropertyType::class);
-    }
-
-    /**
-     * Get the amenities associated with the post.
-     */
-    public function amenities()
-    {
-        return $this->belongsToMany(Amenity::class, 'listing_amenities');
-    }
-
-    /**
-     * Get the images associated with the post.
-     */
-    public function images()
-    {
-        return $this->hasMany(ListingImage::class);
-    }
-
-    /**
-     * Get the place items associated with the post.
-     */
-    public function placeItems()
-    {
-        return $this->belongsToMany(PlaceItem::class, 'listing_place_items');
     }
 
     /**

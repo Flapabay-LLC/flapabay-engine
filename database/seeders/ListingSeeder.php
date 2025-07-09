@@ -59,45 +59,64 @@ class ListingSeeder extends Seeder
                 ];
                 // Select 5 random images for the property
                 $propertyImages = array_values($faker->randomElements($imageUrls, 5));
+                // Define sample amenities
+                $sampleAmenities = ['WiFi', 'Kitchen', 'Pool', 'Parking', 'Air Conditioning', 'Washer', 'Dryer', 'Heating', 'TV', 'Workspace', 'Gym', 'Elevator', 'Hot Tub', 'Fireplace', 'Breakfast', 'Pets Allowed'];
+                // Select 3-6 random amenities for the property
+                $propertyAmenities = array_values($faker->randomElements($sampleAmenities, $faker->numberBetween(3, 6)));
                 // Create property
                 $property = Property::create([
+                    'property_type_id' => $faker->numberBetween(1, 5),
+                    'category_id' => $faker->numberBetween(1, 5),
+
                     'title' => $faker->sentence(3),
                     'description' => $faker->paragraphs(3, true),
                     'location' => $faker->address,
                     'address' => $faker->streetAddress,
                     'latitude' => $faker->latitude,
                     'longitude' => $faker->longitude,
-                    'check_in_hour' => '14:00',
-                    'check_out_hour' => '11:00',
-                    'num_of_guests' => $faker->numberBetween(1, 10),
-                    'num_of_children' => $faker->numberBetween(0, 5),
-                    'maximum_guests' => $faker->numberBetween(2, 12),
-                    'allow_extra_guests' => $faker->boolean,
-                    'neighborhood_area' => $faker->city,
-                    'country' => $faker->country,
-                    'show_contact_form_instead_of_booking' => false,
-                    'allow_instant_booking' => true,
-                    'currency' => 'USD',
-                    'price' => $faker->numberBetween(50, 500),
-                    'price_per_night' => $faker->numberBetween(50, 500),
-                    'additional_guest_price' => $faker->numberBetween(10, 50),
-                    'children_price' => $faker->numberBetween(5, 25),
-                    'amenities' => json_encode($faker->randomElements(['WiFi', 'Kitchen', 'Pool', 'Parking', 'Air Conditioning'], 3)),
-                    'house_rules' => json_encode($faker->randomElements(['No smoking', 'No pets', 'No parties'], 2)),
-                    'video_link' => json_encode(['url' => 'https://www.youtube.com/watch?v=' . $faker->uuid]),
-                    'property_type_id' => $faker->numberBetween(1, 5),
-                    'category_id' => json_encode([$faker->numberBetween(1, 5)]),
-                    'place_items' => json_encode($faker->randomElements(['Bed', 'TV', 'Sofa', 'Table'], 3)),
-                    'verified' => true,
-                    'about_place' => $faker->paragraph,
-                    'host_type' => $faker->randomElement(['Private Individual', 'Business']),
+
+                    'check_in_hour' => '14:00:00',
+                    'check_out_hour' => '11:00:00',
                     'num_of_bedrooms' => $faker->numberBetween(1, 5),
                     'num_of_bathrooms' => $faker->numberBetween(1, 3),
                     'num_of_quarters' => $faker->numberBetween(0, 2),
                     'has_unallocated_rooms' => $faker->boolean,
-                    'first_reserver' => $faker->name,
-                    'featured_status' => $faker->randomElement([null, 'guest_favourite', 'featured']),
+                    'num_of_guests' => $faker->numberBetween(1, 10),
+                    'num_of_children' => $faker->numberBetween(0, 5),
+                    'maximum_guests' => $faker->numberBetween(2, 12),
+                    'allow_extra_guests' => $faker->boolean,
+
+                    'neighborhood_area' => $faker->city,
+                    'country' => $faker->country,
+                    'currency' => 'ZMW',
+                    'price' => $faker->numberBetween(50, 500),
+                    'price_per_night' => $faker->numberBetween(50, 500),
+                    'weekday_price' => $faker->numberBetween(50, 500),
+                    'weekend_price' => $faker->numberBetween(50, 500),
+                    'children_price' => $faker->numberBetween(5, 25),
+                    'additional_guest_price' => $faker->numberBetween(10, 50),
+                    
+                    'amenities' => json_encode($propertyAmenities),
+                    'house_rules' => json_encode($faker->randomElements(['no fighting','no smoking', 'no pets', 'no parties', 'no brothel', 'no drugs', 'no uncessary visitors'], 2)),
+                    'favourites' => json_encode($faker->randomElements(['peaceful', 'quiet surrounding', 'warm'], 2)),
+                    'safety_items' => json_encode($faker->randomElements(['smoke alarm', 'fire extinguisher', 'first aid kit'], 2)),
+                    'who_is_there' => json_encode($faker->randomElements(['just me', 'me and my family', 'roomates', 'teamates'], 1)),
+                    'video_link' => json_encode(['url' => 'https://www.youtube.com/watch?v=' . $faker->uuid]),
+                    'place_items' => json_encode($faker->randomElements(['Bed', 'TV', 'Sofa', 'Table'], 3)),
                     'images' => json_encode($propertyImages),
+
+                    'verified' => true,
+                    'about_place' => $faker->paragraph,
+                    'host_type' => $faker->randomElement(['private individual', 'business']),
+
+                    'first_reserver' => $faker->name,
+                    'show_contact_form_instead_of_booking' => false,
+                    'allow_instant_booking' => true,
+                    'featured_status' => $faker->randomElement([null, 'guest_favourite', 'featured']),
+                    'kind_of_bathrooms' => $faker->randomElement(['private attached','dedicated','shared']),
+                    'every_bedroom_has_lock'=>$faker->boolean,
+                    'who_to_welcome_first_reservation'=>json_encode($faker->randomElements(['any airbnb guest','an experienced guest'], 1)),
+                    'host_booking_settings'=>json_encode($faker->randomElements(['approve your first 5 booking','use instant book'], 1))
                 ]);
 
                 // Create listing
@@ -127,7 +146,8 @@ class ListingSeeder extends Seeder
 
                 DB::commit();
             } catch (\Exception $e) {
-                DB::rollBack();
+                dd($e);
+                // DB::rollBack();
                 $this->command->error("Failed to create listing: " . $e->getMessage());
             }
         }
