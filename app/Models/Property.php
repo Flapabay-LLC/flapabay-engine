@@ -85,8 +85,6 @@ class Property extends Model
         'address', // json
         'coordinates', // json
         'guests', // integer
-        'bedrooms', // integer
-        'beds', // integer
         'every_bedroom_has_lock', // boolean
         'kind_of_bathrooms', // string
         'who_is_there', // json

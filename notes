@@ -166,3 +166,12 @@ weekend_price: (text) Set the base price for weekends.
 disacouts[]: (text) Provide any discounts applicable to the booking.
 
 place_items[]: (text) Indicate if the place has specific items available for guests.
+
+
+
+
+make the fetchAllListings api Route::get('listings', [ListingController::class, 'fetchAllListings']); to have an optional param to return any field name specific search e.g listing by field value http://localhost:8000/api/listings?listing_type=
+http://localhost:8000/api/listings?listing_type=
+
+avoid
+Call to a member function map() on null
