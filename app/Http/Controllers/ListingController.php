@@ -1063,14 +1063,10 @@ class ListingController extends Controller
                     $childrenPrice = \App\Helpers\CurrencyHelper::convert($childrenPrice, $propertyCurrency, $userCurrency);
                 }
 
-                // Get primary image and other images
-                $images = collect($listing->images)->map(function($image) {
-                    return [
-                        'url' => $image->image_url,
-                        'is_primary' => $image->is_primary
-                    ];
-                });
+                // Get the images in property->images[] //json field
+                $images = $property->images;
 
+              
                 return [
                     'id' => $listing->id,
                     'title' => $listing->title,
