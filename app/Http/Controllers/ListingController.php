@@ -280,7 +280,7 @@ class ListingController extends Controller
                                  ->orWhere(function($subSubQ) use ($start, $end) {
                                      $subSubQ->where('check_in_date', '<=', $start)
                                             ->where('check_out_date', '>=', $end);
-                                 });
+                            });
                         });
                     } elseif ($dateType === 'month' && is_numeric($dates)) {
                         $monthsFromNow = (int)$dates;
