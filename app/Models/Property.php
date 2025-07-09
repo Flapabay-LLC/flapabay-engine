@@ -24,14 +24,19 @@ class Property extends Model
         'country',
         'latitude',
         'longitude',
-        'check_in_hour',
-        'check_out_hour',
         'num_of_guests',
         'num_of_children',
+        'has_unallocated_rooms',
+        'num_of_bedrooms',
+        'num_of_bathrooms',
+        'num_of_quarters',
         'maximum_guests',
+        'children_guests',
+        'infant_guests',
+        'adult_guests',
+        'pet_guests',
         'allow_extra_guests',
         'neighborhood_area',
-        'country',
         'show_contact_form_instead_of_booking',
         'allow_instant_booking',
         'currency',
@@ -40,8 +45,8 @@ class Property extends Model
         'price_per_night',
         'additional_guest_price',
         'children_price',
-        'amenities',
-        'house_rules',
+        'weekday_price', // decimal
+        'weekend_price', // decimal
         'page',
         'rating', //array [1,2,3,4,5]
         'images',
@@ -51,54 +56,38 @@ class Property extends Model
         'property_type_id', //for filtering
         'category_id', //for filtering
         'tags', //for filtering
-
-        //Based on listing information
         'about_place',
         'host_type', //enum
         'occupation_type', //enum
         'street',
         'city',
-        'zip',
-        'has_unallocated_rooms', //boolean
-        'num_of_bedrooms',
-        'num_of_bathrooms',
-        'num_of_quarters',
         'favorites',
         'first_reserver',
-        'name',
         'state',
         'zip_code',
-        'bedrooms',
-        'bathrooms',
-        'max_guests',
         'status',
         'square_feet',
-        'children_guests',
-        'infant_guests',
-        'adult_guests',
-        'pet_guests',
         'place_items',
         'nights',
         'check_in_date',
         'check_out_date',
+        'check_in_hour',
+        'check_out_hour',
         'type_of_place', // string
         'address', // json
         'coordinates', // json
-        'guests', // integer
         'every_bedroom_has_lock', // boolean
         'kind_of_bathrooms', // string
         'who_is_there', // json
         'amenities', // json
+        'house_rules',
         'favourites', // json
         'safety_items', // json
         'images', // json
-        'title', // string
         'features', // json
         'description', // text
         'host_booking_settings', // json
         'who_to_welcome_first_reservation', // string
-        'weekday_price', // decimal
-        'weekend_price', // decimal
         'discounts', // json
         'place_items', // json
     ];
