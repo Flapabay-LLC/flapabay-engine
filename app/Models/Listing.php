@@ -30,6 +30,7 @@ class Listing extends Model
         'availability_type',
         'flexible_period',
         'flexible_month',
+        'title',
     ];
 
     /**
@@ -49,6 +50,7 @@ class Listing extends Model
         'availability_type' => 'string',
         'flexible_period' => 'string',
         'flexible_month' => 'string',
+        'title' => 'string',
     ];
 
     /**
