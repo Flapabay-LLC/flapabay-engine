@@ -23,6 +23,7 @@
       <a href="#property-types" class="block hover:text-black">Property Types</a>
       <a href="#host-signup" class="block hover:text-black">Host Signup</a>
       <a href="#verification-status" class="block hover:text-black">Verification Status</a>
+      <a href="#price-breakdown" class="block hover:text-black">Price Breakdown</a>
     </nav>
   </aside>
 
@@ -40,6 +41,9 @@
         <option value="#system-items">System Items</option>
         <option value="#listings">Listings</option>
         <option value="#property-types">Property Types</option>
+        <option value="#host-signup">Host Signup</option>
+        <option value="#verification-status">Verification Status</option>
+        <option value="#price-breakdown">Price Breakdown</option>
       </select>
     </div>
 
@@ -72,6 +76,7 @@ Authorization: Bearer &lt;your_token_here&gt;</pre>
     @include('documentation.sections.system-items')
     @include('documentation.sections.listings')
     @include('documentation.sections.property-types')
+    @include('documentation.sections.price-breakdown')
 
     <footer class="mt-20 text-sm text-center text-gray-500">
       &copy; 2025 Flapa API Docs. All rights reserved.
