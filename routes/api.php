@@ -38,7 +38,7 @@ Route::get('/', function () {
 Route::prefix('v1')->group(function () {
     Route::get('/testing', [UserController::class, 'test']);
     // Authentication routes
-    // Route::post('register', [AuthenticatorController::class, 'register']);
+    
     Route::post('register-user-details', [AuthenticatorController::class, 'registerUserDetails']);
     Route::post('get-email-phone-otp', [AuthenticatorController::class, 'getEmailPhoneOtp']);
     Route::post('login-with-otp', [AuthenticatorController::class, 'otpLogin']);
@@ -55,9 +55,16 @@ Route::prefix('v1')->group(function () {
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
 
+
     //Listings
     Route::post('listings/search', [ListingController::class, 'searchListings']);
     Route::get('listings', [ListingController::class, 'fetchAllListings']);
+    Route::delete('properties/{propertyId}', [PropertyController::class, 'deleteProperty']);
+    Route::get('properties/{propertyId}/reviews', [PropertyController::class, 'getPropertyReviews']);
+    Route::get('properties/{propertyId}/description', [PropertyController::class, 'getPropertyDescription']);
+    Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
+    Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
+    Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
 
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);
@@ -70,6 +77,7 @@ Route::prefix('v1')->group(function () {
 
     Route::post('facebook/signin', [FacebookController::class, 'facebookSignIn']);
     // Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
+    
     // Category routes
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
@@ -133,12 +141,6 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::post('properties', [PropertyController::class, 'createProperties']);
     Route::post('update-properties', [PropertyController::class, 'updateProperties']);
     // Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
-    Route::delete('properties/{propertyId}', [PropertyController::class, 'deleteProperty']);
-    Route::get('properties/{propertyId}/reviews', [PropertyController::class, 'getPropertyReviews']);
-    Route::get('properties/{propertyId}/description', [PropertyController::class, 'getPropertyDescription']);
-    Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
-    Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
-    Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
 
     
     // Property Rating & Reviews
