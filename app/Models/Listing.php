@@ -26,7 +26,10 @@ class Listing extends Model
         'cancellation_policy',
         'category_id',
         'published_at',
-        'is_completed'
+        'is_completed',
+        'availability_type',
+        'flexible_period',
+        'flexible_month',
     ];
 
     /**
@@ -42,7 +45,10 @@ class Listing extends Model
         'status' => 'boolean',
         'cancellation_policy' => 'boolean',
         'is_completed' => 'boolean',
-        'published_at' => 'datetime'
+        'published_at' => 'datetime',
+        'availability_type' => 'string',
+        'flexible_period' => 'string',
+        'flexible_month' => 'string',
     ];
 
     /**

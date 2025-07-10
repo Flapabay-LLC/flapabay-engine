@@ -76,20 +76,6 @@ return new class extends Migration
                 $table->json('place_items')->nullable();
             }
         });
-        Schema::table('listings', function (Blueprint $table) {
-            if (!Schema::hasColumn('listings', 'title')) {
-                $table->string('title')->nullable();
-            }
-            if (!Schema::hasColumn('listings', 'description')) {
-                $table->text('description')->nullable();
-            }
-            if (!Schema::hasColumn('listings', 'features')) {
-                $table->json('features')->nullable();
-            }
-            if (!Schema::hasColumn('listings', 'images')) {
-                $table->json('images')->nullable();
-            }
-        });
     }
 
     public function down(): void

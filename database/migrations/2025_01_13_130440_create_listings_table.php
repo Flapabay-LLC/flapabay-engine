@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('listings', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('title')->nullable();
             $table->unsignedBigInteger('property_id');
             $table->unsignedBigInteger('host_id');
             $table->json('post_levels')->nullable();
