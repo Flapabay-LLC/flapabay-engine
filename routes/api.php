@@ -96,7 +96,7 @@ Route::prefix('v1')->group(function () {
 });
 
 // Protected routes with JWT api authentication
-Route::middleware('auth:api')->prefix('v1')->group(function () {
+Route::middleware('auth.api')->prefix('v1')->group(function () {
 
     // User routes
     Route::get('users/{user_id}', [UserController::class, 'show']);

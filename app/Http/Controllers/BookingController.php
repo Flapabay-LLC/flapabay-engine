@@ -60,16 +60,10 @@ class BookingController extends Controller
 
     public function createBooking(Request $request)
     {
-
-        // dd('here');
         // Step 1: Validate incoming request data
         $validatedData = Validator::make($request->all(), [
             'property_id' => 'required', // Ensure property exists
-            'user_id' => 'required', // Ensure user exists
-            // 'start_date' => 'required|date',
-            // 'end_date' => 'required|date|after:start_date',
-            // 'guest_details' => 'nullable|string',
-            // 'guest_count' => 'required|integer|min:1',
+            'user_id' => 'required', 
             'reservation_id' => 'nullable|integer|exists:reservations,id',
         ]);
 

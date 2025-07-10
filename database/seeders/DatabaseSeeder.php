@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             LocationSeeder::class,
             IconsSeeder::class,
             PropertyTypeSeeder::class,
-            PropertySeeder::class,
+            // PropertySeeder::class,
             UserDetailSeeder::class,
             UserReviewSeeder::class,
             BookingSeeder::class,
