@@ -1006,16 +1006,38 @@ class ListingController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function fetchAllListings()
+    public function fetchAllListings(Request $request)
     {
         try {
-            // Fetch all listings with their relationships (remove 'amenities' from Listing relationships)
-            $listings = Listing::with([
+            // Get filter and pagination parameters
+            $propertyType = strtolower($request->query('property_type', '')) ?: null; // e.g., 'bangalow', 'apartment', etc.
+            $listingType = strtolower($request->query('listing_type', '')) ?: null; // e.g., 'experience' or 'stay'
+            $page = (int) $request->query('page', 1);
+            $perPage = (int) $request->query('per_page', 10);
+
+            // Build the query with relationships
+            $query = Listing::with([
                 'property',
                 'propertyType',
                 'host',
                 'reviews'
-            ])->get();
+            ]);
+
+            // Filter by listing_type if provided
+            if ($listingType) {
+                $query->whereRaw('LOWER(listing_type) = ?', [$listingType]);
+            }
+
+            // Filter by property_type (string name) if provided
+            if ($propertyType) {
+                $query->whereHas('property.propertyType', function ($q) use ($propertyType) {
+                    $q->whereRaw('LOWER(name) = ?', [$propertyType]);
+                });
+            }
+
+            // Paginate the results
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+            $listings = $paginator->items();
 
             // Get user's favorite listings if user is authenticated
             $userFavorites = [];
@@ -1025,26 +1047,19 @@ class ListingController extends Controller
                 $userFavorites = Favorite::where('user_id', auth()->id())
                     ->pluck('property_id')
                     ->toArray();
-                
-                // Get user's preferred currency
                 $userCurrency = auth()->user()->currency ?? 'USD';
             } else {
-                // For non-authenticated users, determine currency based on IP
                 $userCurrency = \App\Helpers\GeoLocationHelper::getCurrencyFromIP();
             }
 
             // Transform the response
-            $listings = $listings->map(function ($listing) use ($userFavorites, $userCurrency) {
+            $listings = collect($listings)->map(function ($listing) use ($userFavorites, $userCurrency) {
                 $property = $listing->property;
-                
-                // Convert prices if property exists and has a different currency
                 $price = $property ? $property->price : null;
                 $pricePerNight = $property ? $property->price_per_night : null;
                 $additionalGuestPrice = $property ? $property->additional_guest_price : null;
                 $childrenPrice = $property ? $property->children_price : null;
                 $propertyCurrency = $property ? $property->currency : 'USD';
-
-                // Store original prices before conversion
                 $originalPrices = null;
                 if ($property && $propertyCurrency !== $userCurrency) {
                     $originalPrices = [
@@ -1054,31 +1069,17 @@ class ListingController extends Controller
                         'children_price' => $childrenPrice,
                         'currency' => $propertyCurrency
                     ];
-
                     $price = \App\Helpers\CurrencyHelper::convert($price, $propertyCurrency, $userCurrency);
                     $pricePerNight = \App\Helpers\CurrencyHelper::convert($pricePerNight, $propertyCurrency, $userCurrency);
                     $additionalGuestPrice = \App\Helpers\CurrencyHelper::convert($additionalGuestPrice, $propertyCurrency, $userCurrency);
                     $childrenPrice = \App\Helpers\CurrencyHelper::convert($childrenPrice, $propertyCurrency, $userCurrency);
                 }
-
-                // Get the images from property->images JSON field
                 $images = $property && isset($property->images) ? $property->images : [];
-
-                // Get the amenities from property->amenities JSON field
                 $amenities = $property && isset($property->amenities) ? json_decode($property->amenities, true) : [];
-
-                // Get the place_items from property->place_items JSON field
                 $place_items = $property && isset($property->place_items) ? json_decode($property->place_items, true) : [];
-
-                // Get the listing_favoutites from property->favourites JSON field
                 $listing_favoutites = $property && isset($property->favourites) ? json_decode($property->favourites, true) : [];
-
-                // Get the safety_items from property->safety_items JSON field
                 $safety_items = $property && isset($property->safety_items) ? json_decode($property->safety_items, true) : [];
-
-                // Get the who_is_there from property->who_is_there JSON field
                 $who_is_there = $property && isset($property->who_is_there) ? json_decode($property->who_is_there, true) : [];
-
                 return [
                     'id' => $listing->id,
                     'title' => $listing->title,
@@ -1125,7 +1126,13 @@ class ListingController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Listings fetched successfully',
-                'data' => $listings
+                'data' => $listings,
+                'pagination' => [
+                    'total' => $paginator->total(),
+                    'per_page' => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                ]
             ], 200);
 
         } catch (\Exception $e) {

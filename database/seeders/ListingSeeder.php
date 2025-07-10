@@ -83,8 +83,11 @@ class ListingSeeder extends Seeder
                     'Spacious Group Retreat',
                     'Romantic Hideaway',
                     'Eco-Friendly Urban Flat',
-                    'Ski-In/Ski-Out Chalet',
-                    'Pet-Friendly Home Base'
+                    'Pet-Friendly Home Base',
+                    'Room in Kabwata',
+                    'Room in Livingstone',
+                    'Room in Kafue',
+                    'Room in Lusaka Woodlands',
                 ];
                 // Pick a random title
                 $randomTitle = $faker->randomElement($propertyTitles);
