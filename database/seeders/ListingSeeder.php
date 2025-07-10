@@ -147,7 +147,6 @@ class ListingSeeder extends Seeder
                 // Create listing
                 $listing = Listing::create([
                     'host_id' => $hosts->random()->id,
-                    'title' => $randomTitle,
                     'property_id' => $property->id,
                     'category_id' => $faker->numberBetween(1, 5),
                     'status' => true,
@@ -162,18 +161,6 @@ class ListingSeeder extends Seeder
                         'july', 'august', 'september', 'october', 'november', 'december'
                     ]),
                 ]);
-
-                // Create sample images
-                $numImages = $faker->numberBetween(1, 3); // Reduced to max 3 since we have 3 specific images
-                $selectedImages = $faker->randomElements($imageUrls, $numImages);
-
-                foreach ($selectedImages as $index => $imageUrl) {
-                    ListingImage::create([
-                        'listing_id' => $listing->id,
-                        'image_url' => $imageUrl,
-                        'is_primary' => $index === 0 // First image is primary
-                    ]);
-                }
 
                 DB::commit();
             } catch (\Exception $e) {
