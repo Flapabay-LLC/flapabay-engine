@@ -528,7 +528,7 @@ class PropertyController extends Controller
             }
 
             // Step 2: Retrieve the property amenities
-            $property = Property::select(['id', 'title', 'amenities'])
+            $property = Property::select(['id', 'amenities'])
                 ->find($propertyId);
 
             if (!$property) {
@@ -551,7 +551,6 @@ class PropertyController extends Controller
                 'success' => true,
                 'message' => 'Property amenities retrieved successfully',
                 'data' => [
-                    'title' => $property->title,
                     'amenities' => $amenities
                 ]
             ], 200);
@@ -581,7 +580,7 @@ class PropertyController extends Controller
             }
 
             // Retrieve the property with relevant fields
-            $property = Property::select(['id', 'title', 'check_in_date', 'check_out_date', 'check_in_hour', 'check_out_hour', 'allow_instant_booking'])
+            $property = Property::select(['id', 'check_in_date', 'check_out_date', 'check_in_hour', 'check_out_hour', 'allow_instant_booking'])
                 ->find($propertyId);
 
             if (!$property) {
@@ -600,7 +599,6 @@ class PropertyController extends Controller
                 'message' => 'Property availability dates retrieved successfully',
                 'data' => [
                     'property_id' => $property->id,
-                    'title' => $property->title,
                     'check_in_date' => $property->check_in_date,
                     'check_out_date' => $property->check_out_date,
                     'check_in_hour' => $property->check_in_hour,
