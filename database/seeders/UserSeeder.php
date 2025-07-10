@@ -25,6 +25,7 @@ class UserSeeder extends Seeder
             'otp_verified_at' => now(),
             'email_verified_at' => now(),
             'profile_photo_path' => 'https://example.com/photo.jpg',
+            'currency'=>'ZMW'
         ]);
 
         User::create([
@@ -38,6 +39,7 @@ class UserSeeder extends Seeder
             'otp_verified_at' => now(),
             'email_verified_at' => now(),
             'profile_photo_path' => 'https://example.com/photo.jpg',
+            'currency'=>'ZMW'
         ]);
 
         User::create([
@@ -52,6 +54,7 @@ class UserSeeder extends Seeder
             'otp_verified_at' => now(),
             'email_verified_at' => now(),
             'profile_photo_path' => 'https://example.com/photo.jpg',
+            'currency'=>'ZMW'
         ]);
     }
 }
