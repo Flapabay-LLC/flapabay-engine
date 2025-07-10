@@ -64,7 +64,8 @@ Route::prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/description', [PropertyController::class, 'getPropertyDescription']);
     Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
-    Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getAvailabilityDates']);
+    Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getPropertyAvailabilityDates']);
+    Route::post('properties/{propertyId}/availability', [PropertyController::class, 'setPropertyAvailabilityDates']);
 
     // Property routes
     Route::get('properties', [PropertyController::class, 'getProperties']);

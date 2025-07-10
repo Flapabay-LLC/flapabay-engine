@@ -538,8 +538,14 @@ class PropertyController extends Controller
                 ], 404);
             }
 
-            // Decode amenities JSON if it exists
-            $amenities = $property->amenities ? json_decode($property->amenities, true) : [];
+            // Handle amenities as string or array
+            if (is_string($property->amenities)) {
+                $amenities = json_decode($property->amenities, true) ?? [];
+            } elseif (is_array($property->amenities)) {
+                $amenities = $property->amenities;
+            } else {
+                $amenities = [];
+            }
 
             return response()->json([
                 'success' => true,
@@ -567,15 +573,15 @@ class PropertyController extends Controller
     public function getPropertyAvailabilityDates($propertyId) {
         try {
             // Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid property ID',
-            ], 400);
-        }
+            if (!is_numeric($propertyId) || $propertyId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid property ID',
+                ], 400);
+            }
 
-            // Retrieve the property
-            $property = Property::select(['id', 'title', 'check_in_date', 'check_out_date'])
+            // Retrieve the property with relevant fields
+            $property = Property::select(['id', 'title', 'check_in_date', 'check_out_date', 'check_in_hour', 'check_out_hour', 'allow_instant_booking'])
                 ->find($propertyId);
 
             if (!$property) {
@@ -584,6 +590,9 @@ class PropertyController extends Controller
                     'message' => 'Property not found',
                 ], 404);
             }
+
+            // Retrieve the related listing for cancellation policy and new fields
+            $listing = $property->listing()->select(['cancellation_policy', 'availability_type', 'flexible_period', 'flexible_month'])->first();
 
             // Return availability information
             return response()->json([
@@ -594,16 +603,67 @@ class PropertyController extends Controller
                     'title' => $property->title,
                     'check_in_date' => $property->check_in_date,
                     'check_out_date' => $property->check_out_date,
+                    'check_in_hour' => $property->check_in_hour,
+                    'check_out_hour' => $property->check_out_hour,
+                    'allow_instant_booking' => $property->allow_instant_booking,
+                    'cancellation_policy' => $listing ? $listing->cancellation_policy : null,
+                    'availability_type' => $listing ? $listing->availability_type : null,
+                    'flexible_period' => $listing ? $listing->flexible_period : null,
+                    'flexible_month' => $listing ? $listing->flexible_month : null,
                     'is_available' => !is_null($property->check_in_date) && !is_null($property->check_out_date)
                 ]
             ], 200);
 
         } catch (\Exception $e) {
+            dd($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve property availability dates',
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Set property availability dates and related listing availability fields
+     */
+    public function setPropertyAvailabilityDates(Request $request, $propertyId) {
+        $validated = $request->validate([
+            'check_in_date' => 'nullable|date',
+            'check_out_date' => 'nullable|date|after_or_equal:check_in_date',
+            'check_in_hour' => 'nullable|string',
+            'check_out_hour' => 'nullable|string',
+            'availability_type' => 'nullable|string|in:range,month,flexible',
+            'flexible_period' => 'nullable|string|in:week,weekend,month',
+            'flexible_month' => 'nullable|string', // could validate against months if needed
+        ]);
+
+        $property = Property::find($propertyId);
+        if (!$property) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Property not found',
+            ], 404);
+        }
+
+        // Update property fields
+        $property->fill(array_filter($validated, function($key) {
+            return in_array($key, ['check_in_date', 'check_out_date', 'check_in_hour', 'check_out_hour']);
+        }, ARRAY_FILTER_USE_KEY));
+        $property->save();
+
+        // Update related listing fields
+        $listing = $property->listing;
+        if ($listing) {
+            $listing->fill(array_filter($validated, function($key) {
+                return in_array($key, ['availability_type', 'flexible_period', 'flexible_month']);
+            }, ARRAY_FILTER_USE_KEY));
+            $listing->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Property availability updated successfully',
+        ], 200);
     }
 }

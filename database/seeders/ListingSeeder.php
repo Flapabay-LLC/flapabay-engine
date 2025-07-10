@@ -63,12 +63,37 @@ class ListingSeeder extends Seeder
                 $sampleAmenities = ['WiFi', 'Kitchen', 'Pool', 'Parking', 'Air Conditioning', 'Washer', 'Dryer', 'Heating', 'TV', 'Workspace', 'Gym', 'Elevator', 'Hot Tub', 'Fireplace', 'Breakfast', 'Pets Allowed'];
                 // Select 3-6 random amenities for the property
                 $propertyAmenities = array_values($faker->randomElements($sampleAmenities, $faker->numberBetween(3, 6)));
+                // Airbnb-style property titles
+                $propertyTitles = [
+                    'Cozy Downtown Apartment',
+                    'Modern Loft with City Views',
+                    'Charming Country Cottage',
+                    'Beachfront Villa Retreat',
+                    'Luxury Penthouse Suite',
+                    'Rustic Mountain Cabin',
+                    'Urban Studio Near Metro',
+                    'Family Home with Pool',
+                    'Historic Townhouse',
+                    'Peaceful Garden Bungalow',
+                    'Designer Condo in Arts District',
+                    'Lakefront Getaway',
+                    'Sunny Suburban Escape',
+                    'Elegant Estate with Garden',
+                    'Tiny House Adventure',
+                    'Spacious Group Retreat',
+                    'Romantic Hideaway',
+                    'Eco-Friendly Urban Flat',
+                    'Ski-In/Ski-Out Chalet',
+                    'Pet-Friendly Home Base'
+                ];
+                // Pick a random title
+                $randomTitle = $faker->randomElement($propertyTitles);
                 // Create property
                 $property = Property::create([
                     'property_type_id' => $faker->numberBetween(1, 5),
                     'category_id' => $faker->numberBetween(1, 5),
 
-                    'title' => $faker->sentence(3),
+                    'title' => $randomTitle,
                     'description' => $faker->paragraphs(3, true),
                     'location' => $faker->address,
                     'address' => $faker->streetAddress,
@@ -122,14 +147,20 @@ class ListingSeeder extends Seeder
                 // Create listing
                 $listing = Listing::create([
                     'host_id' => $hosts->random()->id,
-                    'title' => $property->title,
+                    'title' => $randomTitle,
                     'property_id' => $property->id,
                     'category_id' => $faker->numberBetween(1, 5),
                     'status' => true,
                     'published_at' => now(),
                     'cancellation_policy' => false,
                     'is_completed' => true,
-                    'listing_type' => $faker->randomElement(['stay', 'experience'])
+                    'listing_type' => $faker->randomElement(['stay', 'experience']),
+                    'availability_type' => $faker->randomElement(['range', 'month', 'flexible']),
+                    'flexible_period' => $faker->randomElement(['week', 'weekend', 'month']),
+                    'flexible_month' => $faker->randomElement([
+                        'january', 'february', 'march', 'april', 'may', 'june',
+                        'july', 'august', 'september', 'october', 'november', 'december'
+                    ]),
                 ]);
 
                 // Create sample images
