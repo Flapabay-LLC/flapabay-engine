@@ -247,6 +247,37 @@ class Property extends Model
     }
 
     /**
+     * Get the availability information for the property (matches getPropertyAvailabilityDates controller logic)
+     */
+    public function getAvailabilityAttribute()
+    {
+        // Retrieve the property fields (already loaded on this model)
+        $availability = [
+            'property_id' => $this->id,
+            'check_in_date' => $this->check_in_date,
+            'check_out_date' => $this->check_out_date,
+            'check_in_hour' => $this->check_in_hour,
+            'check_out_hour' => $this->check_out_hour,
+            'allow_instant_booking' => $this->allow_instant_booking,
+            'cancellation_policy' => null,
+            'availability_type' => null,
+            'flexible_period' => null,
+            'flexible_month' => null,
+            'is_available' => !is_null($this->check_in_date) && !is_null($this->check_out_date),
+        ];
+
+        // Try to get related listing fields if loaded or available
+        $listing = $this->relationLoaded('listing') ? $this->listing : $this->listing()->first();
+        if ($listing) {
+            $availability['cancellation_policy'] = $listing->cancellation_policy;
+            $availability['availability_type'] = $listing->availability_type;
+            $availability['flexible_period'] = $listing->flexible_period;
+            $availability['flexible_month'] = $listing->flexible_month;
+        }
+        return $availability;
+    }
+
+    /**
      * Get the category that owns the property.
      */
     public function category()

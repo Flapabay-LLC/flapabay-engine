@@ -54,8 +54,6 @@ Route::prefix('v1')->group(function () {
     Route::post('reset-password', [AuthenticatorController::class, 'resetPassword']);
     Route::post('forgot-password', [AuthenticatorController::class, 'forgotPassword']);
 
-
-
     //Listings
     Route::post('listings/search', [ListingController::class, 'searchListings']);
     Route::get('listings', [ListingController::class, 'fetchAllListings']);
@@ -65,8 +63,7 @@ Route::prefix('v1')->group(function () {
     Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
     Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
     Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getPropertyAvailabilityDates']);
-
-    // Property routes
+    Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
     Route::get('properties', [PropertyController::class, 'getProperties']);
 
     // Google & Facebook Auth
@@ -84,8 +81,6 @@ Route::prefix('v1')->group(function () {
 
     //property types
     Route::get('property-types', [PropertyTypeController::class, 'index']);
-    Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
-
 
     //Supported Languages
     Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);

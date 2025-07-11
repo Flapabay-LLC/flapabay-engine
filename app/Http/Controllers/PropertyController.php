@@ -29,6 +29,7 @@ class PropertyController extends Controller
      */
     public function getProperties(Request $request)
     {
+        // dd($request);
         try {
             // Get the page number from the request, default to 1
             $page = $request->input('page', 1);
@@ -289,6 +290,7 @@ class PropertyController extends Controller
 
 
     public function getProperty($propertyId) {
+        // dd($propertyId);
         try {
             // Step 1: Validate the property ID
             if (!is_numeric($propertyId) || $propertyId <= 0) {
@@ -311,18 +313,10 @@ class PropertyController extends Controller
                           ->with(['user' => function($q) {
                               $q->select('id', 'fname', 'lname', 'email');
                           }]);
-                }
+                },
+                'listing' // eager load listing for title
             ])
-            ->select([
-                'id', 'title', 'description', 'location', 'address', 'county', 'country',
-                'latitude', 'longitude', 'check_in_hour', 'check_out_hour',
-                'num_of_guests', 'num_of_children', 'maximum_guests',
-                'allow_extra_guests', 'neighborhood_area', 'show_contact_form_instead_of_booking',
-                'allow_instant_booking', 'currency', 'price_range', 'price',
-                'price_per_night', 'additional_guest_price', 'children_price',
-                'amenities', 'house_rules', 'page', 'rating', 'favorite',
-                'images', 'video_link', 'verified', 'property_type_id'
-            ])
+            // ->select([...]) // Remove select to get all columns
             ->find($propertyId);
 
             if (!$property) {
@@ -363,6 +357,12 @@ class PropertyController extends Controller
                 $propertyData['average_rating'] = 0;
                 $propertyData['total_reviews'] = 0;
             }
+
+            // Add property availability
+            $propertyData['availability'] = $property->availability;
+
+            // Use title from related listing
+            $propertyData['title'] = $property->listing ? $property->listing->title : null;
 
             return response()->json([
                 'success' => true,
