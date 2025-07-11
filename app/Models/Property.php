@@ -109,9 +109,6 @@ class Property extends Model
         'discounts' => 'array',
         'place_items' => 'array',
         'every_bedroom_has_lock' => 'boolean',
-        'guests' => 'integer',
-        'bedrooms' => 'integer',
-        'beds' => 'integer',
         'weekday_price' => 'decimal:2',
         'weekend_price' => 'decimal:2',
     ];
