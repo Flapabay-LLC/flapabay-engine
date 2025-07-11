@@ -84,6 +84,7 @@ class FavoriteController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'property_id' => 'nullable|integer|exists:properties,id',
+                'wslist' => 'nullable',
                 'is_default' => 'nullable|boolean',
             ]);
 
@@ -208,12 +209,12 @@ class FavoriteController extends Controller
         try {
             $request->validate([
                 'property_id' => 'required',
-                'wslist' => 'required',
+                'wslist' => 'nullable',
             ]);
             
             $favorite = Favorite::where('user_id', auth()->user()->id)
                 ->where('property_id', $request->property_id)
-                ->where('wishlist_id', $request->wslist)
+                ->orWhere('wishlist_id', $request->wslist)
                 ->first();
 
             if (!$favorite) {
@@ -230,7 +231,6 @@ class FavoriteController extends Controller
                 'message' => 'Property removed from wishlist successfully'
             ], 200);
         } catch (\Exception $e) {
-            dd($e);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to remove property from wishlist',
@@ -328,7 +328,7 @@ class FavoriteController extends Controller
                 ], 404);
             }
 
-            if ($wishlist->user_id !== $user->id) {
+            if ($wishlist->user_id !== auth()->user()->id) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Wishlist does not belong to user',
