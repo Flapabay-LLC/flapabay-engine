@@ -94,6 +94,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
     // Wishlist routes
     Route::post('wishlists', [FavoriteController::class, 'createWishlist']);
+    Route::delete('wishlists/{wishlistId}', [FavoriteController::class, 'deleteWishlist']);
 
     // JWT token refresh endpoint
     Route::middleware('auth:api')->post('auth/refresh', [\App\Http\Controllers\Auth\AuthenticatorController::class, 'refreshToken']);
