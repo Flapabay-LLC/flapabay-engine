@@ -1120,6 +1120,8 @@ class ListingController extends Controller
                     }),
                     'created_at' => $listing->created_at,
                     'updated_at' => $listing->updated_at,
+                    // Add property availability
+                    'availability' => $property ? $property->availability : null,
                 ];
             });
 
