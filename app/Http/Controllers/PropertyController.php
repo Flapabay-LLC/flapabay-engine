@@ -361,9 +361,6 @@ class PropertyController extends Controller
             // Add property availability
             $propertyData['availability'] = $property->availability;
 
-            // Use title from related listing
-            $propertyData['title'] = $property->listing ? $property->listing->title : null;
-
             return response()->json([
                 'success' => true,
                 'message' => 'Property retrieved successfully',
