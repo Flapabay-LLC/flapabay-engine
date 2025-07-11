@@ -90,7 +90,8 @@ Route::prefix('v1')->group(function () {
     Route::get('system/favorites', [ListingController::class, 'getSystemFavorites']);
     Route::get('system/place-items', [ListingController::class, 'getSystemPlaceItems']);
     Route::get('system/property-types', [ListingController::class, 'getSystemPropertyTypes']);
-
+    //Currencies
+    Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
     // Wishlist routes
     Route::post('wishlists', [FavoriteController::class, 'createWishlist']);
 
@@ -201,7 +202,6 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::delete('/delete-user-all-notifications/{userId}', [UserNotificationController::class, 'deleteUserAllNotifications']);
 
     //Currencies
-    Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
     Route::post('/set-user-currency', [CurrencyController::class, 'setUserCurrency']);
 
     //Cosmetics
