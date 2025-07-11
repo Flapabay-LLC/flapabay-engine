@@ -16,10 +16,10 @@ class LanguageSeeder extends Seeder
 
         $languages = [
             ['code' => 'en', 'name' => 'English', 'is_active' => true],
-            ['code' => 'fr', 'name' => 'French', 'is_active' => true],
-            ['code' => 'es', 'name' => 'Spanish', 'is_active' => true],
-            ['code' => 'de', 'name' => 'German', 'is_active' => true],
-            ['code' => 'it', 'name' => 'Italian', 'is_active' => true],
+            ['code' => 'fr', 'name' => 'French', 'is_active' => false],
+            ['code' => 'es', 'name' => 'Spanish', 'is_active' => false],
+            ['code' => 'de', 'name' => 'German', 'is_active' => false],
+            ['code' => 'it', 'name' => 'Italian', 'is_active' => false],
         ];
 
         foreach ($languages as $language) {
