@@ -304,4 +304,52 @@ class FavoriteController extends Controller
             'wishlist' => $wishlist,
         ]);
     }
+
+    /**
+     * Delete a wishlist if it belongs to the authenticated user
+     */
+    public function deleteWishlist(Request $request, $wishlistId)
+    {
+        try {
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
+            $wishlist = \App\Models\Wishlist::find($wishlistId);
+
+            if (!$wishlist) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Wishlist not found',
+                ], 404);
+            }
+
+            if ($wishlist->user_id !== $user->id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Wishlist does not belong to user',
+                ], 403);
+            }
+
+            // Delete all favorites in this wishlist
+            $wishlist->favorites()->delete();
+            // Delete the wishlist itself
+            $wishlist->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Wishlist deleted successfully',
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete wishlist',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 }
