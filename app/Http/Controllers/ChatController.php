@@ -16,6 +16,7 @@ class ChatController extends Controller
     {
         try {
             $userId = Auth::id();
+            $authenticatedUser = Auth::user();
             
             $chats = Chat::where('user1_id', $userId)
                 ->orWhere('user2_id', $userId)
@@ -23,13 +24,22 @@ class ChatController extends Controller
                     $query->latest()->first();
                 }])
                 ->get()
-                ->map(function($chat) use ($userId) {
+                ->map(function($chat) use ($userId, $authenticatedUser) {
                     $otherUser = $chat->getOtherUser($userId);
                     $lastMessage = $chat->messages->first();
                     
                     return [
                         'chat_id' => $chat->id,
+                        'authenticated_user' => [
+                            'id' => $authenticatedUser->id,
+                            'host_id' => $authenticatedUser->host_id,
+                            'user_type' => $authenticatedUser->host_id ? 'host' : 'guest',
+                            'fname' => $authenticatedUser->fname,
+                            'lname' => $authenticatedUser->lname,
+                            'email' => $authenticatedUser->email,
+                        ],
                         'other_user' => $otherUser,
+                        'other_user_type' => $otherUser->host_id ? 'host' : 'guest',
                         'last_message' => $lastMessage,
                         'unread_count' => $chat->messages()
                             ->where('receiver_id', $userId)
