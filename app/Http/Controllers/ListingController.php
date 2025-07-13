@@ -797,7 +797,7 @@ class ListingController extends Controller
                 ->with([
                     'propertyType',
                     // 'amenities',
-                    'images',
+                    // 'property.images', // REMOVE: do not eager load images relationship
                     'reviews',
                     'property' // Add property relationship
                 ]);
