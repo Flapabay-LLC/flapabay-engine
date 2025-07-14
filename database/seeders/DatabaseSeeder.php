@@ -34,8 +34,7 @@ class DatabaseSeeder extends Seeder
             // FavoriteSeeder::class,
             PlaceItemSeeder::class,
             ListingSeeder::class,
-            ChatSeeder::class, // Add chat seeder
-            MessageSeeder::class, // Add message seeder
+            ThreadSeeder::class, // Add thread-based chat seeder
         ]);
     }
 }

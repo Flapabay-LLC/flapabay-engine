@@ -1,0 +1,58 @@
+Chat API Endpoints and Fallback Documentation
+============================================
+
+REST API Endpoints (use these while WebSocket is down):
+------------------------------------------------------
+
+# Start a chat thread
+POST /api/v1/chat/start
+- Start a new chat thread.
+
+# Send a message to a thread
+POST /api/v1/chat/thread/message
+- Send a message in a thread.
+
+# Get all chat threads
+GET /api/v1/chat/threads
+- List all chat threads for the user.
+
+# Get a specific thread
+GET /api/v1/chat/thread/{id}
+- Get details for a specific thread.
+
+# Get messages in a thread
+GET /api/v1/chat/thread/{threadId}/messages
+- Get all messages in a thread.
+
+# Send pre-approval
+POST /api/v1/chat/send-pre-approval
+
+# Send special offer
+POST /api/v1/chat/send-special-offer
+
+# Typing status
+POST /api/v1/chat/typing-status
+
+# Presence update
+POST /api/v1/user/presence
+
+# Saved replies
+GET /api/v1/chat/saved-replies
+POST /api/v1/chat/saved-replies
+
+
+Fallback/Degraded Mode Notes:
+----------------------------
+- All chat features are available via REST endpoints.
+- Real-time updates (e.g., instant message delivery, typing indicators) will NOT be instant—poll the REST endpoints for updates.
+- When WebSocket (Reverb) is available, real-time updates will be delivered via socket events.
+
+
+Planned WebSocket Events (for future real-time support):
+-------------------------------------------------------
+- New message event
+- Typing indicator event
+- Presence update event
+- Thread created/updated event
+
+Use REST endpoints for now. Switch to WebSocket events for real-time updates when Reverb is back online. 

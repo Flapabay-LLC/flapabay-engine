@@ -2,123 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Chat;
+use App\Events\MessageSent;
+use App\Events\MessageRead;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
-    /**
-     * Get all chats for the authenticated user
-     */
-    public function getAllMyChats()
-    {
-        try {
-            $userId = Auth::id();
-            $authenticatedUser = Auth::user();
-            
-            $chats = Chat::where('user1_id', $userId)
-                ->orWhere('user2_id', $userId)
-                ->with(['user1', 'user2', 'messages' => function($query) {
-                    $query->latest()->first();
-                }])
-                ->get()
-                ->map(function($chat) use ($userId, $authenticatedUser) {
-                    $otherUser = $chat->getOtherUser($userId);
-                    $lastMessage = $chat->messages->first();
-                    
-                    return [
-                        'chat_id' => $chat->id,
-                        'authenticated_user' => [
-                            'id' => $authenticatedUser->id,
-                            'host_id' => $authenticatedUser->host_id,
-                            'user_type' => $authenticatedUser->host_id ? 'host' : 'guest',
-                            'fname' => $authenticatedUser->fname,
-                            'lname' => $authenticatedUser->lname,
-                            'email' => $authenticatedUser->email,
-                        ],
-                        'other_user' => $otherUser,
-                        'other_user_type' => $otherUser->host_id ? 'host' : 'guest',
-                        'last_message' => $lastMessage,
-                        'unread_count' => $chat->messages()
-                            ->where('receiver_id', $userId)
-                            ->where('is_read', false)
-                            ->where('deleted_for_receiver', false)
-                            ->count()
-                    ];
-                });
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Chats fetched successfully',
-                'data' => $chats
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to fetch chats',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get all unread messages for the authenticated user
-     */
-    public function getAllMyUnreadMessages()
-    {
-        try {
-            $userId = Auth::id();
-            
-            $messages = Message::where('receiver_id', $userId)
-                ->where('is_read', false)
-                ->where('deleted_for_receiver', false)
-                ->with(['sender', 'chat'])
-                ->get();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Unread messages fetched successfully',
-                'data' => $messages
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to fetch unread messages',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get all read messages for the authenticated user
-     */
-    public function getAllMyReadMessages()
-    {
-        try {
-            $userId = Auth::id();
-            
-            $messages = Message::where('receiver_id', $userId)
-                ->where('is_read', true)
-                ->where('deleted_for_receiver', false)
-                ->with(['sender', 'chat'])
-                ->get();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Read messages fetched successfully',
-                'data' => $messages
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to fetch read messages',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     /**
      * Get all messages for a specific chat
      */
@@ -128,7 +19,7 @@ class ChatController extends Controller
             $userId = Auth::id();
             
             // Verify user is part of the chat
-            $chat = Chat::where('id', $chatId)
+            $chat = \App\Models\Chat::where('id', $chatId)
                 ->where(function($query) use ($userId) {
                     $query->where('user1_id', $userId)
                         ->orWhere('user2_id', $userId);
@@ -150,10 +41,18 @@ class ChatController extends Controller
                 ->get();
 
             // Mark messages as read
+            $unread = Message::where('chat_id', $chatId)
+                ->where('receiver_id', $userId)
+                ->where('is_read', false)
+                ->get();
             Message::where('chat_id', $chatId)
                 ->where('receiver_id', $userId)
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
+            // Broadcast MessageRead event for each message
+            foreach ($unread as $msg) {
+                event(new MessageRead($msg, $userId));
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -184,7 +83,7 @@ class ChatController extends Controller
             $receiverId = $request->receiver_id;
 
             // Find or create chat
-            $chat = Chat::where(function($query) use ($senderId, $receiverId) {
+            $chat = \App\Models\Chat::where(function($query) use ($senderId, $receiverId) {
                 $query->where(function($q) use ($senderId, $receiverId) {
                     $q->where('user1_id', $senderId)
                         ->where('user2_id', $receiverId);
@@ -195,7 +94,7 @@ class ChatController extends Controller
             })->first();
 
             if (!$chat) {
-                $chat = Chat::create([
+                $chat = \App\Models\Chat::create([
                     'user1_id' => $senderId,
                     'user2_id' => $receiverId
                 ]);
@@ -208,6 +107,9 @@ class ChatController extends Controller
                 'message' => $request->message
             ]);
 
+            // Broadcast event
+            event(new MessageSent($message));
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Message sent successfully',
@@ -217,43 +119,6 @@ class ChatController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to send message',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Send a reply to a message thread
-     */
-    public function sendMessageThreadReply(Request $request)
-    {
-        try {
-            $request->validate([
-                'parent_message_id' => 'required|exists:messages,id',
-                'message' => 'required|string'
-            ]);
-
-            $parentMessage = Message::findOrFail($request->parent_message_id);
-            $senderId = Auth::id();
-            $receiverId = $parentMessage->sender_id;
-
-            $message = Message::create([
-                'chat_id' => $parentMessage->chat_id,
-                'sender_id' => $senderId,
-                'receiver_id' => $receiverId,
-                'message' => $request->message,
-                'parent_message_id' => $parentMessage->id
-            ]);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Reply sent successfully',
-                'data' => $message->load(['sender', 'receiver', 'parentMessage'])
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to send reply',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -319,5 +184,292 @@ class ChatController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Host-only: Send a pre-approval to a guest
+     */
+    public function sendPreApproval(Request $request)
+    {
+        if (!$request->user()->isHost()) {
+            return response()->json(['status' => 'error', 'message' => 'Only hosts can send pre-approvals.'], 403);
+        }
+        $request->validate([
+            'chat_id' => 'required|exists:chats,id',
+            'message' => 'required|string',
+            'meta' => 'nullable|array', // e.g., booking_id, offer details
+        ]);
+        $chat = \App\Models\Chat::findOrFail($request->chat_id);
+        // Ensure the host is a participant
+        if ($chat->user1_id !== $request->user()->id && $chat->user2_id !== $request->user()->id) {
+            return response()->json(['status' => 'error', 'message' => 'You are not a participant in this chat.'], 403);
+        }
+        $guestId = $chat->user1_id === $request->user()->id ? $chat->user2_id : $chat->user1_id;
+        $msg = \App\Models\Message::create([
+            'chat_id' => $chat->id,
+            'sender_id' => $request->user()->id,
+            'receiver_id' => $guestId,
+            'message' => $request->message,
+            'type' => 'pre_approval',
+            'meta' => $request->meta ?? [],
+        ]);
+        event(new MessageSent($msg));
+        return response()->json(['status' => 'success', 'message' => 'Pre-approval sent.', 'data' => $msg]);
+    }
+
+    /**
+     * Host-only: Send a special offer to a guest
+     */
+    public function sendSpecialOffer(Request $request)
+    {
+        if (!$request->user()->isHost()) {
+            return response()->json(['status' => 'error', 'message' => 'Only hosts can send special offers.'], 403);
+        }
+        $request->validate([
+            'chat_id' => 'required|exists:chats,id',
+            'message' => 'required|string',
+            'meta' => 'nullable|array', // e.g., offer details
+        ]);
+        $chat = \App\Models\Chat::findOrFail($request->chat_id);
+        // Ensure the host is a participant
+        if ($chat->user1_id !== $request->user()->id && $chat->user2_id !== $request->user()->id) {
+            return response()->json(['status' => 'error', 'message' => 'You are not a participant in this chat.'], 403);
+        }
+        $guestId = $chat->user1_id === $request->user()->id ? $chat->user2_id : $chat->user1_id;
+        $msg = \App\Models\Message::create([
+            'chat_id' => $chat->id,
+            'sender_id' => $request->user()->id,
+            'receiver_id' => $guestId,
+            'message' => $request->message,
+            'type' => 'special_offer',
+            'meta' => $request->meta ?? [],
+        ]);
+        event(new MessageSent($msg));
+        return response()->json(['status' => 'success', 'message' => 'Special offer sent.', 'data' => $msg]);
+    }
+
+    /**
+     * Host-only: Get saved replies
+     */
+    public function getSavedReplies(Request $request)
+    {
+        if (!$request->user()->isHost()) {
+            return response()->json(['status' => 'error', 'message' => 'Only hosts can view saved replies.'], 403);
+        }
+        $replies = \App\Models\SavedReply::where('host_id', $request->user()->id)->get();
+        return response()->json(['status' => 'success', 'data' => $replies]);
+    }
+
+    /**
+     * Host-only: Add a saved reply
+     */
+    public function addSavedReply(Request $request)
+    {
+        if (!$request->user()->isHost()) {
+            return response()->json(['status' => 'error', 'message' => 'Only hosts can add saved replies.'], 403);
+        }
+        $request->validate([
+            'reply_text' => 'required|string|max:1000',
+        ]);
+        $reply = \App\Models\SavedReply::create([
+            'host_id' => $request->user()->id,
+            'reply_text' => $request->reply_text,
+        ]);
+        return response()->json(['status' => 'success', 'message' => 'Saved reply added.', 'data' => $reply]);
+    }
+
+    /**
+     * Guest-only: Start a new chat thread with a host
+     */
+    public function startChatThread(Request $request)
+    {
+        if (!$request->user()->isGuest()) {
+            return response()->json(['status' => 'error', 'message' => 'Only guests can start a new chat thread.'], 403);
+        }
+        $request->validate([
+            'host_id' => 'required|exists:users,id',
+            'message' => 'required|string',
+            'listing_id' => 'nullable|exists:listings,id',
+            'booking_id' => 'nullable|exists:bookings,id',
+            'category' => 'nullable|string', // Accept category explicitly, but will be overridden if context is present
+        ]);
+        $host = \App\Models\User::find($request->host_id);
+        if (!$host || !$host->isHost()) {
+            return response()->json(['status' => 'error', 'message' => 'Recipient must be a host.'], 422);
+        }
+        // Prevent guest-to-guest or host-to-host threads
+        if ($request->user()->isHost() || $host->isGuest()) {
+            return response()->json(['status' => 'error', 'message' => 'Thread must be between a guest and a host.'], 422);
+        }
+        // Determine context and dynamic category
+        $contextType = null;
+        $contextId = null;
+        $category = null;
+        if ($request->has('listing_id')) {
+            $contextType = 'listing';
+            $contextId = $request->listing_id;
+            $listing = \App\Models\Listing::with(['category', 'propertyType'])->find($request->listing_id);
+            if ($listing && $listing->category) {
+                $category = $listing->category->name;
+            } elseif ($listing && $listing->propertyType) {
+                $category = $listing->propertyType->name;
+            }
+        } elseif ($request->has('booking_id')) {
+            $contextType = 'booking';
+            $contextId = $request->booking_id;
+            $booking = \App\Models\Booking::with(['property.category', 'property.propertyType'])->find($request->booking_id);
+            if ($booking && $booking->property && $booking->property->category) {
+                $category = $booking->property->category->name;
+            } elseif ($booking && $booking->property && $booking->property->propertyType) {
+                $category = $booking->property->propertyType->name;
+            }
+        }
+        // Fallback: use explicit category if provided, else 'Support'
+        if (!$category) {
+            $category = $request->input('category', 'Support');
+        }
+        // Check for existing thread with same guest, host, and context
+        $existingThread = \App\Models\Thread::where('guest_id', $request->user()->id)
+            ->where('host_id', $host->id)
+            ->where('context_type', $contextType)
+            ->where('context_id', $contextId)
+            ->first();
+        if ($existingThread) {
+            return response()->json(['status' => 'error', 'message' => 'A thread already exists for this context.', 'thread_id' => $existingThread->id], 409);
+        }
+        // Create the thread
+        $thread = \App\Models\Thread::create([
+            'guest_id' => $request->user()->id,
+            'host_id' => $host->id,
+            'thread_type' => 'inquiry', // or infer from context
+            'context_type' => $contextType,
+            'context_id' => $contextId,
+            'status' => 'active',
+            'category' => $category,
+        ]);
+        // Create the first message
+        $msg = \App\Models\Message::create([
+            'thread_id' => $thread->id,
+            'sender_id' => $request->user()->id,
+            'receiver_id' => $host->id,
+            'message' => $request->message,
+            'type' => 'thread_start',
+            'meta' => [
+                'listing_id' => $request->listing_id ?? null,
+                'booking_id' => $request->booking_id ?? null,
+            ],
+        ]);
+        event(new MessageSent($msg));
+        return response()->json(['status' => 'success', 'message' => 'Chat thread started.', 'thread_id' => $thread->id, 'data' => $msg]);
+    }
+
+    /**
+     * Send a new message (thread-based)
+     */
+    public function sendThreadMessage(Request $request)
+    {
+        $request->validate([
+            'thread_id' => 'required|exists:threads,id',
+            'message' => 'required|string',
+        ]);
+        $thread = \App\Models\Thread::findOrFail($request->thread_id);
+        $userId = $request->user()->id;
+        // Only participants can send
+        if ($thread->guest_id !== $userId && $thread->host_id !== $userId) {
+            return response()->json(['status' => 'error', 'message' => 'You are not a participant in this thread.'], 403);
+        }
+        $receiverId = $thread->guest_id === $userId ? $thread->host_id : $thread->guest_id;
+        $msg = \App\Models\Message::create([
+            'thread_id' => $thread->id,
+            'sender_id' => $userId,
+            'receiver_id' => $receiverId,
+            'message' => $request->message,
+        ]);
+        event(new MessageSent($msg));
+        return response()->json(['status' => 'success', 'message' => 'Message sent.', 'data' => $msg]);
+    }
+
+    /**
+     * Get messages for a thread (with pagination)
+     */
+    public function getThreadMessages(Request $request, $threadId)
+    {
+        $userId = $request->user()->id;
+        $thread = \App\Models\Thread::where('id', $threadId)
+            ->where(function($q) use ($userId) {
+                $q->where('guest_id', $userId)->orWhere('host_id', $userId);
+            })
+            ->firstOrFail();
+        $perPage = $request->input('per_page', 20);
+        $messages = \App\Models\Message::where('thread_id', $threadId)
+            ->orderBy('created_at', 'asc')
+            ->paginate($perPage);
+        return response()->json(['status' => 'success', 'data' => $messages]);
+    }
+
+    /**
+     * Broadcast typing indicator to chat participants
+     */
+    public function typingStatus(Request $request)
+    {
+        $request->validate([
+            'chat_id' => 'required|exists:chats,id',
+            'is_typing' => 'required|boolean',
+        ]);
+        $chat = \App\Models\Chat::findOrFail($request->chat_id);
+        $userId = $request->user()->id;
+        // Ensure user is a participant
+        if ($chat->user1_id !== $userId && $chat->user2_id !== $userId) {
+            return response()->json(['status' => 'error', 'message' => 'You are not a participant in this chat.'], 403);
+        }
+        event(new \App\Events\Typing($chat->id, $userId, $request->is_typing));
+        return response()->json(['status' => 'success', 'message' => 'Typing status broadcasted.']);
+    }
+
+    /**
+     * Broadcast presence update (online/offline) to chat partners
+     */
+    public function presenceUpdate(Request $request)
+    {
+        $request->validate([
+            'is_online' => 'required|boolean',
+        ]);
+        $userId = $request->user()->id;
+        event(new \App\Events\PresenceUpdated($userId, $request->is_online));
+        return response()->json(['status' => 'success', 'message' => 'Presence status broadcasted.']);
+    }
+
+    /**
+     * List all threads for the authenticated user (as guest or host)
+     */
+    public function getThreads(Request $request)
+    {
+        $userId = $request->user()->id;
+        $query = \App\Models\Thread::where(function($q) use ($userId) {
+            $q->where('guest_id', $userId)->orWhere('host_id', $userId);
+        });
+        if ($request->has('category') && $request->category !== 'All') {
+            $query->where('category', $request->category);
+        }
+        $threads = $query->with(['guest', 'host'])
+            ->orderBy('updated_at', 'desc')
+            ->paginate($request->input('per_page', 20));
+        // Return category metadata with each thread
+        return response()->json(['status' => 'success', 'data' => $threads]);
+    }
+
+    /**
+     * Fetch a single thread by ID, with messages and metadata
+     */
+    public function getThreadById(Request $request, $id)
+    {
+        $userId = $request->user()->id;
+        $thread = \App\Models\Thread::with(['guest', 'host', 'messages.sender', 'messages.receiver'])
+            ->where('id', $id)
+            ->where(function($q) use ($userId) {
+                $q->where('guest_id', $userId)->orWhere('host_id', $userId);
+            })
+            ->firstOrFail();
+        return response()->json(['status' => 'success', 'data' => $thread]);
     }
 } 

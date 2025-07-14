@@ -108,6 +108,22 @@ class User extends Authenticatable implements JWTSubject
         }
 
     /**
+     * Determine if the user is a host.
+     */
+    public function isHost()
+    {
+        return !is_null($this->host_id);
+    }
+
+    /**
+     * Determine if the user is a guest.
+     */
+    public function isGuest()
+    {
+        return is_null($this->host_id);
+    }
+
+    /**
      * Relationship with the User model.
      *
      * @return \Illuminate\Database\Eloquent\Relations\hasOne

@@ -117,14 +117,19 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::delete('/favorites', [FavoriteController::class, 'destroy']);
 
     // Chat routes
-    Route::get('chats', [ChatController::class, 'getAllMyChats']);
-    Route::get('chats/unread', [ChatController::class, 'getAllMyUnreadMessages']);
-    Route::get('chats/read', [ChatController::class, 'getAllMyReadMessages']);
-    Route::get('chats/{chatId}/messages', [ChatController::class, 'getAllChatMessages']);
-    Route::post('chats/message', [ChatController::class, 'sendChatMessage']);
-    Route::post('chats/reply', [ChatController::class, 'sendMessageThreadReply']);
-    Route::delete('chats/message/{messageId}/me', [ChatController::class, 'deleteMessageForMe']);
-    Route::delete('chats/message/{messageId}/both', [ChatController::class, 'deleteMessageForBoth']);
+    // New role-aware chat endpoints
+    Route::post('chat/send-pre-approval', [ChatController::class, 'sendPreApproval']);
+    Route::post('chat/send-special-offer', [ChatController::class, 'sendSpecialOffer']);
+    Route::get('chat/saved-replies', [ChatController::class, 'getSavedReplies']);
+    Route::post('chat/saved-replies', [ChatController::class, 'addSavedReply']);
+    Route::post('chat/start', [ChatController::class, 'startChatThread']);
+    Route::post('chat/typing-status', [ChatController::class, 'typingStatus']);
+    Route::post('user/presence', [ChatController::class, 'presenceUpdate']);
+    Route::get('chat/threads', [ChatController::class, 'getThreads']);
+    Route::get('chat/thread/{id}', [ChatController::class, 'getThreadById']);
+    // New thread-based message endpoints
+    Route::post('chat/thread/message', [ChatController::class, 'sendThreadMessage']);
+    Route::get('chat/thread/{threadId}/messages', [ChatController::class, 'getThreadMessages']);
 
     // Listing routes
     // Route::get('listings', [ListingController::class, 'fetchAllListings']);
