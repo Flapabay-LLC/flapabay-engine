@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => 'reverb',
+    'default' => env('BROADCAST_CONNECTION', 'null'),
 
     /*
     |--------------------------------------------------------------------------
@@ -31,7 +31,6 @@ return [
     'connections' => [
 
         'reverb' => [
-            // We are using Reverb as the broadcaster.
             'driver' => 'reverb',
             'key' => env('REVERB_APP_KEY'),
             'secret' => env('REVERB_APP_SECRET'),
