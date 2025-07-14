@@ -283,23 +283,26 @@ class ChatController extends Controller
      */
     public function startChatThread(Request $request)
     {
-        if (!$request->user()->isGuest()) {
-            return response()->json(['status' => 'error', 'message' => 'Only guests can start a new chat thread.'], 403);
-        }
         $request->validate([
             'host_id' => 'required|exists:users,id',
             'message' => 'required|string',
             'listing_id' => 'nullable|exists:listings,id',
             'booking_id' => 'nullable|exists:bookings,id',
-            'category' => 'nullable|string', // Accept category explicitly, but will be overridden if context is present
+            'category' => 'nullable|string',
         ]);
         $host = \App\Models\User::find($request->host_id);
         if (!$host || !$host->isHost()) {
             return response()->json(['status' => 'error', 'message' => 'Recipient must be a host.'], 422);
         }
-        // Prevent guest-to-guest or host-to-host threads
-        if ($request->user()->isHost() || $host->isGuest()) {
-            return response()->json(['status' => 'error', 'message' => 'Thread must be between a guest and a host.'], 422);
+        $user = $request->user();
+        // Only guests or hosts booking a listing can start a thread
+        $isBookingContext = $request->has('listing_id') || $request->has('booking_id');
+        if (!$user->isGuest() && !($user->isHost() && $isBookingContext)) {
+            return response()->json(['status' => 'error', 'message' => 'Only guests or hosts booking a listing can start a new chat thread.'], 403);
+        }
+        // Prevent guest-to-guest threads
+        if ($user->isGuest() && $host->isGuest()) {
+            return response()->json(['status' => 'error', 'message' => 'Thread must be between a guest and a host, or a host booking a listing.'], 422);
         }
         // Determine context and dynamic category
         $contextType = null;
@@ -329,7 +332,7 @@ class ChatController extends Controller
             $category = $request->input('category', 'Support');
         }
         // Check for existing thread with same guest, host, and context
-        $existingThread = \App\Models\Thread::where('guest_id', $request->user()->id)
+        $existingThread = \App\Models\Thread::where('guest_id', $user->id)
             ->where('host_id', $host->id)
             ->where('context_type', $contextType)
             ->where('context_id', $contextId)
@@ -339,9 +342,9 @@ class ChatController extends Controller
         }
         // Create the thread
         $thread = \App\Models\Thread::create([
-            'guest_id' => $request->user()->id,
+            'guest_id' => $user->id,
             'host_id' => $host->id,
-            'thread_type' => 'inquiry', // or infer from context
+            'thread_type' => 'inquiry',
             'context_type' => $contextType,
             'context_id' => $contextId,
             'status' => 'active',
@@ -350,7 +353,7 @@ class ChatController extends Controller
         // Create the first message
         $msg = \App\Models\Message::create([
             'thread_id' => $thread->id,
-            'sender_id' => $request->user()->id,
+            'sender_id' => $user->id,
             'receiver_id' => $host->id,
             'message' => $request->message,
             'type' => 'thread_start',
