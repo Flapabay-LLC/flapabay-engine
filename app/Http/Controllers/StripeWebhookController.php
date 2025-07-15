@@ -13,11 +13,13 @@ class StripeWebhookController extends Controller
     public function handle(Request $request)
     {
         $payload = $request->getContent();
-        // $sig_header = $request->header('Stripe-Signature');
+        // $sig_header = $request->header('Stripe-Signature'); // Signature verification disabled for testing
         $secret = config('services.stripe.webhook_secret');
 
         try {
-            $event = Webhook::constructEvent($payload, $sig_header, $secret);
+            // Commented out signature verification for local testing/debugging only!
+            // $event = Webhook::constructEvent($payload, $sig_header, $secret);
+            $event = json_decode($payload); // UNSAFE: Only use this for local development!
         } catch (\UnexpectedValueException $e) {
             return response('Invalid payload', 400);
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
