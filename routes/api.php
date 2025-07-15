@@ -74,6 +74,8 @@ Route::prefix('v1')->group(function () {
     // Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
 
 
+    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+
     Route::post('facebook/signin', [FacebookController::class, 'facebookSignIn']);
     // Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     
@@ -145,8 +147,6 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::post('properties', [PropertyController::class, 'createProperties']);
     Route::post('update-properties', [PropertyController::class, 'updateProperties']);
     Route::post('properties/{propertyId}/availability', [PropertyController::class, 'setPropertyAvailabilityDates']);
-
-    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
     // Property Rating & Reviews
     Route::get('/reviews', [PropertyReviewController::class, 'index']);
