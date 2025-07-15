@@ -407,4 +407,56 @@ class ReservationController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all reservations for properties/listings owned by the authenticated host
+     */
+    public function hostReservations(Request $request)
+    {
+        try {
+            $user = $request->user();
+            // Only allow hosts
+            if (!$user->isHost()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You are not a host.'
+                ], 403);
+            }
+            // Get all reservations where the property belongs to a listing with this host_id or property.host_id
+            $query = Reservation::with(['property', 'user'])
+                ->whereHas('property', function ($q) use ($user) {
+                    $q->whereHas('listing', function ($lq) use ($user) {
+                        $lq->where('host_id', $user->id);
+                    })
+                    ->orWhere('host_id', $user->id);
+                });
+
+            // Optional filters (status, date, etc.)
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+            if ($request->has('start_date')) {
+                $query->where('check_in_date', '>=', $request->start_date);
+            }
+            if ($request->has('end_date')) {
+                $query->where('check_out_date', '<=', $request->end_date);
+            }
+            $sortBy = $request->input('sort_by', 'created_at');
+            $sortOrder = $request->input('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+            $perPage = $request->input('per_page', 10);
+            $reservations = $query->paginate($perPage);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Host reservations fetched successfully',
+                'data' => $reservations
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch host reservations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 } 

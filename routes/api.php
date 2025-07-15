@@ -27,6 +27,8 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\CoHostController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\StripeWebhookController;
+
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -144,7 +146,8 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::post('update-properties', [PropertyController::class, 'updateProperties']);
     Route::post('properties/{propertyId}/availability', [PropertyController::class, 'setPropertyAvailabilityDates']);
 
-    
+    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+
     // Property Rating & Reviews
     Route::get('/reviews', [PropertyReviewController::class, 'index']);
     Route::post('/create-review', [PropertyReviewController::class, 'store']);
@@ -251,6 +254,9 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
 
     // Complete user details endpoint
     Route::post('complete-user-details', [AuthenticatorController::class, 'completeUserDetails']);
+
+    // Host reservations endpoint
+    Route::get('host/reservations', [\App\Http\Controllers\ReservationController::class, 'hostReservations']);
 
 });
 
