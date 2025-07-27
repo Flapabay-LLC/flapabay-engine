@@ -69,9 +69,10 @@ Route::prefix('v1')->group(function () {
     Route::get('properties', [PropertyController::class, 'getProperties']);
 
     // Google & Facebook Auth
-    // Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
-    Route::post('google/signin', [GoogleAuthController::class, 'googleSignIn']);
-    // Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
+// Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
+Route::post('google/signin', [GoogleAuthController::class, 'googleSignIn'])->middleware('throttle:10,1');
+// Route::post('google/callback', [GoogleAuthController::class, 'googleCallback']);
+Route::post('google/logout', [GoogleAuthController::class, 'logout'])->middleware('auth:api');
 
 
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);

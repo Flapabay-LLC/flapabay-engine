@@ -16,10 +16,10 @@ class ThreadSeeder extends Seeder
         $faker = Faker::create();
         $hosts = User::whereNotNull('host_id')->get();
         $guests = User::whereNull('host_id')->get();
-        $listings = Listing::all();
+        $experiences = Listing::all();
 
-        if ($hosts->isEmpty() || $guests->isEmpty() || $listings->isEmpty()) {
-            $this->command->error('Need hosts, guests, and listings to seed threads.');
+        if ($hosts->isEmpty() || $guests->isEmpty() || $experiences->isEmpty()) {
+            $this->command->error('Need hosts, guests, and experiences to seed threads.');
             return;
         }
 
@@ -28,18 +28,16 @@ class ThreadSeeder extends Seeder
         for ($i = 0; $i < $threadCount; $i++) {
             $host = $hosts->random();
             $guest = $guests->random();
-            $listing = $listings->random();
-            // Alternate between 'listing' and 'experience' context_type
-            $contextType = $i % 2 === 0 ? 'listing' : 'experience';
-            $comboKey = $guest->id.'-'.$host->id.'-'.$contextType.'-'.$listing->id;
+            $experience = $experiences->random();
+            $comboKey = $guest->id.'-'.$host->id.'-experience-'.$experience->id;
             if (isset($usedCombos[$comboKey])) continue;
             $usedCombos[$comboKey] = true;
             $thread = Thread::create([
                 'guest_id' => $guest->id,
                 'host_id' => $host->id,
                 'thread_type' => 'inquiry',
-                'context_type' => $contextType,
-                'context_id' => $listing->id,
+                'context_type' => 'experience',
+                'context_id' => $experience->id,
                 'status' => 'active',
             ]);
             // Seed 2-3 normal text messages
@@ -51,7 +49,7 @@ class ThreadSeeder extends Seeder
                     'thread_id' => $thread->id,
                     'sender_id' => $sender->id,
                     'receiver_id' => $receiver->id,
-                    'message' => $faker->sentence(8) . ($contextType === 'experience' ? ' (experience)' : ' (listing)'),
+                    'message' => $faker->sentence(8),
                     'type' => 'text',
                     'is_read' => $faker->boolean(70),
                     'deleted_for_sender' => false,
@@ -63,7 +61,7 @@ class ThreadSeeder extends Seeder
                 'thread_id' => $thread->id,
                 'sender_id' => $host->id,
                 'receiver_id' => $guest->id,
-                'message' => 'You are pre-approved to book this ' . $contextType . '!',
+                'message' => 'You are pre-approved to book this experience!',
                 'type' => 'pre_approval',
                 'meta' => ['booking_id' => $faker->randomNumber(5), 'expires_at' => now()->addDays(2)],
                 'is_read' => false,
@@ -75,7 +73,7 @@ class ThreadSeeder extends Seeder
                 'thread_id' => $thread->id,
                 'sender_id' => $host->id,
                 'receiver_id' => $guest->id,
-                'message' => 'Special offer: 10% off for this weekend on this ' . $contextType . '!',
+                'message' => 'Special offer: 10% off for this weekend!',
                 'type' => 'special_offer',
                 'meta' => ['discount' => '10%', 'valid_until' => now()->addDays(1)],
                 'is_read' => false,
@@ -87,7 +85,7 @@ class ThreadSeeder extends Seeder
                 'thread_id' => $thread->id,
                 'sender_id' => $host->id, // Use host as sender for system messages
                 'receiver_id' => $guest->id,
-                'message' => 'Your booking for this ' . $contextType . ' has been confirmed!',
+                'message' => 'Your booking has been confirmed!',
                 'type' => 'system',
                 'meta' => ['event' => 'booking_confirmed', 'booking_id' => $faker->randomNumber(5)],
                 'is_read' => false,
@@ -99,7 +97,7 @@ class ThreadSeeder extends Seeder
                 'thread_id' => $thread->id,
                 'sender_id' => $guest->id,
                 'receiver_id' => $host->id,
-                'message' => 'Please see the attached document for this ' . $contextType . '.',
+                'message' => 'Please see the attached document.',
                 'type' => 'attachment',
                 'meta' => [
                     'attachments' => [
@@ -112,7 +110,7 @@ class ThreadSeeder extends Seeder
                 'deleted_for_receiver' => false,
             ]);
             // Saved reply (host to guest)
-            $savedReply = $faker->sentence(10) . ' (' . $contextType . ')';
+            $savedReply = $faker->sentence(10);
             \App\Models\SavedReply::firstOrCreate([
                 'host_id' => $host->id,
                 'reply_text' => $savedReply,

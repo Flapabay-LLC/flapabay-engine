@@ -475,4 +475,33 @@ class ChatController extends Controller
             ->firstOrFail();
         return response()->json(['status' => 'success', 'data' => $thread]);
     }
+
+    /**
+     * Upload a media file for chat (returns CDN/public URL, does not store message)
+     * POST /api/v1/chat/upload-media
+     */
+    public function uploadMedia(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max, adjust as needed
+        ]);
+        $file = $request->file('file');
+
+        // (Optional) Virus scan placeholder
+        // e.g., use ClamAV or a third-party service
+        // if (!VirusScanner::scan($file->getPathname())) {
+        //     return response()->json(['error' => 'File failed virus scan.'], 400);
+        // }
+
+        // Upload to cloud storage (S3/CDN)
+        $path = $file->store('chat-media', 's3');
+        $url = \Storage::disk('s3')->url($path); // Or use a presigned URL if needed
+
+        return response()->json([
+            'url' => $url,
+            'type' => $file->getMimeType(),
+            'name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+        ]);
+    }
 } 
