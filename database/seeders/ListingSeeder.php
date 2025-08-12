@@ -94,7 +94,7 @@ class ListingSeeder extends Seeder
                 // Create property
                 $property = Property::create([
                     'property_type_id' => $faker->numberBetween(1, 5),
-                    'category_id' => $faker->numberBetween(1, 5),
+                    'category_id' => [$faker->numberBetween(1, 5)],
                     'description' => $faker->paragraphs(3, true),
                     'location' => $faker->address,
                     'address' => $faker->streetAddress,
@@ -150,7 +150,7 @@ class ListingSeeder extends Seeder
                     'host_id' => $hosts->random()->id,
                     'title' => $randomTitle,
                     'property_id' => $property->id,
-                    'category_id' => $faker->numberBetween(1, 5),
+                    'category_id' => [$faker->numberBetween(1, 5)],
                     'status' => true,
                     'published_at' => now(),
                     'cancellation_policy' => false,

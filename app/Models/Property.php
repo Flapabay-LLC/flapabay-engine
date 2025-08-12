@@ -99,6 +99,7 @@ class Property extends Model
     protected $casts = [
         'address' => 'array',
         'coordinates' => 'array',
+        'category_id' => 'array',
         'who_is_there' => 'array',
         'amenities' => 'array',
         'favourites' => 'array',

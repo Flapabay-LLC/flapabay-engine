@@ -1,0 +1,40 @@
+# Laravel specific
+/storage/logs
+.env.backup
+.phpunit.result.cache
+docker-compose.override.yml
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker (but keep local docker files)
+Dockerfile
+docker-compose.production.yml
+docker-compose.staging.yml
+.dockerignore
+
+# Documentation
+README.md
+deploy/README.md
+deploy/LOCAL-DEVELOPMENT.md
+
+# Build artifacts (we'll build these in container)
+/public/build
+/public/mix-manifest.json
