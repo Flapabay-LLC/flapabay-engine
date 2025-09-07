@@ -31,9 +31,9 @@ class CoHostController extends Controller
                 ], 422);
             }
 
-            // Check if the current user is the host of the property
+            // Check if the current user is the owner of the property
             $property = Property::findOrFail($request->property_id);
-            if ($property->host_id !== auth()->id()) {
+            if ($property->user_id !== auth()->id()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'You are not authorized to add co-hosts to this property'
@@ -42,7 +42,7 @@ class CoHostController extends Controller
 
             // Create co-host record
             $coHost = CoHost::create([
-                'host_id' => auth()->id(),
+                'host_id' => auth()->user()->host_id,
                 'co_host_id' => $request->co_host_id,
                 'property_id' => $request->property_id,
                 // 'permissions' => $request->permissions,
@@ -86,7 +86,7 @@ class CoHostController extends Controller
             // Check if there's a pending invitation
             $coHost = CoHost::where([
                 'host_id' => $request->host_id,
-                'co_host_id' => auth()->id(),
+                'co_host_id' => auth()->user()->host_id,
                 'property_id' => $request->property_id,
                 'status' => 'pending'
             ])->first();
@@ -124,7 +124,7 @@ class CoHostController extends Controller
     public function getPropertiesManagedByCoHost(Request $request)
     {
         try {
-            $coHostId = $request->co_host_id ?? auth()->id();
+            $coHostId = $request->co_host_id ?? auth()->user()->host_id;
 
             $properties = Property::whereHas('coHosts', function ($query) use ($coHostId) {
                 $query->where('co_host_id', $coHostId)
@@ -152,7 +152,7 @@ class CoHostController extends Controller
     public function getHostCoHostMembers(Request $request)
     {
         try {
-            $hostId = $request->host_id ?? auth()->id();
+            $hostId = $request->host_id ?? auth()->user()->host_id;
 
             $coHosts = CoHost::where('host_id', $hostId)
                 ->with(['coHost', 'property'])
@@ -171,4 +171,4 @@ class CoHostController extends Controller
             ], 500);
         }
     }
-} 
+}

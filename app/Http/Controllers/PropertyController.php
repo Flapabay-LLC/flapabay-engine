@@ -7,8 +7,10 @@ use App\Http\Requests\StorePropertyRequest;
 use App\Http\Requests\UpdatePropertyRequest;
 use App\Models\Availability;
 use App\Models\Booking;
+use App\Models\Experience;
 use App\Models\Listing;
 use App\Models\Property;
+use App\Models\Stay;
 use App\Models\UserReview;
 use Aws\S3\S3Client;
 use Carbon\Carbon;
@@ -314,7 +316,8 @@ class PropertyController extends Controller
                               $q->select('id', 'fname', 'lname', 'email');
                           }]);
                 },
-                'listing' // eager load listing for title
+                'listing.stay', // eager load listing with stay details
+                'listing.experience' // eager load listing with experience details
             ])
             // ->select([...]) // Remove select to get all columns
             ->find($propertyId);
@@ -360,6 +363,23 @@ class PropertyController extends Controller
 
             // Add property availability
             $propertyData['availability'] = $property->availability;
+
+            // Add type-specific data if listing exists
+            if ($property->listing) {
+                $propertyData['listing'] = [
+                    'id' => $property->listing->id,
+                    'listing_type' => $property->listing->listing_type,
+                    'status' => $property->listing->status,
+                    'is_completed' => $property->listing->is_completed
+                ];
+
+                // Add stay or experience specific details
+                if ($property->listing->listing_type === 'stay' && $property->listing->stay) {
+                    $propertyData['stay_details'] = $property->listing->stay->toArray();
+                } elseif ($property->listing->listing_type === 'experience' && $property->listing->experience) {
+                    $propertyData['experience_details'] = $property->listing->experience->toArray();
+                }
+            }
 
             return response()->json([
                 'success' => true,

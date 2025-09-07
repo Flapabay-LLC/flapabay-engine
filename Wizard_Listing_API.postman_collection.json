@@ -1,0 +1,651 @@
+{
+	"info": {
+		"_postman_id": "wizard-listing-api-collection",
+		"name": "Wizard Listing API",
+		"description": "Complete collection for testing Wizard Listing API endpoints with authentication, validation, and concurrency control.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"host@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('auth_token', response.access_token);",
+									"    console.log('Auth token saved:', response.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Wizard Listings",
+			"item": [
+				{
+					"name": "Create New Listing (Draft)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Beautiful Oceanview Villa\",\n  \"description\": \"Stunning 3-bedroom villa with panoramic ocean views\",\n  \"property_type_id\": 1,\n  \"category_id\": 2,\n  \"address\": \"123 Ocean Drive\",\n  \"city\": \"Miami Beach\",\n  \"state\": \"FL\",\n  \"country\": \"USA\",\n  \"latitude\": 25.7617,\n  \"longitude\": -80.1918,\n  \"price_per_night\": 299.99,\n  \"currency\": \"USD\",\n  \"num_of_bedrooms\": 3,\n  \"num_of_bathrooms\": 2,\n  \"maximum_guests\": 6,\n  \"amenities\": [\"wifi\", \"pool\", \"parking\"],\n  \"images\": [\"image1.jpg\", \"image2.jpg\"],\n  \"finalize\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('draft_id', response.draft_id);",
+									"    const etag = pm.response.headers.get('ETag');",
+									"    pm.environment.set('current_etag', etag);",
+									"    console.log('Draft created with ID:', response.draft_id);",
+									"    console.log('ETag saved:', etag);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create New Listing (Finalized)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Complete Beachfront Condo\",\n  \"description\": \"Fully furnished 2-bedroom condo steps from the beach\",\n  \"property_type_id\": 2,\n  \"category_id\": 1,\n  \"address\": \"456 Beach Boulevard\",\n  \"city\": \"San Diego\",\n  \"state\": \"CA\",\n  \"country\": \"USA\",\n  \"latitude\": 32.7157,\n  \"longitude\": -117.1611,\n  \"price_per_night\": 199.99,\n  \"currency\": \"USD\",\n  \"num_of_bedrooms\": 2,\n  \"num_of_bathrooms\": 2,\n  \"maximum_guests\": 4,\n  \"amenities\": [\"wifi\", \"beach_access\", \"balcony\"],\n  \"images\": [\"condo1.jpg\", \"condo2.jpg\", \"condo3.jpg\"],\n  \"finalize\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Wizard Listing",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "If-Match",
+								"value": "{{current_etag}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Villa Title\",\n  \"price_per_night\": 349.99,\n  \"amenities\": [\"wifi\", \"pool\", \"parking\", \"gym\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const etag = pm.response.headers.get('ETag');",
+									"    pm.environment.set('current_etag', etag);",
+									"    console.log('Updated ETag:', etag);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Validate Listing (Full)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}",
+								"validate"
+							]
+						}
+					}
+				},
+				{
+					"name": "Validate Listing (Specific Step)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"step\": \"basic_info\",\n  \"fields\": [\"title\", \"description\", \"price_per_night\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}",
+								"validate"
+							]
+						}
+					}
+				},
+				{
+					"name": "Finalize Listing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "If-Match",
+								"value": "{{current_etag}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"validate_only\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}/finalize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}",
+								"finalize"
+							]
+						}
+					}
+				},
+				{
+					"name": "Validate Before Finalize",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"validate_only\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}/finalize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}",
+								"finalize"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Wizard Metadata",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/meta",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"meta"
+							]
+						}
+					}
+				},
+				{
+					"name": "Fetch Host Draft Listings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/drafts?search=villa&sort_by=created_at&sort_order=desc&per_page=10&page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"drafts"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "villa"
+								},
+								{
+									"key": "sort_by",
+									"value": "created_at"
+								},
+								{
+									"key": "sort_order",
+									"value": "desc"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Media Upload",
+			"item": [
+				{
+					"name": "Initialize Media Upload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filename\": \"villa-photo.jpg\",\n  \"content_type\": \"image/jpeg\",\n  \"file_size\": 2048576\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/media/uploads/init",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"media",
+								"uploads",
+								"init"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('upload_id', response.data.upload_id);",
+									"    pm.environment.set('presigned_url', response.data.presigned_url);",
+									"    console.log('Upload initialized:', response.data.upload_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Attach Media to Listing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"upload_id\": \"{{upload_id}}\",\n  \"media_type\": \"image\",\n  \"caption\": \"Main bedroom view\",\n  \"is_primary\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}/media",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}",
+								"media"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Error Testing",
+			"item": [
+				{
+					"name": "Test Concurrency Conflict (412)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "If-Match",
+								"value": "\"outdated-etag-123\""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"This should fail due to ETag mismatch\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/{{draft_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"{{draft_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Test Validation Errors (422)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"\",\n  \"price_per_night\": -50,\n  \"maximum_guests\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings"
+							]
+						}
+					}
+				},
+				{
+					"name": "Test Property Not Found (404)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"This property doesn't exist\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wizard-listings/99999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wizard-listings",
+								"99999"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"console.log('Making request to:', pm.request.url.toString());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"pm.test('Response time is less than 2000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+					"});",
+					"",
+					"pm.test('Response has proper content type', function () {",
+					"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "draft_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "current_etag",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "upload_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "presigned_url",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

@@ -12,6 +12,7 @@ use Google_Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 class GoogleAuthController extends Controller
 {
@@ -67,15 +68,27 @@ class GoogleAuthController extends Controller
 
             $idToken = $request->input('id_token');
 
-            // Verify token with Google
-            $client = new Google_Client(['client_id' => config('services.google.client_id')]);
-            $payload = $client->verifyIdToken($idToken);
+            // Verify token with Google using HTTP client
+            $response = Http::get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $idToken
+            ]);
 
-            if (!$payload) {
+            if (!$response->successful()) {
                 Log::warning('Invalid Google ID token provided', ['token' => substr($idToken, 0, 20) . '...', 'ip' => $request->ip()]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid or expired token',
+                ], 401);
+            }
+
+            $payload = $response->json();
+
+            // Verify the token is for our application
+            if ($payload['aud'] !== config('services.google.client_id')) {
+                Log::warning('Google ID token audience mismatch', ['expected' => config('services.google.client_id'), 'received' => $payload['aud'], 'ip' => $request->ip()]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid token audience',
                 ], 401);
             }
 
@@ -155,13 +168,14 @@ class GoogleAuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'created_at' => $user->created_at,
+                    'is_host' => $user->isHost(),
                 ],
                 'token' => $token,
                 'message' => 'Google authentication successful',
             ]);
 
-        } catch (\Google_Exception $e) {
-            Log::error('Google API error during authentication', ['error' => $e->getMessage(), 'ip' => $request->ip(), 'trace' => $e->getTraceAsString()]);
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('Google API request error during authentication', ['error' => $e->getMessage(), 'ip' => $request->ip(), 'trace' => $e->getTraceAsString()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Token verification failed',

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 
 use App\Models\Booking;
 use App\Models\Property;
+use App\Models\Stay;
+use App\Models\Experience;
 use App\Models\UserReview;
 use Aws\S3\S3Client;
 use Carbon\Carbon;
@@ -389,37 +391,34 @@ class ListingController extends Controller
     {
         // dd($request);
         try {
-            // Require host_id in every request
-            $hostId = $request->input('host_id');
-            if (!$hostId) {
-                return response()->json(['errors' => ['host_id' => ['The host_id field is required.']]], 422);
+            // Get user_id from authenticated user
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['errors' => ['auth' => ['Authentication required.']]], 401);
             }
-            // Validate host_id exists
-            $hostValidator = Validator::make(['host_id' => $hostId], [
-                'host_id' => 'required|exists:users,host_id',
-            ]);
-            if ($hostValidator->fails()) {
-                return response()->json(['errors' => $hostValidator->errors()], 422);
+            $userId = $user->id;
+            if (!$userId) {
+                return response()->json(['errors' => ['user_id' => ['User not authenticated.']]], 422);
             }
 
-            // 1. Find or create a draft property for this host
+            // 1. Find or create a draft property for this user
             $draftId = $request->input('draft_id');
             $property = null;
             if ($draftId) {
                 $property = Property::where('id', $draftId)
-                    ->where('host_id', $hostId)
-                    ->where('is_draft', true)
+                    ->where('user_id', $userId)
+                    ->where('status', Property::STATUS_DRAFT)
                     ->first();
             }
             if (!$property) {
-                // If no draft_id, try to find an existing draft for this host
-                $property = Property::where('host_id', $hostId)
-                    ->where('is_draft', true)
+                // If no draft_id, try to find an existing draft for this user
+                $property = Property::where('user_id', $userId)
+                    ->where('status', Property::STATUS_DRAFT)
                     ->first();
             }
             if (!$property) {
-                // Only create a new draft if none exists for this host
-                $property = new Property(['is_draft' => true, 'host_id' => $hostId]);
+                // Only create a new draft if none exists for this user
+                $property = new Property(['status' => Property::STATUS_DRAFT, 'user_id' => $userId, 'is_host' => true]);
                 $property->save();
             }
 
@@ -496,13 +495,34 @@ class ListingController extends Controller
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            // 3. Update the draft with the new fields and host_id if not set
+            // 3. Update the draft with the new fields and user_id if not set
             $property->fill($request->only(array_keys($fieldsToValidate)));
-            if (!$property->host_id) {
-                $property->host_id = $hostId;
+            if (!$property->user_id) {
+                $property->user_id = $userId;
+                $property->is_host = true;
             }
-            $property->is_draft = true;
+            $property->status = Property::STATUS_DRAFT;
             $property->save();
+
+            // 3.5. Create or update listing record
+            $listing = Listing::firstOrCreate(
+                ['property_id' => $property->id],
+                [
+                    'host_id' => $user->host_id,
+                    'listing_type' => $request->input('listing_type', 'stay'),
+                    'status' => Listing::STATUS_DRAFT,
+                    'is_completed' => false
+                ]
+            );
+
+            // Update listing with any provided fields
+            if ($request->has('listing_type')) {
+                $listing->listing_type = $request->input('listing_type');
+                $listing->save();
+            }
+
+            // Handle type-specific data
+            $this->handleTypeSpecificData($request, $listing);
 
             // 4. Handle image uploads (Wasabi/local) and save URLs to images JSON column
             $imagePaths = [];
@@ -600,22 +620,606 @@ class ListingController extends Controller
                 if ($validator->fails()) {
                     return response()->json(['errors' => $validator->errors(), 'draft_id' => $property->id], 422);
                 }
-                $property->is_draft = false;
+                $property->status = Property::STATUS_PUBLISHED;
+                $property->version = ($property->version ?? 1) + 1;
                 $property->save();
                 $images = $property->images ? json_decode($property->images, true) : [];
-                return response()->json(['success' => true, 'property' => $property->toArray() + ['images' => $images]]);
+                $completionPercentage = $this->calculateCompletionPercentage($property);
+                $stateInfo = $this->getAllowedTransitions($property);
+                $etag = $this->generateETag($property);
+                return response()->json([
+                    'success' => true, 
+                    'property' => $property->toArray() + [
+                        'images' => $images,
+                        'completion_percentage' => $completionPercentage,
+                        'state_management' => $stateInfo
+                    ]
+                ])->header('ETag', $etag);
             }
 
             // 6. Return the draft ID for the next step
-            // Return images as array (decode JSON)
+            // Return images as array (decode JSON) and completion percentage
             $images = $property->images ? json_decode($property->images, true) : [];
-            return response()->json([
+            $completionPercentage = $this->calculateCompletionPercentage($property);
+            $stateInfo = $this->getAllowedTransitions($property);
+            $etag = $this->generateETag($property);
+            
+            // Get the listing with type-specific data
+            $listing = Listing::where('property_id', $property->id)->first();
+            $responseData = [
                 'draft_id' => $property->id,
-                'property' => $property->toArray() + ['images' => $images],
-            ]);
+                'property' => $property->toArray() + [
+                    'images' => $images,
+                    'completion_percentage' => $completionPercentage,
+                    'state_management' => $stateInfo
+                ],
+            ];
+
+            // Include type-specific data if listing exists
+            if ($listing) {
+                $responseData['listing'] = [
+                    'id' => $listing->id,
+                    'listing_type' => $listing->listing_type,
+                    'status' => $listing->status,
+                    'is_completed' => $listing->is_completed
+                ];
+
+                // Add type-specific details
+                if ($listing->listing_type === 'stay' && $listing->stay) {
+                    $responseData['stay_details'] = $listing->stay->toArray();
+                } elseif ($listing->listing_type === 'experience' && $listing->experience) {
+                    $responseData['experience_details'] = $listing->experience->toArray();
+                }
+            }
+            
+            return response()->json($responseData)->header('ETag', $etag);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
+    }
+
+    /**
+     * Finalize a wizard listing
+     */
+    public function finalizeListing(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            // Find the draft property
+            $property = Property::where('id', $id)
+                ->where('host_id', $user->id)
+                ->where('status', Property::STATUS_DRAFT)
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'code' => 'DRAFT_NOT_FOUND',
+                    'message' => 'Draft listing not found or already finalized'
+                ], 404);
+            }
+
+            // Validate If-Match header for optimistic concurrency control
+            $concurrencyError = $this->validateIfMatch($request, $property);
+            if ($concurrencyError) {
+                return $concurrencyError;
+            }
+
+            // Check if validate_only is requested
+            $validateOnly = $request->boolean('validate_only', false);
+
+            // Required fields for finalization
+            $requiredFields = [
+                'title', 'description', 'address', 'location', 'price', 'price_per_night',
+                'currency', 'latitude', 'longitude', 'city', 'country', 'check_in_hour',
+                'check_out_hour', 'num_of_guests', 'maximum_guests', 'property_type_id',
+                'category_id', 'host_type', 'num_of_bedrooms', 'num_of_bathrooms',
+                'first_reserver', 'host_id'
+            ];
+
+            $missingFields = [];
+            foreach ($requiredFields as $field) {
+                if (empty($property->$field)) {
+                    $missingFields[] = $field;
+                }
+            }
+
+            if (!empty($missingFields)) {
+                return response()->json([
+                    'code' => 'VALIDATION_FAILED',
+                    'message' => 'Required fields are missing',
+                    'field_errors' => array_fill_keys($missingFields, ['This field is required'])
+                ], 422);
+            }
+
+            // If validate_only, return success without finalizing
+            if ($validateOnly) {
+                $completionPercentage = $this->calculateCompletionPercentage($property);
+                $stateInfo = $this->getAllowedTransitions($property);
+                return response()->json([
+                    'code' => 'VALIDATION_SUCCESS',
+                    'message' => 'Listing is ready for finalization',
+                    'property' => $property->toArray() + [
+                        'images' => $property->images ? json_decode($property->images, true) : [],
+                        'completion_percentage' => $completionPercentage,
+                        'state_management' => $stateInfo
+                    ]
+                ]);
+            }
+
+            // Finalize the listing
+            $property->status = Property::STATUS_PUBLISHED;
+            $property->version = ($property->version ?? 1) + 1;
+            $property->save();
+
+            // Create or update the listing record
+            $listing = Listing::firstOrCreate(
+                ['property_id' => $property->id],
+                [
+                    'host_id' => $user->id,
+                    'listing_type' => $request->input('listing_type', 'stay'),
+                    'status' => Listing::STATUS_PUBLISHED,
+                    'is_completed' => true,
+                    'published_at' => now()
+                ]
+            );
+
+            // Update listing status to published
+            $listing->update([
+                'status' => Listing::STATUS_PUBLISHED,
+                'is_completed' => true,
+                'published_at' => now()
+            ]);
+
+            // Handle type-specific data during finalization
+            $this->handleTypeSpecificData($request, $listing);
+
+            $completionPercentage = $this->calculateCompletionPercentage($property);
+            $stateInfo = $this->getAllowedTransitions($property);
+            
+            // Generate new ETag
+            $etag = $this->generateETag($property);
+            
+            // Prepare response with type-specific data
+            $responseData = [
+                'code' => 'SUCCESS',
+                'message' => 'Listing finalized successfully',
+                'property' => $property->toArray() + [
+                    'images' => $property->images ? json_decode($property->images, true) : [],
+                    'completion_percentage' => $completionPercentage,
+                    'state_management' => $stateInfo
+                ],
+                'listing' => [
+                    'id' => $listing->id,
+                    'listing_type' => $listing->listing_type,
+                    'status' => $listing->status,
+                    'is_completed' => $listing->is_completed,
+                    'published_at' => $listing->published_at
+                ]
+            ];
+
+            // Add type-specific details
+            if ($listing->listing_type === 'stay' && $listing->stay) {
+                $responseData['stay_details'] = $listing->stay->toArray();
+            } elseif ($listing->listing_type === 'experience' && $listing->experience) {
+                $responseData['experience_details'] = $listing->experience->toArray();
+            }
+            
+            return response()->json($responseData)->header('ETag', $etag);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'code' => 'SERVER_ERROR',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Validate a draft listing
+     */
+    public function validateListing(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $property = Property::where('host_id', $user->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'code' => 'PROPERTY_NOT_FOUND',
+                    'message' => 'Property not found'
+                ], 404);
+            }
+
+            // Get validation type from request
+            $validationType = $request->input('validation_type', 'full'); // 'step' or 'full'
+            $step = $request->input('step'); // For step-by-step validation
+
+            $errors = [];
+            $warnings = [];
+
+            if ($validationType === 'step' && $step) {
+                // Step-by-step validation
+                switch ($step) {
+                    case 'basic_info':
+                        if (!$property->title) $errors['title'] = 'Title is required';
+                        if (!$property->description) $errors['description'] = 'Description is required';
+                        if (!$property->property_type) $errors['property_type'] = 'Property type is required';
+                        break;
+                    case 'location':
+                        if (!$property->address) $errors['address'] = 'Address is required';
+                        if (!$property->city) $errors['city'] = 'City is required';
+                        if (!$property->state) $errors['state'] = 'State is required';
+                        if (!$property->country) $errors['country'] = 'Country is required';
+                        if (!$property->latitude || !$property->longitude) $errors['coordinates'] = 'Location coordinates are required';
+                        break;
+                    case 'amenities':
+                        if (!$property->bedrooms) $errors['bedrooms'] = 'Number of bedrooms is required';
+                        if (!$property->bathrooms) $errors['bathrooms'] = 'Number of bathrooms is required';
+                        if (!$property->max_guests) $errors['max_guests'] = 'Maximum guests is required';
+                        break;
+                    case 'pricing':
+                        if (!$property->price_per_night) $errors['price_per_night'] = 'Price per night is required';
+                        break;
+                    case 'media':
+                        $images = $property->images ? json_decode($property->images, true) : [];
+                        if (empty($images)) $errors['images'] = 'At least one image is required';
+                        if (count($images) < 3) $warnings['images'] = 'At least 3 images recommended for better visibility';
+                        break;
+                }
+            } else {
+                // Full validation
+                if (!$property->title) $errors['title'] = 'Title is required';
+                if (!$property->description) $errors['description'] = 'Description is required';
+                if (!$property->property_type) $errors['property_type'] = 'Property type is required';
+                if (!$property->address) $errors['address'] = 'Address is required';
+                if (!$property->city) $errors['city'] = 'City is required';
+                if (!$property->state) $errors['state'] = 'State is required';
+                if (!$property->country) $errors['country'] = 'Country is required';
+                if (!$property->latitude || !$property->longitude) $errors['coordinates'] = 'Location coordinates are required';
+                if (!$property->bedrooms) $errors['bedrooms'] = 'Number of bedrooms is required';
+                if (!$property->bathrooms) $errors['bathrooms'] = 'Number of bathrooms is required';
+                if (!$property->max_guests) $errors['max_guests'] = 'Maximum guests is required';
+                if (!$property->price_per_night) $errors['price_per_night'] = 'Price per night is required';
+                
+                $images = $property->images ? json_decode($property->images, true) : [];
+                if (empty($images)) $errors['images'] = 'At least one image is required';
+                if (count($images) < 3) $warnings['images'] = 'At least 3 images recommended for better visibility';
+            }
+
+            // Calculate completion percentage
+            $totalFields = 11; // Total required fields
+            $completedFields = 0;
+            
+            if ($property->title) $completedFields++;
+            if ($property->description) $completedFields++;
+            if ($property->property_type) $completedFields++;
+            if ($property->address) $completedFields++;
+            if ($property->city) $completedFields++;
+            if ($property->state) $completedFields++;
+            if ($property->country) $completedFields++;
+            if ($property->latitude && $property->longitude) $completedFields++;
+            if ($property->bedrooms) $completedFields++;
+            if ($property->bathrooms) $completedFields++;
+            if ($property->max_guests) $completedFields++;
+            if ($property->price_per_night) $completedFields++;
+            
+            $images = $property->images ? json_decode($property->images, true) : [];
+            if (!empty($images)) $completedFields++;
+            
+            $completionPercentage = round(($completedFields / ($totalFields + 1)) * 100); // +1 for images
+
+            $response = [
+                'code' => 'SUCCESS',
+                'message' => empty($errors) ? 'Validation passed' : 'Validation failed',
+                'is_valid' => empty($errors),
+                'completion_percentage' => $completionPercentage,
+                'validation_type' => $validationType
+            ];
+
+            if (!empty($errors)) {
+                $response['field_errors'] = $errors;
+            }
+
+            if (!empty($warnings)) {
+                $response['warnings'] = $warnings;
+            }
+
+            if ($validationType === 'step' && $step) {
+                $response['step'] = $step;
+            }
+
+            return response()->json($response, empty($errors) ? 200 : 422);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'code' => 'SERVER_ERROR',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a wizard listing (PATCH for partial updates)
+     */
+    public function updateWizardListing(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $property = Property::where('host_id', $user->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'code' => 'PROPERTY_NOT_FOUND',
+                    'message' => 'Property not found'
+                ], 404);
+            }
+
+            // Only allow updates to draft properties
+            if (!$property->isDraft()) {
+                return response()->json([
+                    'code' => 'PROPERTY_NOT_DRAFT',
+                    'message' => 'Only draft properties can be updated through wizard'
+                ], 400);
+            }
+
+            // Validate If-Match header for optimistic concurrency control
+            $concurrencyError = $this->validateIfMatch($request, $property);
+            if ($concurrencyError) {
+                return $concurrencyError;
+            }
+
+            // Define allowed fields for partial updates
+            $allowedFields = [
+                'title', 'description', 'property_type', 'address', 'city', 'state', 
+                'country', 'postal_code', 'latitude', 'longitude', 'bedrooms', 
+                'bathrooms', 'max_guests', 'price_per_night', 'cleaning_fee',
+                'security_deposit', 'check_in_time', 'check_out_time', 'house_rules',
+                'cancellation_policy', 'amenities', 'images'
+            ];
+
+            // Only update fields that are present in the request
+            $updateData = [];
+            foreach ($allowedFields as $field) {
+                if ($request->has($field)) {
+                    $value = $request->input($field);
+                    
+                    // Handle special cases
+                    if ($field === 'amenities' && is_array($value)) {
+                        $updateData[$field] = json_encode($value);
+                    } elseif ($field === 'images' && is_array($value)) {
+                        $updateData[$field] = json_encode($value);
+                    } else {
+                        $updateData[$field] = $value;
+                    }
+                }
+            }
+
+            if (empty($updateData)) {
+                return response()->json([
+                    'code' => 'NO_UPDATES',
+                    'message' => 'No valid fields provided for update'
+                ], 400);
+            }
+
+            // Increment version for optimistic concurrency control
+            $updateData['version'] = ($property->version ?? 1) + 1;
+
+            // Update the property
+            $property->update($updateData);
+            $property->refresh();
+
+            // Update or create listing record
+            $listing = Listing::firstOrCreate(
+                ['property_id' => $property->id],
+                [
+                    'host_id' => $user->id,
+                    'listing_type' => $request->input('listing_type', 'stay'),
+                    'status' => Listing::STATUS_DRAFT,
+                    'is_completed' => false
+                ]
+            );
+
+            // Update listing type if provided
+            if ($request->has('listing_type')) {
+                $listing->listing_type = $request->input('listing_type');
+                $listing->save();
+            }
+
+            // Handle type-specific data
+            $this->handleTypeSpecificData($request, $listing);
+
+            // Calculate completion percentage
+            $completionPercentage = $this->calculateCompletionPercentage($property);
+            $stateInfo = $this->getAllowedTransitions($property);
+
+            // Generate new ETag
+            $etag = $this->generateETag($property);
+
+            // Prepare response with type-specific data
+            $responseData = [
+                'code' => 'SUCCESS',
+                'message' => 'Property updated successfully',
+                'property' => array_merge($property->toArray(), [
+                    'images' => $property->images ? json_decode($property->images, true) : [],
+                    'amenities' => $property->amenities ? json_decode($property->amenities, true) : [],
+                    'completion_percentage' => $completionPercentage,
+                    'state_management' => $stateInfo
+                ]),
+                'listing' => [
+                    'id' => $listing->id,
+                    'listing_type' => $listing->listing_type,
+                    'status' => $listing->status,
+                    'is_completed' => $listing->is_completed
+                ]
+            ];
+
+            // Add type-specific details
+            if ($listing->listing_type === 'stay' && $listing->stay) {
+                $responseData['stay_details'] = $listing->stay->toArray();
+            } elseif ($listing->listing_type === 'experience' && $listing->experience) {
+                $responseData['experience_details'] = $listing->experience->toArray();
+            }
+            
+            return response()->json($responseData)->header('ETag', $etag);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'code' => 'SERVER_ERROR',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Calculate completion percentage for a property
+     */
+    private function calculateCompletionPercentage($property)
+    {
+        $requiredFields = [
+            'title', 'description', 'property_type', 'address', 'city', 'state',
+            'country', 'latitude', 'longitude', 'bedrooms', 'bathrooms', 
+            'max_guests', 'price_per_night'
+        ];
+        
+        $completedFields = 0;
+        foreach ($requiredFields as $field) {
+            if (!empty($property->$field)) {
+                $completedFields++;
+            }
+        }
+        
+        // Check for images
+        $images = $property->images ? json_decode($property->images, true) : [];
+        if (!empty($images)) {
+            $completedFields++;
+        }
+        
+        $totalFields = count($requiredFields) + 1; // +1 for images
+        return round(($completedFields / $totalFields) * 100);
+    }
+
+    /**
+     * Get allowed transitions for a property based on its current state
+     */
+    private function getAllowedTransitions($property)
+    {
+        $completionPercentage = $this->calculateCompletionPercentage($property);
+        $transitions = [];
+
+        if ($property->isDraft()) {
+            // Draft state transitions
+            $transitions[] = [
+                'action' => 'update',
+                'method' => 'PATCH',
+                'endpoint' => '/api/v1/wizard-listings/' . $property->id,
+                'description' => 'Update draft property details'
+            ];
+            
+            $transitions[] = [
+                'action' => 'validate',
+                'method' => 'POST',
+                'endpoint' => '/api/v1/wizard-listings/' . $property->id . '/validate',
+                'description' => 'Validate property completeness'
+            ];
+
+            if ($completionPercentage >= 80) {
+                $transitions[] = [
+                    'action' => 'finalize',
+                    'method' => 'POST',
+                    'endpoint' => '/api/v1/wizard-listings/' . $property->id . '/finalize',
+                    'description' => 'Finalize and publish property',
+                    'requirements' => ['completion_percentage >= 80']
+                ];
+            }
+
+            $transitions[] = [
+                'action' => 'delete',
+                'method' => 'DELETE',
+                'endpoint' => '/api/v1/listings/' . $property->id,
+                'description' => 'Delete draft property'
+            ];
+        } else {
+            // Published state transitions
+            $transitions[] = [
+                'action' => 'update',
+                'method' => 'POST',
+                'endpoint' => '/api/v1/listings/' . $property->id,
+                'description' => 'Update published property details'
+            ];
+
+            $transitions[] = [
+                'action' => 'deactivate',
+                'method' => 'POST',
+                'endpoint' => '/api/v1/listings/' . $property->id . '/deactivate',
+                'description' => 'Temporarily deactivate property'
+            ];
+
+            $transitions[] = [
+                'action' => 'delete',
+                'method' => 'DELETE',
+                'endpoint' => '/api/v1/listings/' . $property->id,
+                'description' => 'Permanently delete property'
+            ];
+        }
+
+        return [
+            'current_state' => $property->isDraft() ? 'draft' : 'published',
+            'completion_percentage' => $completionPercentage,
+            'allowed_transitions' => $transitions
+        ];
+    }
+
+    /**
+     * Generate ETag for a property based on its version
+     */
+    private function generateETag($property)
+    {
+        $version = $property->version ?? 1;
+        return '"' . md5($property->id . '-' . $version . '-' . $property->updated_at) . '"';
+    }
+
+    /**
+     * Validate If-Match header for optimistic concurrency control
+     */
+    private function validateIfMatch(Request $request, $property)
+    {
+        $ifMatch = $request->header('If-Match');
+        if ($ifMatch) {
+            $currentETag = $this->generateETag($property);
+            if ($ifMatch !== $currentETag) {
+                return response()->json([
+                    'code' => 'PRECONDITION_FAILED',
+                    'message' => 'Resource has been modified by another request',
+                    'current_etag' => $currentETag
+                ], 412);
+            }
+        }
+        return null;
     }
 
     /**
@@ -623,12 +1227,26 @@ class ListingController extends Controller
      */
     public function updateHostListing(Request $request, $listingId)
     {
-
         try {
-            $listing = Listing::where('host_id', Auth::id())
-                ->findOrFail($listingId);
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
 
-            $request->validate([
+            $listing = Listing::where('host_id', $user->id)
+                ->find($listingId);
+
+            if (!$listing) {
+                return response()->json([
+                    'code' => 'LISTING_NOT_FOUND',
+                    'message' => 'Listing not found'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
                 'title' => 'sometimes|string|max:255',
                 'description' => 'sometimes|string',
                 'address' => 'sometimes|string',
@@ -666,9 +1284,17 @@ class ListingController extends Controller
                 'num_of_bathrooms' => 'sometimes|integer|min:1',
                 'num_of_quarters' => 'nullable|integer|min:0',
                 'has_unallocated_rooms' => 'boolean',
-                'status' => 'sometimes|boolean',
+                'status' => 'sometimes|string|in:' . implode(',', Listing::getAvailableStatuses()),
                 'cancellation_policy' => 'sometimes|boolean'
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'code' => 'VALIDATION_FAILED',
+                    'message' => 'Validation failed',
+                    'field_errors' => $validator->errors()
+                ], 422);
+            }
 
             DB::beginTransaction();
 
@@ -767,7 +1393,7 @@ class ListingController extends Controller
             DB::commit();
 
             return response()->json([
-                'status' => 'success',
+                'code' => 'SUCCESS',
                 'message' => 'Listing updated successfully',
                 'data' => [
                     'property' => $property,
@@ -778,9 +1404,8 @@ class ListingController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to update listing',
-                'error' => $e->getMessage()
+                'code' => 'SERVER_ERROR',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -790,33 +1415,173 @@ class ListingController extends Controller
      */
     public function fetchHostListings(Request $request)
     {
-
-        // dd(auth()->user());
         try {
-            $query = Listing::where('host_id', auth()->user()->host_id)
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            // Get both published listings and draft properties
+            $listingsQuery = Listing::where('host_id', $user->id)
                 ->with([
                     'propertyType',
-                    // 'amenities',
-                    // 'property.images', // REMOVE: do not eager load images relationship
                     'reviews',
-                    'property' // Add property relationship
+                    'property',
+                    'stay',
+                    'experience'
                 ]);
 
-            // Add status filter if provided
+            $draftsQuery = Property::where('user_id', $user->id)
+                ->where('status', Property::STATUS_DRAFT)
+                ->with(['propertyType', 'reviews']);
+
+            // Add listing_type filter if provided (only for listings, not drafts)
+            if ($request->has('listing_type')) {
+                $listingType = $request->listing_type;
+                $listingsQuery->where('listing_type', $listingType);
+                // Note: drafts don't have listing_type in properties table
+            }
+
+            // Add status filter if provided (only applies to published listings)
             if ($request->has('status')) {
-                $query->where('status', $request->status);
+                $listingsQuery->where('status', $request->status);
             }
 
             // Add search filter if provided
             if ($request->has('search')) {
                 $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $listingsQuery->where(function($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
                       ->orWhereHas('property', function($q) use ($search) {
                           $q->where('address', 'like', "%{$search}%")
                             ->orWhere('city', 'like', "%{$search}%")
                             ->orWhere('country', 'like', "%{$search}%");
                       });
+                });
+
+                $draftsQuery->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('address', 'like', "%{$search}%")
+                      ->orWhere('city', 'like', "%{$search}%")
+                      ->orWhere('country', 'like', "%{$search}%");
+                });
+            }
+
+            // Get the results
+            $listings = $listingsQuery->get();
+            $drafts = $draftsQuery->get();
+
+            // Transform listings to include status and listing_type
+            $transformedListings = $listings->map(function ($listing) {
+                $data = $listing->toArray();
+                $data['status'] = $listing->status;
+                $data['listing_type'] = $listing->listing_type;
+                $data['status'] = Property::STATUS_PUBLISHED;
+                
+                // Add type-specific data
+                if ($listing->listing_type === 'stay' && $listing->stay) {
+                    $data['stay_details'] = $listing->stay->toArray();
+                }
+                if ($listing->listing_type === 'experience' && $listing->experience) {
+                    $data['experience_details'] = $listing->experience->toArray();
+                }
+                
+                return $data;
+            });
+
+            // Transform drafts to include status and listing_type
+            $transformedDrafts = $drafts->map(function ($property) {
+                $data = $property->toArray();
+                $data['status'] = 'draft';
+                $data['listing_type'] = $property->listing_type;
+                $data['status'] = Property::STATUS_DRAFT;
+                $data['completion_percentage'] = $this->calculateCompletionPercentage($property);
+                $data['images'] = $property->images ? json_decode($property->images, true) : [];
+                $data['amenities'] = $property->amenities ? json_decode($property->amenities, true) : [];
+                return $data;
+            });
+
+            // Combine and sort results
+            $allResults = $transformedListings->concat($transformedDrafts);
+            
+            // Apply sorting
+            $sortBy = $request->input('sort_by', 'created_at');
+            $sortOrder = $request->input('sort_order', 'desc');
+            
+            $sortedResults = $allResults->sortBy(function ($item) use ($sortBy) {
+                return $item[$sortBy] ?? $item['created_at'];
+            });
+            
+            if ($sortOrder === 'desc') {
+                $sortedResults = $sortedResults->reverse();
+            }
+
+            // Manual pagination
+            $perPage = $request->input('per_page', 10);
+            $page = $request->input('page', 1);
+            $total = $sortedResults->count();
+            $items = $sortedResults->forPage($page, $perPage)->values();
+
+            $paginatedData = [
+                'current_page' => $page,
+                'data' => $items,
+                'first_page_url' => $request->url() . '?page=1',
+                'from' => ($page - 1) * $perPage + 1,
+                'last_page' => ceil($total / $perPage),
+                'last_page_url' => $request->url() . '?page=' . ceil($total / $perPage),
+                'next_page_url' => $page < ceil($total / $perPage) ? $request->url() . '?page=' . ($page + 1) : null,
+                'path' => $request->url(),
+                'per_page' => $perPage,
+                'prev_page_url' => $page > 1 ? $request->url() . '?page=' . ($page - 1) : null,
+                'to' => min($page * $perPage, $total),
+                'total' => $total
+            ];
+
+            return response()->json([
+                'code' => 'SUCCESS',
+                'message' => 'Host listings fetched successfully',
+                'data' => $paginatedData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => 'SERVER_ERROR',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Fetch host's draft listings
+     */
+    public function fetchHostDraftListings(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $query = Property::where('host_id', $user->id)
+                ->where('status', Property::STATUS_DRAFT)
+                ->with([
+                    'propertyType',
+                    'reviews'
+                ]);
+
+            // Add search filter if provided
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('address', 'like', "%{$search}%")
+                      ->orWhere('city', 'like', "%{$search}%")
+                      ->orWhere('country', 'like', "%{$search}%");
                 });
             }
 
@@ -827,18 +1592,31 @@ class ListingController extends Controller
 
             // Paginate results
             $perPage = $request->input('per_page', 10);
-            $listings = $query->paginate($perPage);
+            $drafts = $query->paginate($perPage);
+
+            // Add completion percentage, state management, and ETag to each draft
+            $drafts->getCollection()->transform(function ($property) {
+                $completionPercentage = $this->calculateCompletionPercentage($property);
+                $stateInfo = $this->getAllowedTransitions($property);
+                $etag = $this->generateETag($property);
+                $propertyArray = $property->toArray();
+                $propertyArray['completion_percentage'] = $completionPercentage;
+                $propertyArray['images'] = $property->images ? json_decode($property->images, true) : [];
+                $propertyArray['amenities'] = $property->amenities ? json_decode($property->amenities, true) : [];
+                $propertyArray['state_management'] = $stateInfo;
+                $propertyArray['etag'] = $etag;
+                return $propertyArray;
+            });
 
             return response()->json([
-                'status' => 'success',
-                'message' => 'Host listings fetched successfully',
-                'data' => $listings
+                'code' => 'SUCCESS',
+                'message' => 'Host draft listings fetched successfully',
+                'data' => $drafts
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to fetch host listings',
-                'error' => $e->getMessage()
+                'code' => 'SERVER_ERROR',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -849,9 +1627,24 @@ class ListingController extends Controller
     public function deleteHostListing($listingId)
     {
         try {
-            $listing = Listing::where('host_id', auth()->user()->host_id)
-                ->with(['property', 'bookings']) // Eager load relationships
-                ->findOrFail($listingId);
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $listing = Listing::where('host_id', $user->id)
+                ->with(['property', 'bookings'])
+                ->find($listingId);
+
+            if (!$listing) {
+                return response()->json([
+                    'code' => 'LISTING_NOT_FOUND',
+                    'message' => 'Listing not found'
+                ], 404);
+            }
 
             // Check if there are any active bookings
             $activeBookings = $listing->bookings()
@@ -860,7 +1653,7 @@ class ListingController extends Controller
 
             if ($activeBookings) {
                 return response()->json([
-                    'status' => 'error',
+                    'code' => 'ACTIVE_BOOKINGS_EXIST',
                     'message' => 'Cannot delete listing with active bookings'
                 ], 400);
             }
@@ -884,23 +1677,17 @@ class ListingController extends Controller
                 DB::commit();
 
                 return response()->json([
-                    'status' => 'success',
+                    'code' => 'SUCCESS',
                     'message' => 'Listing and all related data deleted successfully'
                 ], 200);
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Listing not found'
-            ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to delete listing',
-                'error' => $e->getMessage()
+                'code' => 'SERVER_ERROR',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -1143,6 +1930,165 @@ class ListingController extends Controller
                 'message' => 'Failed to fetch listings',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get wizard metadata
+     */
+    public function getWizardMetadata()
+    {
+        try {
+            $metadata = [
+                'property_types' => [
+                    ['value' => 'apartment', 'label' => 'Apartment', 'description' => 'A self-contained housing unit within a larger building'],
+                    ['value' => 'house', 'label' => 'House', 'description' => 'A standalone residential building'],
+                    ['value' => 'condo', 'label' => 'Condominium', 'description' => 'A privately owned unit in a building or complex'],
+                    ['value' => 'townhouse', 'label' => 'Townhouse', 'description' => 'A multi-floor home that shares walls with adjacent units'],
+                    ['value' => 'villa', 'label' => 'Villa', 'description' => 'A luxurious house, often with gardens'],
+                    ['value' => 'studio', 'label' => 'Studio', 'description' => 'A single room that combines living, sleeping, and kitchen areas'],
+                    ['value' => 'loft', 'label' => 'Loft', 'description' => 'A large, open space converted from industrial or commercial use']
+                ],
+                'categories' => [
+                    ['value' => 'entire_place', 'label' => 'Entire Place', 'description' => 'Guests have the whole place to themselves'],
+                    ['value' => 'private_room', 'label' => 'Private Room', 'description' => 'Guests have a private room but may share common areas'],
+                    ['value' => 'shared_room', 'label' => 'Shared Room', 'description' => 'Guests share a room with others']
+                ],
+                'amenities' => [
+                    // Basic amenities
+                    ['value' => 'wifi', 'label' => 'WiFi', 'category' => 'basic', 'icon' => 'wifi'],
+                    ['value' => 'kitchen', 'label' => 'Kitchen', 'category' => 'basic', 'icon' => 'kitchen'],
+                    ['value' => 'washer', 'label' => 'Washer', 'category' => 'basic', 'icon' => 'washer'],
+                    ['value' => 'dryer', 'label' => 'Dryer', 'category' => 'basic', 'icon' => 'dryer'],
+                    ['value' => 'air_conditioning', 'label' => 'Air Conditioning', 'category' => 'basic', 'icon' => 'ac'],
+                    ['value' => 'heating', 'label' => 'Heating', 'category' => 'basic', 'icon' => 'heating'],
+                    
+                    // Entertainment
+                    ['value' => 'tv', 'label' => 'TV', 'category' => 'entertainment', 'icon' => 'tv'],
+                    ['value' => 'netflix', 'label' => 'Netflix', 'category' => 'entertainment', 'icon' => 'netflix'],
+                    ['value' => 'sound_system', 'label' => 'Sound System', 'category' => 'entertainment', 'icon' => 'sound'],
+                    
+                    // Safety & Security
+                    ['value' => 'smoke_alarm', 'label' => 'Smoke Alarm', 'category' => 'safety', 'icon' => 'smoke_alarm'],
+                    ['value' => 'carbon_monoxide_alarm', 'label' => 'Carbon Monoxide Alarm', 'category' => 'safety', 'icon' => 'co_alarm'],
+                    ['value' => 'fire_extinguisher', 'label' => 'Fire Extinguisher', 'category' => 'safety', 'icon' => 'fire_extinguisher'],
+                    ['value' => 'first_aid_kit', 'label' => 'First Aid Kit', 'category' => 'safety', 'icon' => 'first_aid'],
+                    
+                    // Outdoor
+                    ['value' => 'pool', 'label' => 'Pool', 'category' => 'outdoor', 'icon' => 'pool'],
+                    ['value' => 'hot_tub', 'label' => 'Hot Tub', 'category' => 'outdoor', 'icon' => 'hot_tub'],
+                    ['value' => 'balcony', 'label' => 'Balcony', 'category' => 'outdoor', 'icon' => 'balcony'],
+                    ['value' => 'garden', 'label' => 'Garden', 'category' => 'outdoor', 'icon' => 'garden'],
+                    ['value' => 'bbq_grill', 'label' => 'BBQ Grill', 'category' => 'outdoor', 'icon' => 'bbq'],
+                    
+                    // Parking & Transportation
+                    ['value' => 'free_parking', 'label' => 'Free Parking', 'category' => 'parking', 'icon' => 'parking'],
+                    ['value' => 'paid_parking', 'label' => 'Paid Parking', 'category' => 'parking', 'icon' => 'paid_parking'],
+                    ['value' => 'ev_charger', 'label' => 'EV Charger', 'category' => 'parking', 'icon' => 'ev_charger']
+                ],
+                'constraints' => [
+                    'bedrooms' => ['min' => 0, 'max' => 20],
+                    'bathrooms' => ['min' => 0, 'max' => 10, 'step' => 0.5],
+                    'max_guests' => ['min' => 1, 'max' => 50],
+                    'price_per_night' => ['min' => 1, 'max' => 10000, 'currency' => 'USD'],
+                    'title' => ['min_length' => 10, 'max_length' => 100],
+                    'description' => ['min_length' => 50, 'max_length' => 2000],
+                    'images' => ['min_count' => 1, 'max_count' => 20, 'max_size_mb' => 10],
+                    'amenities' => ['min_count' => 0, 'max_count' => 50]
+                ],
+                'validation_rules' => [
+                    'required_fields' => [
+                        'title', 'description', 'property_type', 'category',
+                        'bedrooms', 'bathrooms', 'max_guests', 'price_per_night',
+                        'address', 'city', 'state', 'country', 'postal_code',
+                        'latitude', 'longitude'
+                    ],
+                    'recommended_fields' => [
+                        'images', 'amenities', 'house_rules', 'check_in_time', 'check_out_time'
+                    ]
+                ]
+            ];
+
+            return response()->json([
+                'code' => 'SUCCESS',
+                'message' => 'Wizard metadata retrieved successfully',
+                'data' => $metadata
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'code' => 'SERVER_ERROR',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle type-specific data for stays and experiences
+     */
+    private function handleTypeSpecificData(Request $request, Listing $listing)
+    {
+        if ($listing->listing_type === 'stay') {
+            $this->handleStayData($request, $listing);
+        } elseif ($listing->listing_type === 'experience') {
+            $this->handleExperienceData($request, $listing);
+        }
+    }
+
+    /**
+     * Handle stay-specific data
+     */
+    private function handleStayData(Request $request, Listing $listing)
+    {
+        $stayFields = [
+            'cleaning_fee', 'minimum_nights', 'maximum_nights', 'check_in_instructions',
+            'self_check_in', 'keypad_code', 'lockbox_location', 'check_in_start_time',
+            'check_in_end_time', 'check_out_time', 'quiet_hours_start', 'quiet_hours_end',
+            'house_manual', 'wifi_name', 'wifi_password', 'parking_instructions',
+            'local_recommendations'
+        ];
+
+        $stayData = [];
+        foreach ($stayFields as $field) {
+            if ($request->has($field)) {
+                $stayData[$field] = $request->input($field);
+            }
+        }
+
+        if (!empty($stayData)) {
+            $listing->stay()->updateOrCreate(
+                ['listing_id' => $listing->id],
+                $stayData
+            );
+        }
+    }
+
+    /**
+     * Handle experience-specific data
+     */
+    private function handleExperienceData(Request $request, Listing $listing)
+    {
+        $experienceFields = [
+            'duration_hours', 'duration_minutes', 'minimum_group_size', 'maximum_group_size',
+            'activity_type', 'difficulty_level', 'minimum_age', 'maximum_age',
+            'physical_requirements', 'what_to_bring', 'meeting_point', 'meeting_instructions',
+            'cancellation_hours', 'weather_dependent', 'languages_offered', 'includes',
+            'excludes', 'safety_requirements', 'experience_highlights', 'itinerary',
+            'price_per_person', 'group_discount_threshold', 'group_discount_percentage'
+        ];
+
+        $experienceData = [];
+        foreach ($experienceFields as $field) {
+            if ($request->has($field)) {
+                $experienceData[$field] = $request->input($field);
+            }
+        }
+
+        if (!empty($experienceData)) {
+            $listing->experience()->updateOrCreate(
+                ['listing_id' => $listing->id],
+                $experienceData
+            );
         }
     }
 }

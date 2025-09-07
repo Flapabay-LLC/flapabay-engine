@@ -65,6 +65,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $appends = [
         'profile_photo_url',
+        'is_host',
     ];
 
 
@@ -113,6 +114,14 @@ class User extends Authenticatable implements JWTSubject
     public function isHost()
     {
         return !is_null($this->host_id);
+    }
+
+    /**
+     * Get the is_host attribute for JSON serialization.
+     */
+    public function getIsHostAttribute()
+    {
+        return $this->isHost();
     }
 
     /**

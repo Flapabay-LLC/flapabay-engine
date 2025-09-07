@@ -102,7 +102,7 @@ Route::post('google/logout', [GoogleAuthController::class, 'logout'])->middlewar
     Route::delete('wishlists/{wishlistId}', [FavoriteController::class, 'deleteWishlist']);
 
     // JWT token refresh endpoint
-    Route::middleware('auth:api')->post('auth/refresh', [\App\Http\Controllers\Auth\AuthenticatorController::class, 'refreshToken']);
+    Route::middleware('auth:api')->post('auth/refresh', [AuthenticatorController::class, 'refreshToken']);
 });
 
 // Protected routes with JWT api authentication
@@ -138,9 +138,20 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
 
     // Listing routes
     // Route::get('listings', [ListingController::class, 'fetchAllListings']);
+    Route::get('wizard-listings/meta', [ListingController::class, 'getWizardMetadata']);
     Route::post('wizard-listings', [ListingController::class, 'createNewListing']);
+    Route::patch('wizard-listings/{id}', [ListingController::class, 'updateWizardListing']);
+    Route::post('wizard-listings/{id}/finalize', [ListingController::class, 'finalizeListing']);
+    Route::post('wizard-listings/{id}/validate', [ListingController::class, 'validateListing']);
     Route::post('listings/{listingId}', [ListingController::class, 'updateHostListing']);
+    
+    // Media upload routes
+    Route::post('media/uploads/init', [\App\Http\Controllers\MediaController::class, 'initializeUpload']);
+    Route::post('media/uploads/direct', [\App\Http\Controllers\MediaController::class, 'directUpload']);
+    Route::post('media/attach', [\App\Http\Controllers\MediaController::class, 'attachToProperty']);
+    Route::get('media/status/{fileKey}', [\App\Http\Controllers\MediaController::class, 'getUploadStatus'])->where('fileKey', '.*');
     Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
+    Route::get('listings/host/drafts', [ListingController::class, 'fetchHostDraftListings']);
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
 
     // Property routes

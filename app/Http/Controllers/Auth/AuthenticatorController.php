@@ -721,24 +721,24 @@ class AuthenticatorController extends Controller
             return response()->json([
                 'success' => true,
                 'token' => $newToken,
-                'message' => 'Token refreshed successfully.'
+                'token_type' => 'bearer',
+                'expires_in' => config('jwt.ttl') * 60 // Convert minutes to seconds
             ], 200);
         } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid token.'
+                'message' => 'Invalid or expired token'
             ], 401);
         } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Token refresh failed.'
+                'message' => 'Token could not be refreshed'
             ], 401);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Token could not be refreshed'
+            ], 401);
         }
     }
 

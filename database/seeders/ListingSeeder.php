@@ -151,7 +151,7 @@ class ListingSeeder extends Seeder
                     'title' => $randomTitle,
                     'property_id' => $property->id,
                     'category_id' => $faker->numberBetween(1, 5),
-                    'status' => true,
+                    'status' => Listing::STATUS_PUBLISHED,
                     'published_at' => now(),
                     'cancellation_policy' => false,
                     'is_completed' => true,

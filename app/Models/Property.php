@@ -10,6 +10,25 @@ class Property extends Model
     /** @use HasFactory<\Database\Factories\PropertyFactory> */
     use HasFactory;
 
+    // Status constants
+    const STATUS_DRAFT = 'draft';
+    const STATUS_PUBLISHED = 'published';
+    const STATUS_PENDING = 'pending';
+    const STATUS_ARCHIVED = 'archived';
+
+    /**
+     * Get all available status values
+     */
+    public static function getAvailableStatuses(): array
+    {
+        return [
+            self::STATUS_DRAFT,
+            self::STATUS_PUBLISHED,
+            self::STATUS_PENDING,
+            self::STATUS_ARCHIVED,
+        ];
+    }
+
 
     /**
      * The attributes that are mass assignable.
@@ -89,6 +108,10 @@ class Property extends Model
         'who_to_welcome_first_reservation', // string
         'discounts', // json
         'place_items', // json
+        'status', // string - draft, published, pending, archived
+        'user_id', // foreign key to users table
+        'is_host', // boolean - indicates if user is a host
+        'version', // integer for optimistic concurrency control
     ];
 
     /**
@@ -111,6 +134,8 @@ class Property extends Model
         'every_bedroom_has_lock' => 'boolean',
         'weekday_price' => 'decimal:2',
         'weekend_price' => 'decimal:2',
+        'status' => 'string',
+        'is_host' => 'boolean',
     ];
 
     /**
@@ -145,6 +170,8 @@ class Property extends Model
             'num_of_bedrooms' => $data['num_of_bedrooms'], // Number of bedrooms
             'num_of_bathrooms' => $data['num_of_bathrooms'], // Number of bathrooms
             'num_of_quarters' => $data['num_of_quarters'], // Number of quarters
+            'user_id' => $data['user_id'], // User ID (property owner)
+            'is_host' => $data['is_host'] ?? true, // Boolean to indicate if user is host
         ]);
     }
 
@@ -187,6 +214,14 @@ class Property extends Model
     public function listing()
     {
         return $this->hasOne(\App\Models\Listing::class, 'property_id');
+    }
+
+    /**
+     * Relationship with User model (property owner).
+     */
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
 
     /**
@@ -301,6 +336,86 @@ class Property extends Model
     public function images()
     {
         return $this->hasMany(PropertyImage::class);
+    }
+
+
+
+    public function setDraft(): void
+    {
+        $this->status = self::STATUS_DRAFT;
+    }
+
+    public function setPublished(): void
+    {
+        $this->status = self::STATUS_PUBLISHED;
+    }
+
+    public function setPending(): void
+    {
+        $this->status = self::STATUS_PENDING;
+    }
+
+    public function setArchived(): void
+    {
+        $this->status = self::STATUS_ARCHIVED;
+    }
+
+    // Query scopes
+    public function scopeDraft($query)
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('status', self::STATUS_PUBLISHED);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->where('status', self::STATUS_ARCHIVED);
+    }
+
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Check if property is in draft status
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    /**
+     * Check if property is published
+     */
+    public function isPublished(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED;
+    }
+
+    /**
+     * Check if property is pending
+     */
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * Check if property is archived
+     */
+    public function isArchived(): bool
+    {
+        return $this->status === self::STATUS_ARCHIVED;
     }
 
     public function amenities()
