@@ -11,13 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->integer('square_feet')->nullable()->after('num_of_quarters');
-            $table->integer('children_guests')->nullable()->after('square_feet');
-            $table->integer('infant_guests')->nullable()->after('children_guests');
-            $table->integer('adult_guests')->nullable()->after('infant_guests');
-            $table->integer('pet_guests')->nullable()->after('adult_guests');
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table. These fields should be added to listings if needed.
+        
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     /**
@@ -29,4 +26,4 @@ return new class extends Migration
             $table->dropColumn(['square_feet', 'children_guests', 'infant_guests', 'adult_guests', 'pet_guests']);
         });
     }
-}; 
+};

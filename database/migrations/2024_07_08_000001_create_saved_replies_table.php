@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('saved_replies', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('host_id');
+            $table->unsignedBigInteger('user_id');
             $table->text('reply_text');
             $table->timestamps();
 
-            $table->foreign('host_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

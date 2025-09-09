@@ -8,9 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->enum('featured_status', ['guest_favourite', 'featured'])->nullable()->default(null)->after('verified');
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table.
+        
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     public function down(): void
@@ -19,4 +20,4 @@ return new class extends Migration
             $table->dropColumn('featured_status');
         });
     }
-}; 
+};

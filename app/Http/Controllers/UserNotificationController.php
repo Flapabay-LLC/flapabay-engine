@@ -27,7 +27,7 @@ class UserNotificationController extends Controller
         //     'title' => 'required|string',
         //     'message' => 'required|string',
         //     'sender_user_id' => 'required',
-        //     'property_id' => 'required',
+        //     'listing_id' => 'required',
         // ]);
 
         // dd($request);
@@ -38,7 +38,7 @@ class UserNotificationController extends Controller
                 'message' => $request->message,
                 'type' => $request->type,
                 'from_user_id' => $request->sender_user_id,
-                'property_id' => $request->property_id,
+                'listing_id' => $request->listing_id,
                 'textColor' => $request->textColor,
                 'bgColor' => $request->bgColor,
                 'icon' => $request->icon,

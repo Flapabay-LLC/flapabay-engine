@@ -14,8 +14,8 @@ class ThreadSeeder extends Seeder
     public function run(): void
     {
         $faker = Faker::create();
-        $hosts = User::whereNotNull('host_id')->get();
-        $guests = User::whereNull('host_id')->get();
+        $hosts = User::where('is_host', true)->get();
+        $guests = User::where('is_host', false)->orWhereNull('is_host')->get();
         $experiences = Listing::all();
 
         if ($hosts->isEmpty() || $guests->isEmpty() || $experiences->isEmpty()) {
@@ -34,7 +34,7 @@ class ThreadSeeder extends Seeder
             $usedCombos[$comboKey] = true;
             $thread = Thread::create([
                 'guest_id' => $guest->id,
-                'host_id' => $host->id,
+                'user_id' => $host->id,
                 'thread_type' => 'inquiry',
                 'context_type' => 'experience',
                 'context_id' => $experience->id,
@@ -112,7 +112,7 @@ class ThreadSeeder extends Seeder
             // Saved reply (host to guest)
             $savedReply = $faker->sentence(10);
             \App\Models\SavedReply::firstOrCreate([
-                'host_id' => $host->id,
+                'user_id' => $host->id,
                 'reply_text' => $savedReply,
             ]);
             Message::create([
@@ -121,7 +121,7 @@ class ThreadSeeder extends Seeder
                 'receiver_id' => $guest->id,
                 'message' => $savedReply,
                 'type' => 'saved_reply',
-                'meta' => ['saved_reply_id' => \App\Models\SavedReply::where('host_id', $host->id)->where('reply_text', $savedReply)->first()->id],
+                'meta' => ['saved_reply_id' => \App\Models\SavedReply::where('user_id', $host->id)->where('reply_text', $savedReply)->first()->id],
                 'is_read' => false,
                 'deleted_for_sender' => false,
                 'deleted_for_receiver' => false,
@@ -129,4 +129,4 @@ class ThreadSeeder extends Seeder
         }
         $this->command->info('Thread-based chat data seeded successfully!');
     }
-} 
+}

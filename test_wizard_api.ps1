@@ -27,7 +27,7 @@ try {
 # Test 2: Create New Wizard Listing
 Write-Host "\n2️⃣  Testing POST /wizard-listings" -ForegroundColor Yellow
 $createBody = @{
-    host_id = 1111
+    user_id = 1111
     title = 'API Test Listing'
     description = 'This is a comprehensive test listing created through the wizard API to verify all functionality works correctly'
     property_type = 'apartment'

@@ -10,12 +10,17 @@ class SavedReply extends Model
     use HasFactory;
 
     protected $fillable = [
-        'host_id',
+        'user_id',
         'reply_text',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function host()
     {
-        return $this->belongsTo(User::class, 'host_id');
+        return $this->user();
     }
-} 
+}

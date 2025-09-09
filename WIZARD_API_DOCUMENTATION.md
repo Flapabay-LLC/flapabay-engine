@@ -20,7 +20,7 @@ All endpoints require authentication via Bearer token:
 Authorization: Bearer <your_jwt_token>
 ```
 
-The `host_id` is automatically derived from the authenticated user token.
+The `user_id` is automatically derived from the authenticated user token.
 
 ## Base URL
 ```

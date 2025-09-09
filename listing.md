@@ -6,13 +6,13 @@ High priority (must-have before FE integration)
 
 1.
 Authentication and identity
-Derive host_id on the server from the authenticated user; do not require it in payloads.
+Derive user_id on the server from the authenticated user; do not require it in payloads.
 Require Authorization: Bearer
 for all wizard endpoints.
 
 Return 401/403 with a standard error body on unauthenticated/unauthorized access.
 Acceptance criteria:
-host_id is never required from the client.
+user_id is never required from the client.
 All responses include consistent error schema on failure.
 1.
 Finalize endpoint (canonical)

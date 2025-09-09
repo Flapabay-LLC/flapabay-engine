@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('co_hosts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('host_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('co_host_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('property_id')->constrained('properties')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('co_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('listing_id')->constrained('listings')->onDelete('cascade');
             $table->enum('status', ['pending', 'active', 'inactive'])->default('pending');
             $table->json('permissions')->nullable(); // Store permissions as JSON
             $table->timestamp('joined_at')->nullable();
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // Unique constraint to prevent duplicate co-host assignments
-            $table->unique(['host_id', 'co_host_id', 'property_id']);
+            $table->unique(['user_id', 'co_user_id', 'listing_id']);
         });
     }
 
@@ -29,4 +29,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('co_hosts');
     }
-}; 
+};

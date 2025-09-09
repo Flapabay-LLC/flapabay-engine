@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Listing;
-use App\Models\Property;
 use App\Models\User;
 use App\Models\ListingImage;
 use Faker\Factory as Faker;
@@ -21,14 +20,14 @@ class ListingSeeder extends Seeder
         $faker = Faker::create();
         
         // Get all hosts
-        $hosts = User::whereNotNull('host_id')->get();
+        $hosts = User::where('is_host', true)->get();
         
         if ($hosts->isEmpty()) {
-            $this->command->error('No hosts found. Please create at least one user with host_id.');
+            $this->command->error('No hosts found. Please create at least one user with is_host set to true.');
             return;
         }
 
-        // Create 30 listings
+        // Create 10 listings
         for ($i = 0; $i < 10; $i++) {
             DB::beginTransaction();
             try {
@@ -91,16 +90,29 @@ class ListingSeeder extends Seeder
                 ];
                 // Pick a random title
                 $randomTitle = $faker->randomElement($propertyTitles);
-                // Create property
-                $property = Property::create([
-                    'property_type_id' => $faker->numberBetween(1, 5),
+                // Create listing (properties are now merged into listings)
+                $listing = Listing::create([
+                    'user_id' => $hosts->random()->id,
+                    'title' => $randomTitle,
                     'category_id' => $faker->numberBetween(1, 5),
+                    'status' => Listing::STATUS_PUBLISHED,
+                    'published_at' => now(),
+                    'cancellation_policy' => false,
+                    'is_completed' => true,
+                    'listing_type' => $faker->randomElement(['stay', 'experience']),
+                    'availability_type' => $faker->randomElement(['range', 'month', 'flexible']),
+                    'flexible_month' => $faker->randomElement([
+                        'january', 'february', 'march', 'april', 'may', 'june',
+                        'july', 'august', 'september', 'october', 'november', 'december'
+                    ]),
+                    
+                    // Property fields now in listings table
+                    'property_type_id' => $faker->numberBetween(1, 5),
                     'description' => $faker->paragraphs(3, true),
                     'location' => $faker->address,
                     'address' => $faker->streetAddress,
                     'latitude' => $faker->latitude,
                     'longitude' => $faker->longitude,
-
                     'check_in_hour' => '14:00:00',
                     'check_out_hour' => '11:00:00',
                     'num_of_bedrooms' => $faker->numberBetween(1, 5),
@@ -111,7 +123,6 @@ class ListingSeeder extends Seeder
                     'num_of_children' => $faker->numberBetween(0, 5),
                     'maximum_guests' => $faker->numberBetween(2, 12),
                     'allow_extra_guests' => $faker->boolean,
-
                     'neighborhood_area' => $faker->city,
                     'country' => $faker->country,
                     'currency' => 'ZMW',
@@ -121,57 +132,33 @@ class ListingSeeder extends Seeder
                     'weekend_price' => $faker->numberBetween(50, 500),
                     'children_price' => $faker->numberBetween(5, 25),
                     'additional_guest_price' => $faker->numberBetween(10, 50),
-                    
                     'amenities' => json_encode($propertyAmenities),
                     'house_rules' => json_encode($faker->randomElements(['no fighting','no smoking', 'no pets', 'no parties', 'no brothel', 'no drugs', 'no uncessary visitors'], 2)),
-                    'favourites' => json_encode($faker->randomElements(['peaceful', 'quiet surrounding', 'warm'], 2)),
-                    'safety_items' => json_encode($faker->randomElements(['smoke alarm', 'fire extinguisher', 'first aid kit'], 2)),
+                    'favorite' => $faker->boolean, // Changed from 'favourites' to 'favorite'
                     'who_is_there' => json_encode($faker->randomElements(['just me', 'me and my family', 'roomates', 'teamates'], 1)),
                     'video_link' => json_encode(['url' => 'https://www.youtube.com/watch?v=' . $faker->uuid]),
                     'place_items' => json_encode($faker->randomElements(['Bed', 'TV', 'Sofa', 'Table'], 3)),
                     'images' => json_encode($propertyImages),
-
                     'verified' => true,
                     'about_place' => $faker->paragraph,
                     'host_type' => $faker->randomElement(['private individual', 'business']),
-
-                    'first_reserver' => $faker->name,
                     'show_contact_form_instead_of_booking' => false,
                     'allow_instant_booking' => true,
                     'featured_status' => $faker->randomElement([null, 'guest_favourite', 'featured']),
                     'kind_of_bathrooms' => $faker->randomElement(['private attached','dedicated','shared']),
-                    'every_bedroom_has_lock'=>$faker->boolean,
-                    'who_to_welcome_first_reservation'=>json_encode($faker->randomElements(['any airbnb guest','an experienced guest'], 1)),
-                    'host_booking_settings'=>json_encode($faker->randomElements(['approve your first 5 booking','use instant book'], 1))
+                    'every_bedroom_has_lock' => $faker->boolean
                 ]);
 
-                // Create listing
-                $listing = Listing::create([
-                    'host_id' => $hosts->random()->id,
-                    'title' => $randomTitle,
-                    'property_id' => $property->id,
-                    'category_id' => $faker->numberBetween(1, 5),
-                    'status' => Listing::STATUS_PUBLISHED,
-                    'published_at' => now(),
-                    'cancellation_policy' => false,
-                    'is_completed' => true,
-                    'listing_type' => $faker->randomElement(['stay', 'experience']),
-                    'availability_type' => $faker->randomElement(['range', 'month', 'flexible']),
-                    'flexible_period' => $faker->randomElement(['week', 'weekend', 'month']),
-                    'flexible_month' => $faker->randomElement([
-                        'january', 'february', 'march', 'april', 'may', 'june',
-                        'july', 'august', 'september', 'october', 'november', 'december'
-                    ]),
-                ]);
+                // Note: Property model is no longer used as properties are merged into listings
 
                 DB::commit();
             } catch (\Exception $e) {
-                dd($e);
-                // DB::rollBack();
+                DB::rollBack();
                 $this->command->error("Failed to create listing: " . $e->getMessage());
+                continue; // Skip this listing and continue with the next one
             }
         }
 
-        $this->command->info('30 listings seeded successfully!');
+        $this->command->info('10 listings seeded successfully!');
     }
 }

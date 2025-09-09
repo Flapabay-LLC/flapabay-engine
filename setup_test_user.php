@@ -18,14 +18,14 @@ if ($userCount == 0) {
         'lname' => 'Host',
         'email' => 'host@example.com',
         'password' => bcrypt('password'),
-        'host_id' => '1111'
+        'user_id' => '1111'
     ]);
     echo "User created successfully with ID: {$user->id}\n";
 } else {
     echo "Existing users:\n";
-    $users = User::select('id', 'fname', 'lname', 'email', 'host_id')->get();
+    $users = User::select('id', 'fname', 'lname', 'email', 'user_id')->get();
     foreach ($users as $user) {
-        echo "{$user->id}: {$user->fname} {$user->lname} ({$user->email}) - host_id: {$user->host_id}\n";
+        echo "{$user->id}: {$user->fname} {$user->lname} ({$user->email}) - user_id: {$user->user_id}\n";
     }
 }
 

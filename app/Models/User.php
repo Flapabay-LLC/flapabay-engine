@@ -28,7 +28,7 @@ class User extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $fillable = [
-        'host_id', //nullable (only if a user is a host)
+        'is_host', // boolean - indicates if user is a host
         'fname',
         'lname',
         'email',
@@ -89,6 +89,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_host' => 'boolean',
         ];
     }
 
@@ -113,7 +114,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function isHost()
     {
-        return !is_null($this->host_id);
+        return (bool) $this->attributes['is_host'] ?? false;
     }
 
     /**
@@ -121,7 +122,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function getIsHostAttribute()
     {
-        return $this->isHost();
+        return (bool) $this->attributes['is_host'] ?? false;
     }
 
     /**
@@ -129,7 +130,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function isGuest()
     {
-        return is_null($this->host_id);
+        return !$this->is_host;
     }
 
     /**
@@ -140,5 +141,15 @@ class User extends Authenticatable implements JWTSubject
     public function details()
     {
         return $this->hasOne(UserDetail::class);
+    }
+
+    /**
+     * Relationship with Property model (properties owned by this user).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function properties()
+    {
+        return $this->hasMany(Property::class, 'user_id');
     }
 }

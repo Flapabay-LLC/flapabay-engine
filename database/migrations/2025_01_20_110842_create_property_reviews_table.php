@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('property_reviews', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('property_id');
+            $table->unsignedBigInteger('listing_id'); // Changed from listing_id to listing_id
             $table->integer('rating');
             $table->text('review');
             $table->timestamps();
@@ -22,7 +22,7 @@ return new class extends Migration
 
             // Foreign key constraints
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('property_id')->references('id')->on('properties')->onDelete('cascade');
+            $table->foreign('listing_id')->references('id')->on('listings')->onDelete('cascade'); // Changed to reference listings
         });
     }
 

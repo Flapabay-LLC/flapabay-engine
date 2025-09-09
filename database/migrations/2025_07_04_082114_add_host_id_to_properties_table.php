@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->unsignedBigInteger('host_id')->nullable()->after('id');
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table. The user_id field already exists in listings.
+        
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     /**
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('properties', function (Blueprint $table) {
-            $table->dropColumn('host_id');
+            $table->dropForeign(['user_id']);
+            $table->dropColumn(['user_id', 'is_host']);
         });
     }
 };

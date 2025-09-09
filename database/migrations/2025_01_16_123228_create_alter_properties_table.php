@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->json('tags')->nullable();
-            $table->json('category_id')->nullable();
-            $table->renameColumn('property_type', 'property_type_id');
-            $table->integer('property_type_id')->change()->nullable();
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table. The relevant fields are now part of listings.
+        
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     /**

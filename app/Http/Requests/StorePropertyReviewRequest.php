@@ -23,7 +23,7 @@ class StorePropertyReviewRequest extends FormRequest
     {
         return [
             'user_id' => 'required|exists:users,id',
-            'property_id' => 'required|exists:properties,id',
+            'listing_id' => 'required|exists:listings,id',
             'rating' => 'required|integer|min:1|max:5',
             'review' => 'required|string|max:1000',
         ];

@@ -67,7 +67,7 @@ class FavoriteController extends Controller
     }
 
     /**
-     * Create a wishlist for a user and add property_ids to it
+     * Create a wishlist for a user and add listing_ids to it
      */
     public function createWishlist(Request $request)
     {
@@ -83,7 +83,7 @@ class FavoriteController extends Controller
 
             $request->validate([
                 'name' => 'required|string|max:255',
-                'property_id' => 'nullable|integer|exists:properties,id',
+                'listing_id' => 'nullable|integer|exists:properties,id',
                 'wslist' => 'nullable',
                 'is_default' => 'nullable|boolean',
             ]);
@@ -102,11 +102,11 @@ class FavoriteController extends Controller
                 'is_default' => $isDefault,
             ]);
 
-            // If property_id is provided, add it as a favorite
-            if ($wishlist && $request->filled('property_id')) {
+            // If listing_id is provided, add it as a favorite
+            if ($wishlist && $request->filled('listing_id')) {
                 Favorite::create([
                     'user_id' => $userId,
-                    'property_id' => $request->property_id,
+                    'listing_id' => $request->listing_id,
                     'wishlist_id' => $wishlist->id,
                 ]);
             }
@@ -131,7 +131,7 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'property_id' => 'required',
+            'listing_id' => 'required',
             'wishlist_id' => 'required',
         ]);
 
@@ -151,7 +151,7 @@ class FavoriteController extends Controller
 
         // Check if favorite already exists in this wishlist
         $existingFavorite = Favorite::where('user_id', $user->id)
-            ->where('property_id', $request->property_id)
+            ->where('listing_id', $request->listing_id)
             ->where('wishlist_id', $request->wishlist_id)
             ->first();
 
@@ -164,7 +164,7 @@ class FavoriteController extends Controller
 
         $favorite = Favorite::create([
             'user_id' => $user->id,
-            'property_id' => $request->property_id,
+            'listing_id' => $request->listing_id,
             'wishlist_id' => $request->wishlist_id,
         ]);
 
@@ -208,12 +208,12 @@ class FavoriteController extends Controller
         
         try {
             $request->validate([
-                'property_id' => 'required',
+                'listing_id' => 'required',
                 'wslist' => 'nullable',
             ]);
             
             $favorite = Favorite::where('user_id', auth()->user()->id)
-                ->where('property_id', $request->property_id)
+                ->where('listing_id', $request->listing_id)
                 ->orWhere('wishlist_id', $request->wslist)
                 ->first();
 

@@ -1,5 +1,5 @@
 # Final test of wizard listing creation
-Write-Host "Testing wizard listing creation with host_id fix..."
+Write-Host "Testing wizard listing creation with user_id fix..."
 
 # Login and get token
 $loginBody = '{"email": "mikakovac@gmail.com", "password": "password"}'
@@ -38,7 +38,7 @@ try {
     Write-Host "Status Code: $($response.StatusCode)"
     Write-Host "Response Body:"
     Write-Host $response.Content
-    Write-Host "\n=== host_id validation error has been FIXED! ==="
+    Write-Host "\n=== user_id validation error has been FIXED! ==="
 } catch {
     Write-Host "\n=== ERROR ==="
     Write-Host "Exception: $($_.Exception.Message)"

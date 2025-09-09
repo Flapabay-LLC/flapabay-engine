@@ -12,19 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, change the column type to string
-        Schema::table('properties', function (Blueprint $table) {
-            $table->string('is_draft')->default('draft')->change();
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table. The is_draft field is now part of listings.
         
-        // Then update existing boolean-like values to proper strings
-        DB::table('properties')
-            ->where('is_draft', '1')
-            ->update(['is_draft' => 'published']);
-            
-        DB::table('properties')
-            ->where('is_draft', '0')
-            ->update(['is_draft' => 'draft']);
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     /**

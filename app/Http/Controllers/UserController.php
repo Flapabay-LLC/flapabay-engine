@@ -240,16 +240,12 @@ class UserController extends Controller
         // dd($request);
 
         try {
-            // Generate a unique 4-digit host_id
-            do {
-                $uuid = str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT);
-            } while (\App\Models\User::where('host_id', $uuid)->exists());
             // Find the user by user_id
             $user = auth()->user();
 
             if ($user) {
-                // Update the host_id field
-                $user->host_id = $uuid;
+                // Update the is_host field
+                $user->is_host = true;
                 $user->save();
 
                 // Handle image uploads (Wasabi/local) and save URLs to images JSON column
@@ -329,9 +325,9 @@ class UserController extends Controller
 
                 // Create Listing for the property
                 $listingData = [
-                    'host_id' => $user->id,
+                    'user_id' => $user->id,
                     'title' => $property->title,
-                    'property_id' => $property->id,
+                    'listing_id' => $property->id,
                     'category_id' => $property->category_id ?? null,
                     'status' => true,
                     'published_at' => now(),
@@ -349,7 +345,7 @@ class UserController extends Controller
                     'message' => 'Host registered and property/listing created successfully',
                     'data' => [
                         'user_id' => $user->id,
-                        'host_id' => $user->host_id,
+                        'is_host' => $user->is_host,
                         'property' => $property,
                         'listing' => $listing,
                     ],

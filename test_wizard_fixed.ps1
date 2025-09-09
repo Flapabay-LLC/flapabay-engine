@@ -1,4 +1,4 @@
-# Test wizard listing creation without host_id requirement
+# Test wizard listing creation without user_id requirement
 # Get fresh token
 $loginBody = @{ email = "mikakovac@gmail.com"; password = "password" } | ConvertTo-Json
 try {

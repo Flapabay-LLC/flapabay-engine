@@ -59,7 +59,7 @@ class UserNotification extends Notification
             'icon_alt' => $this->data['icon_alt'] ?? 'bell', // Alternative text for the icon
             'bgColor' => $this->data['bgColor'] ?? '#f0f0f0', // Background color
             'textColor' => $this->data['textColor'] ?? '#000', // Text color
-            'property_id' => $this->data['property_id'] ?? '', // The related property to this notification
+            'listing_id' => $this->data['listing_id'] ?? '', // The related property to this notification
             'from_user_id' => $this->data['sender_user_id'] ?? '', // Source/Sender
         ];
     }

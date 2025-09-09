@@ -10,7 +10,7 @@ class PropertyImage extends Model
     use HasFactory;
 
     protected $fillable = [
-        'property_id',
+        'listing_id',
         'image_url',
         'is_primary',
     ];

@@ -532,7 +532,7 @@ profile_picture: [file]
 #### Request
 ```json
 {
-  "property_id": 1,
+  "listing_id": 1,
   "check_in_date": "2025-02-15",
   "check_out_date": "2025-02-18",
   "guests": 2,
@@ -645,7 +645,7 @@ profile_picture: [file]
 #### Request
 ```json
 {
-  "property_id": 1,
+  "listing_id": 1,
   "recipient_id": 456,
   "message": "Hi! I'm interested in booking your property for next weekend."
 }

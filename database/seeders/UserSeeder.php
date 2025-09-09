@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'host_id' => 1111,
+            'is_host' => true,
             'fname' => 'Mika',
             'lname' => 'Kovac',
             'email' => 'mikakovac@gmail.com',
@@ -43,7 +43,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'host_id' => 1320,
+            'is_host' => true,
             'fname' => 'Daniel',
             'lname' => 'Phiri',
             'email' => 'danp10@example.com',
@@ -87,7 +87,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'host_id' => 2456,
+            'is_host' => true,
             'fname' => 'Lisa',
             'lname' => 'Wang',
             'email' => 'lisa.wang@example.com',

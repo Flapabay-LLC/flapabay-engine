@@ -9,7 +9,7 @@
     <pre class="overflow-x-auto p-4 mt-4 text-sm bg-gray-100 rounded">
         {
             "id": "text (optional)",
-            "host_id": "text (optional)",
+            "user_id": "text (optional)",
             "fname": "text (optional)",
             "lname": "text (optional)",
             "email": "text (optional)",
@@ -52,7 +52,7 @@
   "message": "User updated successfully",
   "user": {
     "id": 1,
-    "host_id": "H123",
+    "user_id": "H123",
     "fname": "John",
     "lname": "Doe",
     "email": "john@example.com",

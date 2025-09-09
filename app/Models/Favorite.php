@@ -12,7 +12,7 @@ class Favorite extends Model
 
     protected $fillable = [
         'user_id',
-        'property_id',
+        'listing_id',
         'wishlist_id',
     ];
 

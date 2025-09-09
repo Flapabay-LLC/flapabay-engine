@@ -18,8 +18,8 @@ class CoHostController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'property_id' => 'required|exists:properties,id',
-                'co_host_id' => 'required|exists:users,id',
+                'listing_id' => 'required|exists:properties,id',
+                'co_user_id' => 'required|exists:users,id',
                 // 'permissions' => 'required|array'
             ]);
 
@@ -32,7 +32,7 @@ class CoHostController extends Controller
             }
 
             // Check if the current user is the owner of the property
-            $property = Property::findOrFail($request->property_id);
+            $property = Property::findOrFail($request->listing_id);
             if ($property->user_id !== auth()->id()) {
                 return response()->json([
                     'status' => 'error',
@@ -42,9 +42,9 @@ class CoHostController extends Controller
 
             // Create co-host record
             $coHost = CoHost::create([
-                'host_id' => auth()->user()->host_id,
-                'co_host_id' => $request->co_host_id,
-                'property_id' => $request->property_id,
+                'user_id' => auth()->user()->id,
+                'co_user_id' => $request->co_user_id,
+                'listing_id' => $request->listing_id,
                 // 'permissions' => $request->permissions,
                 'status' => 'pending',
                 'joined_at' => now()
@@ -71,8 +71,8 @@ class CoHostController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'property_id' => 'required|exists:properties,id',
-                'host_id' => 'required|exists:users,id'
+                'listing_id' => 'required|exists:properties,id',
+                'user_id' => 'required|exists:users,id'
             ]);
 
             if ($validator->fails()) {
@@ -85,9 +85,9 @@ class CoHostController extends Controller
 
             // Check if there's a pending invitation
             $coHost = CoHost::where([
-                'host_id' => $request->host_id,
-                'co_host_id' => auth()->user()->host_id,
-                'property_id' => $request->property_id,
+                'user_id' => $request->user_id,
+                'co_user_id' => auth()->user()->id,
+                'listing_id' => $request->listing_id,
                 'status' => 'pending'
             ])->first();
 
@@ -124,13 +124,13 @@ class CoHostController extends Controller
     public function getPropertiesManagedByCoHost(Request $request)
     {
         try {
-            $coHostId = $request->co_host_id ?? auth()->user()->host_id;
+            $coHostId = $request->co_user_id ?? auth()->user()->id;
 
             $properties = Property::whereHas('coHosts', function ($query) use ($coHostId) {
-                $query->where('co_host_id', $coHostId)
+                $query->where('co_user_id', $coHostId)
                     ->where('status', 'active');
             })->with(['coHosts' => function ($query) use ($coHostId) {
-                $query->where('co_host_id', $coHostId);
+                $query->where('co_user_id', $coHostId);
             }])->get();
 
             return response()->json([
@@ -152,12 +152,12 @@ class CoHostController extends Controller
     public function getHostCoHostMembers(Request $request)
     {
         try {
-            $hostId = $request->host_id ?? auth()->user()->host_id;
+            $hostId = $request->user_id ?? auth()->user()->id;
 
-            $coHosts = CoHost::where('host_id', $hostId)
+            $coHosts = CoHost::where('user_id', $hostId)
                 ->with(['coHost', 'property'])
                 ->get()
-                ->groupBy('property_id');
+                ->groupBy('listing_id');
 
             return response()->json([
                 'status' => 'success',

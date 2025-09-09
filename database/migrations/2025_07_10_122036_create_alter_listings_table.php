@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->dropColumn('title');
-        });
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Only keeping the listings table modification
+        
         Schema::table('listings', function (Blueprint $table) {
-            $table->string('title')->nullable()->after('host_id');
+            if (!Schema::hasColumn('listings', 'title')) {
+                $table->string('title')->nullable()->after('user_id');
+            }
         });
     }
 
@@ -27,8 +29,7 @@ return new class extends Migration
         Schema::table('listings', function (Blueprint $table) {
             $table->dropColumn('title');
         });
-        Schema::table('properties', function (Blueprint $table) {
-            $table->string('title')->nullable();
-        });
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Rollback operations for properties table are no longer applicable
     }
-}; 
+};

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('threads', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('guest_id');
-            $table->unsignedBigInteger('host_id');
+            $table->unsignedBigInteger('user_id');
             $table->string('thread_type')->nullable(); // inquiry, reservation, follow-up
             $table->string('context_type')->nullable(); // listing, booking
             $table->unsignedBigInteger('context_id')->nullable(); // listing_id or booking_id
@@ -20,8 +20,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('guest_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('host_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unique(['guest_id', 'host_id', 'context_type', 'context_id'], 'unique_thread_per_context');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unique(['guest_id', 'user_id', 'context_type', 'context_id'], 'unique_thread_per_context');
         });
     }
 

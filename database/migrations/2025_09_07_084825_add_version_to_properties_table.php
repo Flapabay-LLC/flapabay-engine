@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->integer('version')->default(1)->after('host_id');
-        });
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Version field is now managed through the listings table
     }
 
     /**
@@ -21,8 +20,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->dropColumn('version');
-        });
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Rollback operations are no longer applicable
     }
 };

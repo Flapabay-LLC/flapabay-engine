@@ -9,6 +9,8 @@ class Stay extends Model
 {
     use HasFactory;
 
+    protected $table = 'stays_details';
+
     /**
      * The attributes that are mass assignable.
      *

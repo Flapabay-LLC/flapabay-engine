@@ -11,16 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Update any properties that might have invalid status values
-        // Convert any boolean-like values to proper string status
-        \DB::statement("
-            UPDATE properties 
-            SET status = CASE 
-                WHEN status IN ('1', 'true', '0', 'false') THEN 'draft'
-                WHEN status NOT IN ('draft', 'published', 'pending', 'archived') THEN 'draft'
-                ELSE status 
-            END
-        ");
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Data update is no longer applicable as the source table doesn't exist
     }
 
     /**

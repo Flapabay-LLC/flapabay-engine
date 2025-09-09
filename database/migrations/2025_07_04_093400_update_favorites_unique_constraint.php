@@ -9,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('favorites', function (Blueprint $table) {
-            $table->unique(['user_id', 'property_id', 'wishlist_id']);
+            $table->unique(['user_id', 'listing_id', 'wishlist_id']);
         });
     }
 
     public function down(): void
     {
         Schema::table('favorites', function (Blueprint $table) {
-            $table->dropUnique(['user_id', 'property_id', 'wishlist_id']);
-            $table->unique(['user_id', 'property_id']);
+            $table->dropUnique(['user_id', 'listing_id', 'wishlist_id']);
+            $table->unique(['user_id', 'listing_id']);
         });
     }
-}; 
+};

@@ -16,8 +16,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Migrate existing property data to subtables
-        $this->migrateExistingData();
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Data migration is no longer applicable as the source table doesn't exist
     }
 
     /**
@@ -46,8 +46,8 @@ return new class extends Migration
             $listing = $property->listing;
             if (!$listing) {
                 $listing = Listing::create([
-                    'property_id' => $property->id,
-                    'host_id' => $property->host_id ?? 1, // Default host if not set
+                    'listing_id' => $property->id,
+                    'user_id' => $property->user_id ?? 1, // Default host if not set
                     'listing_type' => $this->determineListingType($property),
                     'status' => $property->status ?? false,
                     'is_completed' => $property->is_completed ?? false

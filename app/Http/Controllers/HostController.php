@@ -9,10 +9,10 @@ use App\Models\User;
 class HostController extends Controller
 {
 
-    public function getHostInfo($host_id): JsonResponse
+    public function getHostInfo($user_id): JsonResponse
     {
         // Fetch host information by ID
-        $host = User::with('details')->where('host_id',$host_id)->first();
+        $host = User::with('details')->where('id', $user_id)->where('is_host', true)->first();
 
         // Check if the host exists
         if (!$host) {

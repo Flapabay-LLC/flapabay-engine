@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('favorites', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('property_id');
+            $table->unsignedBigInteger('listing_id');
             $table->timestamps();
 
             // Add foreign key constraints
@@ -23,9 +23,9 @@ return new class extends Migration
                 ->on('users')
                 ->onDelete('cascade');
 
-            $table->foreign('property_id')
+            $table->foreign('listing_id')
                 ->references('id')
-                ->on('properties')
+                ->on('listings')
                 ->onDelete('cascade');
 
             // Removed unique constraint

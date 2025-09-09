@@ -18,7 +18,7 @@ class UserReview extends Model
     protected $fillable = [
         'user_id',
         'listing_id',
-        'property_id',
+        'listing_id',
         'rating',
         'review'
     ];

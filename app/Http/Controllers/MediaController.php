@@ -29,7 +29,7 @@ class MediaController extends Controller
                 'file_name' => 'required|string|max:255',
                 'file_size' => 'required|integer|min:1|max:10485760', // 10MB max
                 'file_type' => 'required|string|in:image/jpeg,image/png,image/jpg,image/webp',
-                'property_id' => 'nullable|exists:properties,id'
+                'listing_id' => 'nullable|exists:properties,id'
             ]);
 
             if ($validator->fails()) {
@@ -85,7 +85,7 @@ class MediaController extends Controller
                     ],
                     'form_data' => [
                         'file_key' => $fileKey,
-                        'property_id' => $request->property_id
+                        'listing_id' => $request->listing_id
                     ]
                 ]);
             }
@@ -115,7 +115,7 @@ class MediaController extends Controller
             $validator = Validator::make($request->all(), [
                 'file' => 'required|file|mimes:jpeg,png,jpg,webp|max:10240', // 10MB
                 'file_key' => 'required|string',
-                'property_id' => 'nullable|exists:properties,id'
+                'listing_id' => 'nullable|exists:properties,id'
             ]);
 
             if ($validator->fails()) {
@@ -177,7 +177,7 @@ class MediaController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'property_id' => 'required|exists:properties,id',
+                'listing_id' => 'required|exists:properties,id',
                 'file_keys' => 'required|array|min:1|max:20',
                 'file_keys.*' => 'required|string',
                 'action' => 'required|in:add,replace,remove'
@@ -191,8 +191,8 @@ class MediaController extends Controller
                 ], 422);
             }
 
-            $property = Property::where('host_id', $user->id)
-                ->where('id', $request->property_id)
+            $property = Property::where('user_id', $user->id)
+                ->where('id', $request->listing_id)
                 ->first();
 
             if (!$property) {
@@ -226,7 +226,7 @@ class MediaController extends Controller
             return response()->json([
                 'code' => 'SUCCESS',
                 'message' => 'Media attached successfully',
-                'property_id' => $property->id,
+                'listing_id' => $property->id,
                 'images' => $updatedImages,
                 'total_images' => count($updatedImages)
             ]);

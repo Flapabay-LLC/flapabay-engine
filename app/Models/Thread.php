@@ -11,7 +11,7 @@ class Thread extends Model
 
     protected $fillable = [
         'guest_id',
-        'host_id',
+        'user_id',
         'thread_type',
         'context_type',
         'context_id',
@@ -24,13 +24,18 @@ class Thread extends Model
         return $this->belongsTo(User::class, 'guest_id');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function host()
     {
-        return $this->belongsTo(User::class, 'host_id');
+        return $this->user();
     }
 
     public function messages()
     {
         return $this->hasMany(Message::class);
     }
-} 
+}

@@ -48,7 +48,7 @@
   "message": "Host registered and property/listing created successfully",
   "data": {
     "user_id": 1,
-    "host_id": "1234",
+    "user_id": "1234",
     "property": { ... },
     "listing": { ... }
   }

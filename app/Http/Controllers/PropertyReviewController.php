@@ -13,7 +13,7 @@ class PropertyReviewController extends Controller
      */
     public function index()
     {
-        $reviews = PropertyReview::with(['user', 'property'])->orderBy('created_at', 'desc')->get();
+        $reviews = PropertyReview::with(['user', 'listing'])->orderBy('created_at', 'desc')->get();
         return response()->json([
             'message' => 'All reviews fetched successfully',
             'data' => $reviews

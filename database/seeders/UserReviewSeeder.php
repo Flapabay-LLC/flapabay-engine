@@ -17,19 +17,19 @@ class UserReviewSeeder extends Seeder
             $userReviews = [
                 [
                     'user_id' => 1,
-                    'property_id' => 1, // Assuming property with ID 1 exists
+                    'listing_id' => 1, // Assuming listing with ID 1 exists
                     'rating' => 5,
                     'review' => 'Amazing place! Loved the experience, the property was exactly as described, and the hosts were very welcoming.',
                 ],
                 [
                     'user_id' => 2,
-                    'property_id' => 2, // Assuming property with ID 2 exists
+                    'listing_id' => 2, // Assuming listing with ID 2 exists
                     'rating' => 4,
                     'review' => 'Great stay, but could use a bit more variety in amenities. Overall, very comfortable.',
                 ],
                 [
                     'user_id' => 3,
-                    'property_id' => 3, // Assuming property with ID 3 exists
+                    'listing_id' => 3, // Assuming listing with ID 3 exists
                     'rating' => 3,
                     'review' => 'Good location, but there were some issues with cleanliness. Could have been better.',
                 ],

@@ -17,7 +17,7 @@ class PropertyReview extends Model
      */
     protected $fillable = [
         'user_id',
-        'property_id',
+        'listing_id',
         'rating',
         'review'
     ];
@@ -28,8 +28,8 @@ class PropertyReview extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function property()
+    public function listing()
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(Listing::class);
     }
 }

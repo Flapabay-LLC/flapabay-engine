@@ -21,7 +21,7 @@ return new class extends Migration
     {
         Schema::create('availabilities', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('property_id');
+            $table->unsignedBigInteger('listing_id');
             $table->json('date_range')->nullable();
             $table->json('price_dates')->nullable();
             $table->timestamps();

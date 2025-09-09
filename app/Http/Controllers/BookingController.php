@@ -62,7 +62,7 @@ class BookingController extends Controller
     {
         // Step 1: Validate incoming request data
         $validatedData = Validator::make($request->all(), [
-            'property_id' => 'required', // Ensure property exists
+            'listing_id' => 'required', // Ensure property exists
             'user_id' => 'required', 
             'reservation_id' => 'nullable|integer|exists:reservations,id',
         ]);
@@ -98,7 +98,7 @@ class BookingController extends Controller
             // Step 2: Create the booking
             $booking = Booking::create([
                 'booking_number' => uniqid('booking_'), // Generate a unique booking number
-                'property_id' => $request->input('property_id'),
+                'listing_id' => $request->input('listing_id'),
                 'amount' => $amount,
                 'user_id' => $request->input('user_id'),
                 'start_date' => $request->input('start_date'),
@@ -252,7 +252,7 @@ class BookingController extends Controller
     public function hostBookings(Request $request)
     {
         $user = $request->user();
-        if (empty($user->host_id)) {
+        if (!$user->is_host) {
             return response()->json([
                 'success' => false,
                 'message' => 'You are not a host.'
@@ -262,7 +262,7 @@ class BookingController extends Controller
         try {
             $bookings = Booking::with(['property', 'user'])
                 ->whereHas('property', function ($q) use ($user) {
-                    $q->where('host_id', $user->host_id);
+                    $q->where('user_id', $user->id);
                 })
                 ->orderBy('start_date', 'desc')
                 ->get();

@@ -11,27 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->enum('occupation_type',['room','entire_place','shared_room_in_hotel'])->nullable();
-            $table->text('about_place')->nullable()->after('description');
-            $table->string('street')->nullable();
-            $table->string('city')->nullable();
-            $table->string('zip')->nullable();
-            $table->boolean('has_unallocated_rooms')->default(false);
-            $table->integer('num_of_bedrooms')->default(0);
-            $table->integer('num_of_bathrooms')->default(0);
-            $table->integer('num_of_quarters')->default(0);
-            $table->string('first_reserver')->nullable();
-            $table->json('place_items')->nullable()->after('amenities');
-            $table->enum('host_type',['Private Individual','Business'])->nullable()->after('about_place');
-
-            $table->removeColumn('favorite');
-        });
-
-        Schema::table('listings', function (Blueprint $table) {
-            $table->removeColumn('category_id');
-            $table->string('listing_type')->nullable();
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table. The relevant fields are now part of listings.
+        
+        // The listings table modifications are also not needed as the structure is already correct
+        
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     /**

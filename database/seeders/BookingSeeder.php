@@ -19,7 +19,7 @@ class BookingSeeder extends Seeder
             DB::table('bookings')->insert([
                 'booking_number' => Str::uuid()->toString(), // Generate a unique booking number
                 'amount' => rand(100, 1000) + rand(0, 99) / 100, // Random amount between 100.00 and 1000.99
-                'property_id' => rand(1, 10), // Assuming you have properties with IDs 1 to 10
+                'listing_id' => rand(1, 30), // Assuming you have listings with IDs 1 to 30
                 'user_id' => rand(1, 10), // Assuming you have users with IDs 1 to 10
                 'start_date' => Carbon::today()->subDays(rand(1, 30)), // Random start date within the last 30 days
                 'end_date' => Carbon::today()->addDays(rand(1, 10)), // Random end date within the next 10 days

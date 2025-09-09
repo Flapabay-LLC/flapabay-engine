@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Migration disabled: properties table has been dropped and merged into listings
+        // All host fields are now managed through the listings table
+        
+        /*
         Schema::table('properties', function (Blueprint $table) {
             if (!Schema::hasColumn('properties', 'every_bedroom_has_lock')) {
                 $table->boolean('every_bedroom_has_lock')->nullable();
@@ -46,10 +50,15 @@ return new class extends Migration
                 $table->json('place_items')->nullable();
             }
         });
+        */
     }
 
     public function down(): void
     {
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Rollback operations are no longer applicable
+        
+        /*
         Schema::table('properties', function (Blueprint $table) {
             $table->dropColumn([
                 'every_bedroom_has_lock',
@@ -66,5 +75,6 @@ return new class extends Migration
                 'place_items',
             ]);
         });
+        */
     }
-}; 
+};

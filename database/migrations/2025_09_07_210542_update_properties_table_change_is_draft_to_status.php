@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Use raw SQL to rename column to avoid Laravel's default value issues
-        \DB::statement('ALTER TABLE properties CHANGE is_draft status VARCHAR(255)');
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Column renaming is no longer applicable
     }
 
     /**
@@ -20,7 +20,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Use raw SQL to rename column back
-        \DB::statement('ALTER TABLE properties CHANGE status is_draft VARCHAR(255)');
+        // Migration disabled: properties table has been dropped and merged into listings
+        // Rollback operations are no longer applicable
     }
 };

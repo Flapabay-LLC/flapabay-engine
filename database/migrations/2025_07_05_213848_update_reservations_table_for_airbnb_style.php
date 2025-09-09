@@ -18,11 +18,11 @@ return new class extends Migration
             $table->string('guest_phone')->nullable()->after('is_instant_booking');
             $table->string('guest_email')->nullable()->after('guest_phone');
             
-            // Add property_id column
-            $table->unsignedBigInteger('property_id')->nullable()->after('user_id');
-            
-            // Add foreign key constraint for property_id
-            $table->foreign('property_id')->references('id')->on('properties')->onDelete('cascade');
+            // Add listing_id column only if it doesn't exist
+            if (!Schema::hasColumn('reservations', 'listing_id')) {
+                $table->unsignedBigInteger('listing_id')->nullable()->after('user_id');
+                $table->foreign('listing_id')->references('id')->on('listings')->onDelete('cascade');
+            }
         });
     }
 
@@ -33,11 +33,11 @@ return new class extends Migration
     {
         Schema::table('reservations', function (Blueprint $table) {
             // Drop foreign key constraint
-            $table->dropForeign(['property_id']);
+            $table->dropForeign(['listing_id']);
             
             // Drop columns
             $table->dropColumn([
-                'property_id',
+                'listing_id',
                 'number_of_infants',
                 'number_of_pets',
                 'guest_phone',

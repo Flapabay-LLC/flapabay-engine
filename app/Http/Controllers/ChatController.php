@@ -256,7 +256,7 @@ class ChatController extends Controller
         if (!$request->user()->isHost()) {
             return response()->json(['status' => 'error', 'message' => 'Only hosts can view saved replies.'], 403);
         }
-        $replies = \App\Models\SavedReply::where('host_id', $request->user()->id)->get();
+        $replies = \App\Models\SavedReply::where('user_id', $request->user()->id)->get();
         return response()->json(['status' => 'success', 'data' => $replies]);
     }
 
@@ -272,7 +272,7 @@ class ChatController extends Controller
             'reply_text' => 'required|string|max:1000',
         ]);
         $reply = \App\Models\SavedReply::create([
-            'host_id' => $request->user()->id,
+            'user_id' => $request->user()->id,
             'reply_text' => $request->reply_text,
         ]);
         return response()->json(['status' => 'success', 'message' => 'Saved reply added.', 'data' => $reply]);
@@ -284,13 +284,13 @@ class ChatController extends Controller
     public function startChatThread(Request $request)
     {
         $request->validate([
-            'host_id' => 'required|exists:users,id',
+            'user_id' => 'required|exists:users,id',
             'message' => 'required|string',
             'listing_id' => 'nullable|exists:listings,id',
             'booking_id' => 'nullable|exists:bookings,id',
             'category' => 'nullable|string',
         ]);
-        $host = \App\Models\User::find($request->host_id);
+        $host = \App\Models\User::find($request->user_id);
         if (!$host || !$host->isHost()) {
             return response()->json(['status' => 'error', 'message' => 'Recipient must be a host.'], 422);
         }
@@ -333,7 +333,7 @@ class ChatController extends Controller
         }
         // Check for existing thread with same guest, host, and context
         $existingThread = \App\Models\Thread::where('guest_id', $user->id)
-            ->where('host_id', $host->id)
+            ->where('user_id', $host->id)
             ->where('context_type', $contextType)
             ->where('context_id', $contextId)
             ->first();
@@ -343,7 +343,7 @@ class ChatController extends Controller
         // Create the thread
         $thread = \App\Models\Thread::create([
             'guest_id' => $user->id,
-            'host_id' => $host->id,
+            'user_id' => $host->id,
             'thread_type' => 'inquiry',
             'context_type' => $contextType,
             'context_id' => $contextId,
@@ -378,10 +378,10 @@ class ChatController extends Controller
         $thread = \App\Models\Thread::findOrFail($request->thread_id);
         $userId = $request->user()->id;
         // Only participants can send
-        if ($thread->guest_id !== $userId && $thread->host_id !== $userId) {
+        if ($thread->guest_id !== $userId && $thread->user_id !== $userId) {
             return response()->json(['status' => 'error', 'message' => 'You are not a participant in this thread.'], 403);
         }
-        $receiverId = $thread->guest_id === $userId ? $thread->host_id : $thread->guest_id;
+        $receiverId = $thread->guest_id === $userId ? $thread->user_id : $thread->guest_id;
         $msg = \App\Models\Message::create([
             'thread_id' => $thread->id,
             'sender_id' => $userId,
@@ -400,7 +400,7 @@ class ChatController extends Controller
         $userId = $request->user()->id;
         $thread = \App\Models\Thread::where('id', $threadId)
             ->where(function($q) use ($userId) {
-                $q->where('guest_id', $userId)->orWhere('host_id', $userId);
+                $q->where('guest_id', $userId)->orWhere('user_id', $userId);
             })
             ->firstOrFail();
         $perPage = $request->input('per_page', 20);
@@ -449,12 +449,12 @@ class ChatController extends Controller
     {
         $userId = $request->user()->id;
         $query = \App\Models\Thread::where(function($q) use ($userId) {
-            $q->where('guest_id', $userId)->orWhere('host_id', $userId);
+            $q->where('guest_id', $userId)->orWhere('user_id', $userId);
         });
         if ($request->has('category') && $request->category !== 'All') {
             $query->where('category', $request->category);
         }
-        $threads = $query->with(['guest', 'host'])
+        $threads = $query->with(['guest', 'user'])
             ->orderBy('updated_at', 'desc')
             ->paginate($request->input('per_page', 20));
         // Return category metadata with each thread
@@ -467,10 +467,10 @@ class ChatController extends Controller
     public function getThreadById(Request $request, $id)
     {
         $userId = $request->user()->id;
-        $thread = \App\Models\Thread::with(['guest', 'host', 'messages.sender', 'messages.receiver'])
+        $thread = \App\Models\Thread::with(['guest', 'user', 'messages.sender', 'messages.receiver'])
             ->where('id', $id)
             ->where(function($q) use ($userId) {
-                $q->where('guest_id', $userId)->orWhere('host_id', $userId);
+                $q->where('guest_id', $userId)->orWhere('user_id', $userId);
             })
             ->firstOrFail();
         return response()->json(['status' => 'success', 'data' => $thread]);
@@ -504,4 +504,4 @@ class ChatController extends Controller
             'size' => $file->getSize(),
         ]);
     }
-} 
+}

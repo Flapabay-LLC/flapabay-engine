@@ -110,7 +110,6 @@ class Property extends Model
         'place_items', // json
         'status', // string - draft, published, pending, archived
         'user_id', // foreign key to users table
-        'is_host', // boolean - indicates if user is a host
         'version', // integer for optimistic concurrency control
     ];
 
@@ -135,7 +134,6 @@ class Property extends Model
         'weekday_price' => 'decimal:2',
         'weekend_price' => 'decimal:2',
         'status' => 'string',
-        'is_host' => 'boolean',
     ];
 
     /**
@@ -171,7 +169,6 @@ class Property extends Model
             'num_of_bathrooms' => $data['num_of_bathrooms'], // Number of bathrooms
             'num_of_quarters' => $data['num_of_quarters'], // Number of quarters
             'user_id' => $data['user_id'], // User ID (property owner)
-            'is_host' => $data['is_host'] ?? true, // Boolean to indicate if user is host
         ]);
     }
 
@@ -213,7 +210,7 @@ class Property extends Model
      */
     public function listing()
     {
-        return $this->hasOne(\App\Models\Listing::class, 'property_id');
+        return $this->hasOne(\App\Models\Listing::class, 'listing_id');
     }
 
     /**
@@ -285,7 +282,7 @@ class Property extends Model
     {
         // Retrieve the property fields (already loaded on this model)
         $availability = [
-            'property_id' => $this->id,
+            'listing_id' => $this->id,
             'check_in_date' => $this->check_in_date,
             'check_out_date' => $this->check_out_date,
             'check_in_hour' => $this->check_in_hour,

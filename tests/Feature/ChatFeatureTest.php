@@ -17,25 +17,25 @@ class ChatFeatureTest extends TestCase
 
     public function test_guest_can_create_thread_with_host()
     {
-        $guest = User::factory()->create(['host_id' => null]);
-        $host = User::factory()->create(['host_id' => 1]);
+        $guest = User::factory()->create(['is_host' => false]);
+        $host = User::factory()->create(['is_host' => true]);
         $this->actingAs($guest);
         $response = $this->postJson('/api/v1/chat/start', [
-            'host_id' => $host->id,
+            'user_id' => $host->id,
             'message' => 'Hello, host!',
         ]);
         $response->assertStatus(200)->assertJson(['status' => 'success']);
         $this->assertDatabaseHas('threads', [
             'guest_id' => $guest->id,
-            'host_id' => $host->id,
+            'user_id' => $host->id,
         ]);
     }
 
     public function test_participant_can_send_message_in_thread()
     {
-        $guest = User::factory()->create(['host_id' => null]);
-        $host = User::factory()->create(['host_id' => 1]);
-        $thread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id]);
+        $guest = User::factory()->create(['is_host' => false]);
+        $host = User::factory()->create(['is_host' => true]);
+        $thread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id]);
         $this->actingAs($guest);
         $response = $this->postJson('/api/v1/chat/thread/message', [
             'thread_id' => $thread->id,
@@ -51,10 +51,10 @@ class ChatFeatureTest extends TestCase
 
     public function test_non_participant_cannot_send_message()
     {
-        $guest = User::factory()->create(['host_id' => null]);
-        $host = User::factory()->create(['host_id' => 1]);
-        $other = User::factory()->create(['host_id' => null]);
-        $thread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id]);
+        $guest = User::factory()->create(['is_host' => false]);
+        $host = User::factory()->create(['is_host' => true]);
+        $other = User::factory()->create(['is_host' => false]);
+        $thread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id]);
         $this->actingAs($other);
         $response = $this->postJson('/api/v1/chat/thread/message', [
             'thread_id' => $thread->id,
@@ -66,9 +66,9 @@ class ChatFeatureTest extends TestCase
     public function test_message_sent_event_is_emitted()
     {
         Event::fake([MessageSent::class]);
-        $guest = User::factory()->create(['host_id' => null]);
-        $host = User::factory()->create(['host_id' => 1]);
-        $thread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id]);
+        $guest = User::factory()->create(['is_host' => false]);
+        $host = User::factory()->create(['is_host' => true]);
+        $thread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id]);
         $this->actingAs($guest);
         $this->postJson('/api/v1/chat/thread/message', [
             'thread_id' => $thread->id,
@@ -79,12 +79,12 @@ class ChatFeatureTest extends TestCase
 
     public function test_can_filter_threads_by_category()
     {
-        $guest = User::factory()->create(['host_id' => null]);
-        $host = User::factory()->create(['host_id' => 1]);
-        $homesThread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id, 'category' => 'Homes']);
-        $expThread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id, 'category' => 'Experiences']);
-        $travelThread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id, 'category' => 'Traveling']);
-        $supportThread = Thread::factory()->create(['guest_id' => $guest->id, 'host_id' => $host->id, 'category' => 'Support']);
+        $guest = User::factory()->create(['is_host' => false]);
+        $host = User::factory()->create(['is_host' => true]);
+        $homesThread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id, 'category' => 'Homes']);
+        $expThread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id, 'category' => 'Experiences']);
+        $travelThread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id, 'category' => 'Traveling']);
+        $supportThread = Thread::factory()->create(['guest_id' => $guest->id, 'user_id' => $host->id, 'category' => 'Support']);
         $this->actingAs($guest);
         // All
         $response = $this->getJson('/api/v1/chat/threads?category=All');
@@ -121,4 +121,4 @@ class ChatFeatureTest extends TestCase
     // TODO: Add tests for MessageRead, Typing, PresenceUpdated events
     // TODO: Add tests for socket channel authorization (if possible)
     // TODO: Add tests for pagination, deletion, and role-specific endpoints
-} 
+}

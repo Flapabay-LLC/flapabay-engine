@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->date('check_in_date')->nullable()->after('nights');
-            $table->date('check_out_date')->nullable()->after('check_in_date');
-        });
+        // This migration is no longer needed as the properties table has been dropped
+        // and merged into the listings table. These fields should be added to listings if needed.
+        
+        // No-op: Migration is disabled as properties table no longer exists
     }
 
     /**

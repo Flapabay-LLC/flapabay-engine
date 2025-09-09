@@ -20,7 +20,7 @@ class ReservationController extends Controller
         // dd('here');
         try {
             $validator = Validator::make($request->all(), [
-                'property_id' => 'required|exists:properties,id',
+                'listing_id' => 'required|exists:properties,id',
                 'check_in_date' => 'required|date|after:today',
                 'check_out_date' => 'required|date|after:check_in_date',
                 'number_of_guests' => 'required|integer|min:1',
@@ -42,7 +42,7 @@ class ReservationController extends Controller
             }
 
             // Get the property
-            $property = Property::findOrFail($request->property_id);
+            $property = Property::findOrFail($request->listing_id);
 
             // Check if the property is available for the selected dates
             $isAvailable = $this->checkPropertyAvailability($property, $request->check_in_date, $request->check_out_date);
@@ -73,7 +73,7 @@ class ReservationController extends Controller
             // Create the reservation
             $reservation = Reservation::create([
                 'user_id' => Auth::id(),
-                'property_id' => $request->property_id,
+                'listing_id' => $request->listing_id,
                 'check_in_date' => $request->check_in_date,
                 'check_out_date' => $request->check_out_date,
                 'number_of_guests' => $request->number_of_guests,
@@ -127,8 +127,8 @@ class ReservationController extends Controller
             }
 
             // Filter by property
-            if ($request->has('property_id')) {
-                $query->where('property_id', $request->property_id);
+            if ($request->has('listing_id')) {
+                $query->where('listing_id', $request->listing_id);
             }
 
             // Filter by date range
@@ -266,7 +266,7 @@ class ReservationController extends Controller
         }
 
         // Check for existing reservations that conflict with the requested dates
-        $existingReservations = Reservation::where('property_id', $property->id)
+        $existingReservations = Reservation::where('listing_id', $property->id)
             ->where('status', '!=', 'cancelled')
             ->where(function ($query) use ($checkIn, $checkOut) {
                 $query->whereBetween('check_in_date', [$checkIn, $checkOut])
@@ -341,7 +341,7 @@ class ReservationController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'property_id' => 'required|exists:properties,id',
+                'listing_id' => 'required|exists:properties,id',
                 'check_in_date' => 'required|date|after:today',
                 'check_out_date' => 'required|date|after:check_in_date',
                 'number_of_guests' => 'required|integer|min:1',
@@ -358,7 +358,7 @@ class ReservationController extends Controller
                 ], 422);
             }
 
-            $property = Property::findOrFail($request->property_id);
+            $property = Property::findOrFail($request->listing_id);
 
             // Check availability
             $isAvailable = $this->checkPropertyAvailability($property, $request->check_in_date, $request->check_out_date);
@@ -422,13 +422,13 @@ class ReservationController extends Controller
                     'message' => 'You are not a host.'
                 ], 403);
             }
-            // Get all reservations where the property belongs to a listing with this host_id or property.host_id
+            // Get all reservations where the property belongs to a listing with this user_id or property.user_id
             $query = Reservation::with(['property', 'user'])
                 ->whereHas('property', function ($q) use ($user) {
                     $q->whereHas('listing', function ($lq) use ($user) {
-                        $lq->where('host_id', $user->id);
+                        $lq->where('user_id', $user->id);
                     })
-                    ->orWhere('host_id', $user->id);
+                    ->orWhere('user_id', $user->id);
                 });
 
             // Optional filters (status, date, etc.)
@@ -459,4 +459,4 @@ class ReservationController extends Controller
             ], 500);
         }
     }
-} 
+}

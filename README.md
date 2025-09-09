@@ -29,7 +29,7 @@ All endpoints require authentication (JWT or session).
   - `page` (optional): Page number
 - **Returns:** Paginated list of threads (only those where user is guest or host)
 - **Thread Object:**
-  - `id`, `guest_id`, `host_id`, `category`, `thread_type`, `context_type`, `context_id`, `status`, `updated_at`, `guest`, `host`
+  - `id`, `guest_id`, `user_id`, `category`, `thread_type`, `context_type`, `context_id`, `status`, `updated_at`, `guest`, `host`
 
 #### Get Single Thread (REST)
 **GET** `/api/v1/chat/thread/{id}`
@@ -42,7 +42,7 @@ All endpoints require authentication (JWT or session).
 #### Start New Thread (REST)
 **POST** `/api/v1/chat/start`
 - **Body:**
-  - `host_id` (required)
+  - `user_id` (required)
   - `message` (required)
   - `listing_id` (optional)
   - `booking_id` (optional)

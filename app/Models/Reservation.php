@@ -12,7 +12,7 @@ class Reservation extends Model
 
     protected $fillable = [
         'user_id',
-        'property_id',
+        'listing_id',
         'check_in_date',
         'check_out_date',
         'number_of_guests',

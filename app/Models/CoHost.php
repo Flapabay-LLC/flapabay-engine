@@ -11,9 +11,9 @@ class CoHost extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'host_id',
-        'co_host_id',
-        'property_id',
+        'user_id',
+        'co_user_id',
+        'listing_id',
         'status',
         'permissions',
         'joined_at',
@@ -27,14 +27,19 @@ class CoHost extends Model
     ];
 
     // Relationships
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function host()
     {
-        return $this->belongsTo(User::class, 'host_id');
+        return $this->user();
     }
 
     public function coHost()
     {
-        return $this->belongsTo(User::class, 'co_host_id');
+        return $this->belongsTo(User::class, 'co_user_id');
     }
 
     public function property()
@@ -52,4 +57,4 @@ class CoHost extends Model
     {
         return $query->where('status', 'pending');
     }
-} 
+}

@@ -9,7 +9,6 @@ use App\Models\Availability;
 use App\Models\Booking;
 use App\Models\Experience;
 use App\Models\Listing;
-use App\Models\Property;
 use App\Models\Stay;
 use App\Models\UserReview;
 use Aws\S3\S3Client;
@@ -24,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
 class PropertyController extends Controller
 {
     /**
-     * Get a list of properties without filters.
+     * Get a list of listings without filters.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
@@ -36,23 +35,24 @@ class PropertyController extends Controller
             // Get the page number from the request, default to 1
             $page = $request->input('page', 1);
 
-            // Paginate the properties with 10 items per page
-            $properties = Property::paginate(10, ['*'], 'page', $page);
+            // Paginate the listings with 10 items per page, only show published listings
+            $listings = Listing::where('status', Listing::STATUS_PUBLISHED)
+                ->paginate(10, ['*'], 'page', $page);
 
             // Return success response with paginated data
             return response()->json([
                 'success' => true,
-                'data' => $properties->items(),
-                'total_results' => $properties->total(),
-                'current_page' => $properties->currentPage(),
-                'last_page' => $properties->lastPage(),
-                'per_page' => $properties->perPage(),
+                'data' => $listings->items(),
+                'total_results' => $listings->total(),
+                'current_page' => $listings->currentPage(),
+                'last_page' => $listings->lastPage(),
+                'per_page' => $listings->perPage(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch properties',
+                'message' => 'Failed to fetch listings',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -60,7 +60,7 @@ class PropertyController extends Controller
 
 
     /**
-     * Create a new property and store it in wp_posts and wp_postmeta.
+     * Create a new listing.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
@@ -72,8 +72,36 @@ class PropertyController extends Controller
         try {
             DB::beginTransaction();
 
-            // Step 1: Create property record
-            $property = Property::createProperty($validatedData);
+            // Step 1: Create listing record
+            $listing = Listing::create([
+                'title' => $validatedData['title'],
+                'description' => $validatedData['description'],
+                'location' => $validatedData['location'],
+                'address' => $validatedData['address'],
+                'latitude' => $validatedData['latitude'],
+                'longitude' => $validatedData['longitude'],
+                'check_in_hour' => $validatedData['check_in_hour'],
+                'check_out_hour' => $validatedData['check_out_hour'],
+                'num_of_guests' => $validatedData['num_of_guests'],
+                'num_of_children' => $validatedData['num_of_children'],
+                'maximum_guests' => $validatedData['maximum_guests'],
+                'country' => $validatedData['country'],
+                'currency' => $validatedData['currency'],
+                'price_range' => $validatedData['price_range'],
+                'price' => $validatedData['price'],
+                'additional_guest_price' => $validatedData['additional_guest_price'],
+                'children_price' => $validatedData['children_price'],
+                'amenities' => json_encode($validatedData['amenities']),
+                'house_rules' => json_encode($validatedData['house_rules']),
+                'video_link' => $validatedData['video_link'],
+                'verified' => $validatedData['verified'],
+                'num_of_bedrooms' => $validatedData['num_of_bedrooms'],
+                'num_of_bathrooms' => $validatedData['num_of_bathrooms'],
+                'num_of_quarters' => $validatedData['num_of_quarters'],
+                'user_id' => $validatedData['user_id'],
+                'status' => 'draft',
+                'listing_type' => 'stay' // Default to stay, can be updated later
+            ]);
 
             // Step 2: Handle image uploads
             $imagePaths = [];
@@ -124,17 +152,17 @@ class PropertyController extends Controller
                 }
             }
 
-            // Save image paths to the property
+            // Save image paths to the listing
             if (!empty($imagePaths)) {
-                $property->images = json_encode($imagePaths);
-                $property->save();
+                $listing->images = json_encode($imagePaths);
+                $listing->save();
             }
             DB::commit();
 
             return response()->json([
                 "success" => true,
-                "message" => 'Property created successfully',
-                "property" => $property,
+                "message" => 'Listing created successfully',
+                "listing" => $listing,
             ], 201);
 
         } catch (Exception $e) {
@@ -142,7 +170,7 @@ class PropertyController extends Controller
 
             return response()->json([
                 "success" => false,
-                "message" => 'Failed to create property',
+                "message" => 'Failed to create listing',
                 "error" => $e->getMessage(),
             ], 500);
         }
@@ -157,7 +185,7 @@ class PropertyController extends Controller
             DB::beginTransaction();
     
             // Fetch existing property
-            $property = Property::find($request->input('property_id'));
+            $property = Property::find($request->input('listing_id'));
             if (!$property) {
                 return response()->json([
                     "success" => false,
@@ -262,13 +290,13 @@ class PropertyController extends Controller
             $property = Property::findOrFail($propertyId);
 
             // Step 3: Delete related Listings
-            Listing::where('property_id', $propertyId)->delete();
+            Listing::where('listing_id', $propertyId)->delete();
 
             // Step 4: Delete related Availability
-            Availability::where('property_id', $propertyId)->delete();
+            Availability::where('listing_id', $propertyId)->delete();
 
             // Step 5: Delete related Bookings
-            Booking::where('property_id', $propertyId)->delete();
+            Booking::where('listing_id', $propertyId)->delete();
 
             // Step 6: Delete the Property
             $property->delete();
@@ -302,8 +330,8 @@ class PropertyController extends Controller
                 ], 400);
             }
 
-            // Step 2: Retrieve the property with its relationships
-            $property = Property::with([
+            // Step 2: Retrieve the listing with its relationships, only show published listings
+            $listing = Listing::with([
                 'category' => function($query) {
                     $query->select('id', 'name', 'description');
                 },
@@ -311,80 +339,89 @@ class PropertyController extends Controller
                     $query->select('id', 'name', 'description');
                 },
                 'reviews' => function($query) {
-                    $query->select('id', 'property_id', 'user_id', 'rating', 'review', 'created_at')
+                    $query->select('id', 'listing_id', 'user_id', 'rating', 'review', 'created_at')
                           ->with(['user' => function($q) {
                               $q->select('id', 'fname', 'lname', 'email');
                           }]);
                 },
-                'listing.stay', // eager load listing with stay details
-                'listing.experience' // eager load listing with experience details
+                'stayDetails', // eager load stay details
+                'experienceDetails' // eager load experience details
             ])
-            // ->select([...]) // Remove select to get all columns
+            ->where('status', Listing::STATUS_PUBLISHED)
             ->find($propertyId);
+            
+            // Only load user relationship if user_id is not null
+            if ($listing && $listing->user_id) {
+                $listing->load(['user' => function($query) {
+                    $query->select('id', 'fname', 'lname', 'email');
+                }]);
+            }
 
-            if (!$property) {
+            if (!$listing) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Property not found',
+                    'message' => 'Listing not found',
                 ], 404);
             }
 
             // Step 3: Format the response data
-            $propertyData = $property->toArray();
+            $listingData = $listing->toArray();
             
             // Ensure images are properly decoded if they're stored as JSON
-            if (isset($propertyData['images']) && is_string($propertyData['images'])) {
-                $propertyData['images'] = json_decode($propertyData['images'], true) ?? [];
+            if (isset($listingData['images']) && is_string($listingData['images'])) {
+                $listingData['images'] = json_decode($listingData['images'], true) ?? [];
             }
 
             // Ensure amenities are properly decoded if they're stored as JSON
-            if (isset($propertyData['amenities']) && is_string($propertyData['amenities'])) {
-                $propertyData['amenities'] = json_decode($propertyData['amenities'], true) ?? [];
+            if (isset($listingData['amenities']) && is_string($listingData['amenities'])) {
+                $listingData['amenities'] = json_decode($listingData['amenities'], true) ?? [];
             }
 
             // Ensure house_rules are properly decoded if they're stored as JSON
-            if (isset($propertyData['house_rules']) && is_string($propertyData['house_rules'])) {
-                $propertyData['house_rules'] = json_decode($propertyData['house_rules'], true) ?? [];
+            if (isset($listingData['house_rules']) && is_string($listingData['house_rules'])) {
+                $listingData['house_rules'] = json_decode($listingData['house_rules'], true) ?? [];
             }
 
             // Ensure price_range is properly decoded if it's stored as JSON
-            if (isset($propertyData['price_range']) && is_string($propertyData['price_range'])) {
-                $propertyData['price_range'] = json_decode($propertyData['price_range'], true) ?? [];
+            if (isset($listingData['price_range']) && is_string($listingData['price_range'])) {
+                $listingData['price_range'] = json_decode($listingData['price_range'], true) ?? [];
             }
 
             // Calculate average rating from reviews
-            if (isset($propertyData['reviews']) && !empty($propertyData['reviews'])) {
-                $propertyData['average_rating'] = collect($propertyData['reviews'])->avg('rating');
-                $propertyData['total_reviews'] = count($propertyData['reviews']);
+            if (isset($listingData['reviews']) && !empty($listingData['reviews'])) {
+                $listingData['average_rating'] = collect($listingData['reviews'])->avg('rating');
+                $listingData['total_reviews'] = count($listingData['reviews']);
             } else {
-                $propertyData['average_rating'] = 0;
-                $propertyData['total_reviews'] = 0;
+                $listingData['average_rating'] = 0;
+                $listingData['total_reviews'] = 0;
             }
 
-            // Add property availability
-            $propertyData['availability'] = $property->availability;
+            // Add listing availability (availability fields are now part of listing)
+            $listingData['availability'] = [
+                'listing_id' => $listing->id,
+                'check_in_date' => $listing->check_in_date,
+                'check_out_date' => $listing->check_out_date,
+                'check_in_hour' => $listing->check_in_hour,
+                'check_out_hour' => $listing->check_out_hour,
+                'allow_instant_booking' => $listing->allow_instant_booking,
+                'cancellation_policy' => $listing->cancellation_policy,
+                'availability_type' => $listing->availability_type,
+                'flexible_period' => $listing->flexible_period,
+                'flexible_month' => $listing->flexible_month,
+                'is_available' => !is_null($listing->check_in_date) && !is_null($listing->check_out_date),
+            ];
 
-            // Add type-specific data if listing exists
-            if ($property->listing) {
-                $propertyData['listing'] = [
-                    'id' => $property->listing->id,
-                    'listing_type' => $property->listing->listing_type,
-                    'status' => $property->listing->status,
-                    'is_completed' => $property->listing->is_completed
-                ];
-
-                // Add stay or experience specific details
-                if ($property->listing->listing_type === 'stay' && $property->listing->stay) {
-                    $propertyData['stay_details'] = $property->listing->stay->toArray();
-                } elseif ($property->listing->listing_type === 'experience' && $property->listing->experience) {
-                    $propertyData['experience_details'] = $property->listing->experience->toArray();
-                }
+            // Add type-specific data
+            if ($listing->listing_type === 'stay' && $listing->stayDetails) {
+                $listingData['stay_details'] = $listing->stayDetails->toArray();
+            } elseif ($listing->listing_type === 'experience' && $listing->experienceDetails) {
+                $listingData['experience_details'] = $listing->experienceDetails->toArray();
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property retrieved successfully',
-                'property' => $propertyData,
+                'message' => 'Listing retrieved successfully',
+                'listing' => $listingData,
             ], 200);
 
         } catch (\Exception $e) {
@@ -408,8 +445,8 @@ class PropertyController extends Controller
         }
 
         try {
-            // Step 2: Retrieve reviews from UserReview Model where property_id = $propertyId
-            $reviews = UserReview::where('property_id', $propertyId)->get();
+            // Step 2: Retrieve reviews from UserReview Model where listing_id = $propertyId
+            $reviews = UserReview::where('listing_id', $propertyId)->get();
 
             // Step 3: Check if reviews exist
             if ($reviews->isEmpty()) {
@@ -436,59 +473,59 @@ class PropertyController extends Controller
     }
 
 
-    public function getPropertyDescription($propertyId) {
+    public function getPropertyDescription($listingId) {
         try {
-            // Step 1: Validate the property ID
-            if (!is_numeric($propertyId) || $propertyId <= 0) {
+            // Step 1: Validate the listing ID
+            if (!is_numeric($listingId) || $listingId <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid property ID',
+                    'message' => 'Invalid listing ID',
                 ], 400);
             }
 
-            // Step 2: Retrieve the property description
-            $property = Property::select(['id', 'title', 'description', 'about_place'])
-                ->find($propertyId);
+            // Step 2: Retrieve the listing description
+            $listing = Listing::select(['id', 'title', 'description', 'about_place'])
+                ->find($listingId);
 
-            if (!$property) {
+            if (!$listing) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Property not found',
+                    'message' => 'Listing not found',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property description retrieved successfully',
+                'message' => 'Listing description retrieved successfully',
                 'data' => [
-                    'title' => $property->title,
-                    'description' => $property->description,
-                    'about_place' => $property->about_place
+                    'title' => $listing->title,
+                    'description' => $listing->description,
+                    'about_place' => $listing->about_place
                 ]
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Property description retrieval error: ' . $e->getMessage());
+            Log::error('Listing description retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve property description',
+                'message' => 'Failed to retrieve listing description',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function getPropertyPriceDetails($propertyId) {
+    public function getPropertyPriceDetails($listingId) {
         try {
-            // Step 1: Validate the property ID
-            if (!is_numeric($propertyId) || $propertyId <= 0) {
+            // Step 1: Validate the listing ID
+            if (!is_numeric($listingId) || $listingId <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid property ID',
+                    'message' => 'Invalid listing ID',
                 ], 400);
             }
 
-            // Step 2: Retrieve the property price details
-            $property = Property::select([
+            // Step 2: Retrieve the listing price details
+            $listing = Listing::select([
                 'id',
                 'title',
                 'currency',
@@ -497,86 +534,86 @@ class PropertyController extends Controller
                 'price_range',
                 'additional_guest_price',
                 'children_price'
-            ])->find($propertyId);
+            ])->find($listingId);
 
-            if (!$property) {
+            if (!$listing) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Property not found',
+                    'message' => 'Listing not found',
                 ], 404);
             }
 
             // Format price range if it exists
-            $priceRange = $property->price_range ? json_decode($property->price_range, true) : null;
+            $priceRange = $listing->price_range ? json_decode($listing->price_range, true) : null;
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property price details retrieved successfully',
+                'message' => 'Listing price details retrieved successfully',
                 'data' => [
-                    'title' => $property->title,
-                    'currency' => $property->currency,
-                    'price' => $property->price,
-                    'price_per_night' => $property->price_per_night,
+                    'title' => $listing->title,
+                    'currency' => $listing->currency,
+                    'price' => $listing->price,
+                    'price_per_night' => $listing->price_per_night,
                     'price_range' => $priceRange,
-                    'additional_guest_price' => $property->additional_guest_price,
-                    'children_price' => $property->children_price
+                    'additional_guest_price' => $listing->additional_guest_price,
+                    'children_price' => $listing->children_price
                 ]
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Property price details retrieval error: ' . $e->getMessage());
+            Log::error('Listing price details retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve property price details',
+                'message' => 'Failed to retrieve listing price details',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
 
-    public function getPropertyAmenities($propertyId) {
+    public function getPropertyAmenities($listingId) {
         try {
-            // Step 1: Validate the property ID
-            if (!is_numeric($propertyId) || $propertyId <= 0) {
+            // Step 1: Validate the listing ID
+            if (!is_numeric($listingId) || $listingId <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid property ID',
+                    'message' => 'Invalid listing ID',
                 ], 400);
             }
 
-            // Step 2: Retrieve the property amenities
-            $property = Property::select(['id', 'amenities'])
-                ->find($propertyId);
+            // Step 2: Retrieve the listing amenities
+            $listing = Listing::select(['id', 'amenities'])
+                ->find($listingId);
 
-            if (!$property) {
+            if (!$listing) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Property not found',
+                    'message' => 'Listing not found',
                 ], 404);
             }
 
             // Handle amenities as string or array
-            if (is_string($property->amenities)) {
-                $amenities = json_decode($property->amenities, true) ?? [];
-            } elseif (is_array($property->amenities)) {
-                $amenities = $property->amenities;
+            if (is_string($listing->amenities)) {
+                $amenities = json_decode($listing->amenities, true) ?? [];
+            } elseif (is_array($listing->amenities)) {
+                $amenities = $listing->amenities;
             } else {
                 $amenities = [];
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Property amenities retrieved successfully',
+                'message' => 'Listing amenities retrieved successfully',
                 'data' => [
                     'amenities' => $amenities
                 ]
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Property amenities retrieval error: ' . $e->getMessage());
+            Log::error('Listing amenities retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve property amenities',
+                'message' => 'Failed to retrieve listing amenities',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -584,65 +621,64 @@ class PropertyController extends Controller
 
 
     /**
-     * Get property availability dates based on check_in_date and check_out_date
+     * Get listing availability dates based on check_in_date and check_out_date
      */
-    public function getPropertyAvailabilityDates($propertyId) {
+    public function getPropertyAvailabilityDates($listingId) {
         try {
-            // Validate the property ID
-            if (!is_numeric($propertyId) || $propertyId <= 0) {
+            // Validate the listing ID
+            if (!is_numeric($listingId) || $listingId <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid property ID',
+                    'message' => 'Invalid listing ID',
                 ], 400);
             }
 
-            // Retrieve the property with relevant fields
-            $property = Property::select(['id', 'check_in_date', 'check_out_date', 'check_in_hour', 'check_out_hour', 'allow_instant_booking'])
-                ->find($propertyId);
+            // Retrieve the listing with relevant fields
+            $listing = Listing::select([
+                'id', 'check_in_date', 'check_out_date', 'check_in_hour', 
+                'check_out_hour', 'allow_instant_booking', 'cancellation_policy', 
+                'availability_type', 'flexible_period', 'flexible_month'
+            ])->find($listingId);
 
-            if (!$property) {
+            if (!$listing) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Property not found',
+                    'message' => 'Listing not found',
                 ], 404);
             }
-
-            // Retrieve the related listing for cancellation policy and new fields
-            $listing = $property->listing()->select(['cancellation_policy', 'availability_type', 'flexible_period', 'flexible_month'])->first();
 
             // Return availability information
             return response()->json([
                 'success' => true,
-                'message' => 'Property availability dates retrieved successfully',
+                'message' => 'Listing availability dates retrieved successfully',
                 'data' => [
-                    'property_id' => $property->id,
-                    'check_in_date' => $property->check_in_date,
-                    'check_out_date' => $property->check_out_date,
-                    'check_in_hour' => $property->check_in_hour,
-                    'check_out_hour' => $property->check_out_hour,
-                    'allow_instant_booking' => $property->allow_instant_booking,
-                    'cancellation_policy' => $listing ? $listing->cancellation_policy : null,
-                    'availability_type' => $listing ? $listing->availability_type : null,
-                    'flexible_period' => $listing ? $listing->flexible_period : null,
-                    'flexible_month' => $listing ? $listing->flexible_month : null,
-                    'is_available' => !is_null($property->check_in_date) && !is_null($property->check_out_date)
+                    'listing_id' => $listing->id,
+                    'check_in_date' => $listing->check_in_date,
+                    'check_out_date' => $listing->check_out_date,
+                    'check_in_hour' => $listing->check_in_hour,
+                    'check_out_hour' => $listing->check_out_hour,
+                    'allow_instant_booking' => $listing->allow_instant_booking,
+                    'cancellation_policy' => $listing->cancellation_policy,
+                    'availability_type' => $listing->availability_type,
+                    'flexible_period' => $listing->flexible_period,
+                    'flexible_month' => $listing->flexible_month,
+                    'is_available' => !is_null($listing->check_in_date) && !is_null($listing->check_out_date)
                 ]
             ], 200);
 
         } catch (\Exception $e) {
-            dd($e);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve property availability dates',
+                'message' => 'Failed to retrieve listing availability dates',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Set property availability dates and related listing availability fields
+     * Set listing availability dates and related availability fields
      */
-    public function setPropertyAvailabilityDates(Request $request, $propertyId) {
+    public function setPropertyAvailabilityDates(Request $request, $listingId) {
         $validated = $request->validate([
             'check_in_date' => 'nullable|date',
             'check_out_date' => 'nullable|date|after_or_equal:check_in_date',
@@ -653,32 +689,21 @@ class PropertyController extends Controller
             'flexible_month' => 'nullable|string', // could validate against months if needed
         ]);
 
-        $property = Property::find($propertyId);
-        if (!$property) {
+        $listing = Listing::find($listingId);
+        if (!$listing) {
             return response()->json([
                 'success' => false,
-                'message' => 'Property not found',
+                'message' => 'Listing not found',
             ], 404);
         }
 
-        // Update property fields
-        $property->fill(array_filter($validated, function($key) {
-            return in_array($key, ['check_in_date', 'check_out_date', 'check_in_hour', 'check_out_hour']);
-        }, ARRAY_FILTER_USE_KEY));
-        $property->save();
-
-        // Update related listing fields
-        $listing = $property->listing;
-        if ($listing) {
-            $listing->fill(array_filter($validated, function($key) {
-                return in_array($key, ['availability_type', 'flexible_period', 'flexible_month']);
-            }, ARRAY_FILTER_USE_KEY));
-            $listing->save();
-        }
+        // Update all availability fields on the listing
+        $listing->fill($validated);
+        $listing->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Property availability updated successfully',
+            'message' => 'Listing availability updated successfully',
         ], 200);
     }
 }
