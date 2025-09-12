@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReviewController;
+use App\Http\Controllers\GuestReviewController;
 
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\HostController;
@@ -163,6 +164,14 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::get('/reviews', [listingReviewController::class, 'index']);
     Route::post('/create-review', [listingReviewController::class, 'store']);
     Route::post('/update-review', [listingReviewController::class, 'update']);
+
+    // Guest Review routes
+    Route::get('reviews/guest', [GuestReviewController::class, 'index']);
+    Route::get('reviews/pending', [GuestReviewController::class, 'pending']);
+    Route::post('reviews', [GuestReviewController::class, 'store']);
+    Route::put('reviews/{reviewId}', [GuestReviewController::class, 'update']);
+    Route::delete('reviews/{reviewId}', [GuestReviewController::class, 'destroy']);
+    Route::patch('reviews/{reviewId}/publish', [GuestReviewController::class, 'publish']);
 
     // Booking routes
     Route::post('booking', [BookingController::class, 'createBooking']);

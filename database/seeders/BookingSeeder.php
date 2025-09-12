@@ -14,24 +14,91 @@ class BookingSeeder extends Seeder
      */
     public function run(): void
     {
-        // Generate dummy data for 10 bookings
+        // Original bookings
         for ($i = 1; $i <= 10; $i++) {
             DB::table('bookings')->insert([
-                'booking_number' => Str::uuid()->toString(), // Generate a unique booking number
-                'amount' => rand(100, 1000) + rand(0, 99) / 100, // Random amount between 100.00 and 1000.99
-                'listing_id' => rand(1, 30), // Assuming you have listings with IDs 1 to 30
-                'user_id' => rand(1, 10), // Assuming you have users with IDs 1 to 10
-                'start_date' => Carbon::today()->subDays(rand(1, 30)), // Random start date within the last 30 days
-                'end_date' => Carbon::today()->addDays(rand(1, 10)), // Random end date within the next 10 days
-                'guest_details' => json_encode(['adults' => rand(1, 4), 'children' => rand(0, 3)]), // Random guest details
-                'guest_count' => rand(1, 6), // Random guest count between 1 and 6
-                'booking_status' => collect(['pending', 'confirmed', 'canceled'])->random(), // Random booking status
-                'payment_status' => collect(['pending', 'completed', 'failed'])->random(), // Random payment status
-                'payment_method' => collect(['credit_card', 'paypal', 'bank_transfer'])->random(), // Random payment method
-                'payment_date' => Carbon::today()->subDays(rand(0, 10))->toDateString(), // Random payment date within the last 10 days
-                'cancellation_reason' => rand(0, 1) ? 'Customer request' : null, // Random cancellation reason or null
-                'cancellation_date' => rand(0, 1) ? Carbon::today()->subDays(rand(1, 5))->toDateString() : null, // Random cancellation date or null
+                'booking_number' => 'BK' . str_pad($i, 6, '0', STR_PAD_LEFT),
+                'amount' => rand(100, 1000),
+                'listing_id' => rand(1, 5),
+                'user_id' => rand(1, 10),
+                'start_date' => now()->addDays(rand(1, 30)),
+                'end_date' => now()->addDays(rand(31, 60)),
+                'guest_details' => 'Adult: ' . rand(1, 4) . ', Children: ' . rand(0, 2),
+                'guest_count' => rand(1, 6),
+                'booking_status' => ['pending', 'confirmed', 'canceled'][rand(0, 2)],
+                'payment_status' => ['pending', 'paid', 'failed'][rand(0, 2)],
+                'payment_method' => ['credit_card', 'paypal', 'bank_transfer'][rand(0, 2)],
+                'payment_date' => now()->subDays(rand(1, 10))->format('Y-m-d'),
+                'cancellation_reason' => rand(0, 1) ? 'User requested cancellation' : null,
+                'cancellation_date' => rand(0, 1) ? now()->subDays(rand(1, 5)) : null,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
+        }
+
+        // Completed bookings for user 7 (eligible for reviews)
+        $completedBookings = [
+            [
+                'booking_number' => 'BK000011',
+                'amount' => 250.00,
+                'listing_id' => 1,
+                'user_id' => 7,
+                'start_date' => now()->subDays(15)->format('Y-m-d'),
+                'end_date' => now()->subDays(10)->format('Y-m-d'),
+                'guest_details' => 'Adult: 2, Children: 0',
+                'guest_count' => 2,
+                'booking_status' => 'completed',
+                'payment_status' => 'paid',
+                'payment_method' => 'credit_card',
+                'payment_date' => now()->subDays(20)->format('Y-m-d'),
+                'cancellation_reason' => null,
+                'cancellation_date' => null,
+                'booking_type' => 'stay',
+                'created_at' => now()->subDays(25),
+                'updated_at' => now()->subDays(10),
+            ],
+            [
+                'booking_number' => 'BK000012',
+                'amount' => 180.00,
+                'listing_id' => 2,
+                'user_id' => 7,
+                'start_date' => now()->subDays(30)->format('Y-m-d'),
+                'end_date' => now()->subDays(27)->format('Y-m-d'),
+                'guest_details' => 'Adult: 1, Children: 1',
+                'guest_count' => 2,
+                'booking_status' => 'completed',
+                'payment_status' => 'paid',
+                'payment_method' => 'paypal',
+                'payment_date' => now()->subDays(35)->format('Y-m-d'),
+                'cancellation_reason' => null,
+                'cancellation_date' => null,
+                'booking_type' => 'experience',
+                'created_at' => now()->subDays(40),
+                'updated_at' => now()->subDays(27),
+            ],
+            [
+                'booking_number' => 'BK000013',
+                'amount' => 420.00,
+                'listing_id' => 3,
+                'user_id' => 7,
+                'start_date' => now()->subDays(45)->format('Y-m-d'),
+                'end_date' => now()->subDays(38)->format('Y-m-d'),
+                'guest_details' => 'Adult: 3, Children: 1',
+                'guest_count' => 4,
+                'booking_status' => 'completed',
+                'payment_status' => 'paid',
+                'payment_method' => 'bank_transfer',
+                'payment_date' => now()->subDays(50)->format('Y-m-d'),
+                'cancellation_reason' => null,
+                'cancellation_date' => null,
+                'booking_type' => 'trip',
+                'created_at' => now()->subDays(55),
+                'updated_at' => now()->subDays(38),
+            ]
+        ];
+
+        foreach ($completedBookings as $booking) {
+            DB::table('bookings')->insert($booking);
         }
     }
 }

@@ -11,7 +11,6 @@ use Aws\S3\S3Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Listing;
-use App\Models\listing;
 
 class UserController extends Controller
 {

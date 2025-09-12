@@ -66,4 +66,12 @@ class Booking extends Model
     {
         return $this->belongsTo(Reservation::class, 'reservation_id');
     }
+
+    /**
+     * Get the user reviews for this booking.
+     */
+    public function userReviews()
+    {
+        return $this->hasMany(UserReview::class, 'trip_id');
+    }
 }

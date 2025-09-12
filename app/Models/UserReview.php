@@ -18,9 +18,12 @@ class UserReview extends Model
     protected $fillable = [
         'user_id',
         'listing_id',
-        'listing_id',
+        'trip_id',
         'rating',
-        'review'
+        'review',
+        'status',
+        'host_response_comment',
+        'host_response_created_at'
     ];
 
     /**
@@ -36,6 +39,38 @@ class UserReview extends Model
      */
     public function listing()
     {
-        return $this->belongsTo(listing::class);
+        return $this->belongsTo(Listing::class);
+    }
+
+    /**
+     * Get the booking/trip associated with this review.
+     */
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class, 'trip_id');
+    }
+
+    /**
+     * Check if review has host response.
+     */
+    public function hasHostResponse()
+    {
+        return !is_null($this->host_response_comment);
+    }
+
+    /**
+     * Check if review is published.
+     */
+    public function isPublished()
+    {
+        return $this->status === 'published';
+    }
+
+    /**
+     * Check if review is draft.
+     */
+    public function isDraft()
+    {
+        return $this->status === 'draft';
     }
 }
