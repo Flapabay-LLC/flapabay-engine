@@ -11,7 +11,7 @@ use Aws\S3\S3Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Listing;
-use App\Models\Property;
+use App\Models\listing;
 
 class UserController extends Controller
 {
@@ -274,7 +274,7 @@ class UserController extends Controller
                             try {
                                 $result = $s3Client->putObject([
                                     'Bucket'     => $bucketName,
-                                    'Key'        => 'properties/' . $fileName,
+                                    'Key'        => 'listings/' . $fileName,
                                     'SourceFile' => $image->getPathname(),
                                 ]);
                                 if (isset($result['ObjectURL'])) {
@@ -284,7 +284,7 @@ class UserController extends Controller
                                 }
                             } catch (\Exception $e) {
                                 // Fallback to local storage
-                                $localPath = $image->storeAs('properties', $fileName, 'public');
+                                $localPath = $image->storeAs('listings', $fileName, 'public');
                                 $imageUrl = \Storage::disk('public')->url($localPath);
                             }
                             $imagePaths[] = $imageUrl;
@@ -292,8 +292,8 @@ class UserController extends Controller
                     }
                 }
 
-                // Create Property for the host
-                $propertyData = $request->only([
+                // Create listing for the host
+                $listingData = $request->only([
                     'title', 'description', 'location', 'address', 'country', 'latitude', 'longitude',
                     'check_in_hour', 'check_out_hour', 'num_of_guests', 'num_of_children', 'maximum_guests',
                     'allow_extra_guests', 'neighborhood_area', 'currency', 'price_range', 'price',
@@ -307,46 +307,46 @@ class UserController extends Controller
                 ]);
                 // Map 'guests' to 'maximum_guests' if present
                 if ($request->has('guests')) {
-                    $propertyData['maximum_guests'] = $request->input('guests');
+                    $listingData['maximum_guests'] = $request->input('guests');
                 }
                 // Map 'bedrooms' to 'num_of_bedrooms' if present
                 if ($request->has('bedrooms')) {
-                    $propertyData['num_of_bedrooms'] = $request->input('bedrooms');
+                    $listingData['num_of_bedrooms'] = $request->input('bedrooms');
                 }
                 // Map 'bathrooms' to 'num_of_bathrooms' if present
                 if ($request->has('bathrooms')) {
-                    $propertyData['num_of_bathrooms'] = $request->input('bathrooms');
+                    $listingData['num_of_bathrooms'] = $request->input('bathrooms');
                 }
-                $propertyData['user_id'] = $user->id;
+                $listingData['user_id'] = $user->id;
                 if (!empty($imagePaths)) {
-                    $propertyData['images'] = $imagePaths;
+                    $listingData['images'] = $imagePaths;
                 }
-                $property = Property::create($propertyData);
+                $listing = listing::create($listingData);
 
-                // Create Listing for the property
+                // Create Listing for the listing
                 $listingData = [
                     'user_id' => $user->id,
-                    'title' => $property->title,
-                    'listing_id' => $property->id,
-                    'category_id' => $property->category_id ?? null,
+                    'title' => $listing->title,
+                    'listing_id' => $listing->id,
+                    'category_id' => $listing->category_id ?? null,
                     'status' => true,
                     'published_at' => now(),
                     'cancellation_policy' => false,
                     'is_completed' => true,
                     'listing_type' => $request->input('listing_type', 'stay'),
-                    'description' => $property->description,
-                    'features' => $property->features,
-                    'images' => $property->images,
+                    'description' => $listing->description,
+                    'features' => $listing->features,
+                    'images' => $listing->images,
                 ];
                 $listing = Listing::create($listingData);
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Host registered and property/listing created successfully',
+                    'message' => 'Host registered and listing/listing created successfully',
                     'data' => [
                         'user_id' => $user->id,
                         'is_host' => $user->is_host,
-                        'property' => $property,
+                        'listing' => $listing,
                         'listing' => $listing,
                     ],
                 ], 200);

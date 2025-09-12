@@ -63,11 +63,11 @@ class Reservation extends Model
     }
 
     /**
-     * Get the property that was reserved.
+     * Get the listing that was reserved.
      */
-    public function property()
+    public function listing()
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(listing::class);
     }
 
     /**

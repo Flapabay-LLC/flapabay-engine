@@ -6,7 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class PropertySeeder extends Seeder
+class listingSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -14,7 +14,7 @@ class PropertySeeder extends Seeder
     public function run(): void
     {
 
-            $properties = [
+            $listings = [
                 [
                     'title'=> 'Sweet Home',
                     'description'=> 'Sweet Home Sweet HomeSweet HomeSweet HomeSweet HomeSweet HomeSweet HomeSweet Home',
@@ -48,7 +48,7 @@ class PropertySeeder extends Seeder
                     'verified' => true,
                     'tags' => json_encode(['beach', 'luxury', 'family-friendly']),
                     'category_id' => json_encode([1, 2]),
-                    'property_type_id' => 1,
+                    'listing_type_id' => 1,
                     'featured_status' => null, // Not featured
                 ],
                 [
@@ -84,14 +84,14 @@ class PropertySeeder extends Seeder
                     'verified' => false,
                     'tags' => json_encode(['city-center', 'budget']),
                     'category_id' => json_encode([2, 4]),
-                    'property_type_id' => 2,
+                    'listing_type_id' => 2,
                     'featured_status' => 'guest_favourite', // Example featured status
                 ],
-                // Add more sample properties as needed
+                // Add more sample listings as needed
             ];
 
-            foreach ($properties as $property) {
-                DB::table('properties')->insert($property);
+            foreach ($listings as $listing) {
+                DB::table('listings')->insert($listing);
             }
 
     }

@@ -21,9 +21,9 @@ class Favorite extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function property()
+    public function listing()
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(Listing::class);
     }
 
     public function wishlist()

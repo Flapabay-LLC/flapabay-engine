@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Property extends Model
+class listing extends Model
 {
-    /** @use HasFactory<\Database\Factories\PropertyFactory> */
+    /** @use HasFactory<\Database\Factories\listingFactory> */
     use HasFactory;
 
     // Status constants
@@ -71,7 +71,7 @@ class Property extends Model
         'video_link',
         'verified',
         'featured_status', // enum: null, 'guest_favourite', 'featured'
-        'property_type_id', //for filtering
+        'listing_type_id', //for filtering
         'category_id', //for filtering
         'tags', //for filtering
         'about_place',
@@ -141,13 +141,13 @@ class Property extends Model
      *
      * @var array
      */
-    public static function createProperty($data)
+    public static function createlisting($data)
     {
-        return Property::create([
-            'title' => $data['title'], // Property title
-            'description' => $data['description'], // Property description
-            'location' => $data['location'], // Location of the property
-            'address' => $data['address'], // Address of the property
+        return listing::create([
+            'title' => $data['title'], // listing title
+            'description' => $data['description'], // listing description
+            'location' => $data['location'], // Location of the listing
+            'address' => $data['address'], // Address of the listing
             'latitude' => $data['latitude'], // Latitude
             'longitude' => $data['longitude'], // Longitude
             'check_in_hour' => $data['check_in_hour'], // Check-in hour
@@ -168,13 +168,13 @@ class Property extends Model
             'num_of_bedrooms' => $data['num_of_bedrooms'], // Number of bedrooms
             'num_of_bathrooms' => $data['num_of_bathrooms'], // Number of bathrooms
             'num_of_quarters' => $data['num_of_quarters'], // Number of quarters
-            'user_id' => $data['user_id'], // User ID (property owner)
+            'user_id' => $data['user_id'], // User ID (listing owner)
         ]);
     }
 
 
     /**
-     * Scope a query to only include verified properties.
+     * Scope a query to only include verified listings.
      */
     public function scopeVerified($query)
     {
@@ -182,7 +182,7 @@ class Property extends Model
     }
 
     /**
-     * Scope a query to only include favorite properties.
+     * Scope a query to only include favorite listings.
      */
     public function scopeFavorite($query)
     {
@@ -190,15 +190,15 @@ class Property extends Model
     }
 
     /**
-     * Scope a query to filter by property type.
+     * Scope a query to filter by listing type.
      */
     public function scopeOfType($query, $type)
     {
-        return $query->where('property_type', $type);
+        return $query->where('listing_type', $type);
     }
 
     /**
-     * Scope a query to filter properties within a price range.
+     * Scope a query to filter listings within a price range.
      */
     public function scopeWithinPriceRange($query, $min, $max)
     {
@@ -214,7 +214,7 @@ class Property extends Model
     }
 
     /**
-     * Relationship with User model (property owner).
+     * Relationship with User model (listing owner).
      */
     public function user()
     {
@@ -241,7 +241,7 @@ class Property extends Model
     }
 
     /**
-     * Determine if the property allows instant booking.
+     * Determine if the listing allows instant booking.
      */
     public function allowsInstantBooking()
     {
@@ -249,7 +249,7 @@ class Property extends Model
     }
 
     /**
-     * Check if a property is marked as a favorite.
+     * Check if a listing is marked as a favorite.
      */
     public function isFavorite()
     {
@@ -265,7 +265,7 @@ class Property extends Model
     }
 
     /**
-     * Get the Google Maps URL for the property location.
+     * Get the Google Maps URL for the listing location.
      */
     public function getGoogleMapsUrlAttribute()
     {
@@ -276,11 +276,11 @@ class Property extends Model
     }
 
     /**
-     * Get the availability information for the property (matches getPropertyAvailabilityDates controller logic)
+     * Get the availability information for the listing (matches getlistingAvailabilityDates controller logic)
      */
     public function getAvailabilityAttribute()
     {
-        // Retrieve the property fields (already loaded on this model)
+        // Retrieve the listing fields (already loaded on this model)
         $availability = [
             'listing_id' => $this->id,
             'check_in_date' => $this->check_in_date,
@@ -307,7 +307,7 @@ class Property extends Model
     }
 
     /**
-     * Get the category that owns the property.
+     * Get the category that owns the listing.
      */
     public function category()
     {
@@ -315,15 +315,15 @@ class Property extends Model
     }
 
     /**
-     * Get the property type that owns the property.
+     * Get the listing type that owns the listing.
      */
-    public function propertyType()
+    public function listingType()
     {
-        return $this->belongsTo(PropertyType::class);
+        return $this->belongsTo(listingType::class);
     }
 
     /**
-     * Get the reviews for the property.
+     * Get the reviews for the listing.
      */
     public function reviews()
     {
@@ -332,7 +332,7 @@ class Property extends Model
 
     public function images()
     {
-        return $this->hasMany(PropertyImage::class);
+        return $this->hasMany(listingImage::class);
     }
 
 
@@ -384,7 +384,7 @@ class Property extends Model
     }
 
     /**
-     * Check if property is in draft status
+     * Check if listing is in draft status
      */
     public function isDraft(): bool
     {
@@ -392,7 +392,7 @@ class Property extends Model
     }
 
     /**
-     * Check if property is published
+     * Check if listing is published
      */
     public function isPublished(): bool
     {
@@ -400,7 +400,7 @@ class Property extends Model
     }
 
     /**
-     * Check if property is pending
+     * Check if listing is pending
      */
     public function isPending(): bool
     {
@@ -408,7 +408,7 @@ class Property extends Model
     }
 
     /**
-     * Check if property is archived
+     * Check if listing is archived
      */
     public function isArchived(): bool
     {
@@ -417,7 +417,7 @@ class Property extends Model
 
     public function amenities()
     {
-        return $this->belongsToMany(Amenity::class, 'property_amenities');
+        return $this->belongsToMany(Amenity::class, 'listing_amenities');
     }
 
     public function favorites()

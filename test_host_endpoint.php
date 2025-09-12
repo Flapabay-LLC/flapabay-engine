@@ -44,15 +44,15 @@ if ($response) {
     if ($decodedResponse) {
         echo json_encode($decodedResponse, JSON_PRETTY_PRINT) . "\n";
         
-        // Count properties if data exists
+        // Count listings if data exists
         if (isset($decodedResponse['data']) && is_array($decodedResponse['data'])) {
-            $propertyCount = count($decodedResponse['data']);
+            $listingCount = count($decodedResponse['data']);
             echo "\n--- ANALYSIS ---\n";
-            echo "API returned $propertyCount properties for user 7\n";
-            echo "Database showed 1 property for user 7\n";
+            echo "API returned $listingCount listings for user 7\n";
+            echo "Database showed 1 listing for user 7\n";
             
-            if ($propertyCount != 1) {
-                echo "DISCREPANCY FOUND: API shows $propertyCount properties, but database has 1\n";
+            if ($listingCount != 1) {
+                echo "DISCREPANCY FOUND: API shows $listingCount listings, but database has 1\n";
             } else {
                 echo "MATCH: Both API and database show the same count\n";
             }

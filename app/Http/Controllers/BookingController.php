@@ -62,7 +62,7 @@ class BookingController extends Controller
     {
         // Step 1: Validate incoming request data
         $validatedData = Validator::make($request->all(), [
-            'listing_id' => 'required', // Ensure property exists
+            'listing_id' => 'required', // Ensure listing exists
             'user_id' => 'required', 
             'reservation_id' => 'nullable|integer|exists:reservations,id',
         ]);
@@ -221,13 +221,13 @@ class BookingController extends Controller
     }
 
     /**
-     * Get all bookings (trips) for the authenticated user, with property and listing details
+     * Get all bookings (trips) for the authenticated user, with listing and listing details
      */
     public function myTrips(Request $request)
     {
         try {
             $user = $request->user();
-            $bookings = Booking::with(['property', 'property.listing'])
+            $bookings = Booking::with(['listing.user', 'listing.listingType'])
                 ->where('user_id', $user->id)
                 ->orderBy('start_date', 'desc')
                 ->get();
@@ -260,8 +260,8 @@ class BookingController extends Controller
         }
 
         try {
-            $bookings = Booking::with(['property', 'user'])
-                ->whereHas('property', function ($q) use ($user) {
+            $bookings = Booking::with(['listing', 'user'])
+                ->whereHas('listing', function ($q) use ($user) {
                     $q->where('user_id', $user->id);
                 })
                 ->orderBy('start_date', 'desc')
@@ -282,13 +282,13 @@ class BookingController extends Controller
     }
 
     /**
-     * Get all wishlists for the authenticated user, with properties and listings
+     * Get all wishlists for the authenticated user, with listings and listings
      */
     public function myWishlists(Request $request)
     {
         $user = $request->user();
         try {
-            $wishlists = \App\Models\Wishlist::with(['favorites.property.listing'])
+            $wishlists = \App\Models\Wishlist::with(['favorites.listing'])
                 ->where('user_id', $user->id)
                 ->get();
 

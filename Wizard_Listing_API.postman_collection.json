@@ -73,7 +73,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"Beautiful Oceanview Villa\",\n  \"description\": \"Stunning 3-bedroom villa with panoramic ocean views\",\n  \"property_type_id\": 1,\n  \"category_id\": 2,\n  \"address\": \"123 Ocean Drive\",\n  \"city\": \"Miami Beach\",\n  \"state\": \"FL\",\n  \"country\": \"USA\",\n  \"latitude\": 25.7617,\n  \"longitude\": -80.1918,\n  \"price_per_night\": 299.99,\n  \"currency\": \"USD\",\n  \"num_of_bedrooms\": 3,\n  \"num_of_bathrooms\": 2,\n  \"maximum_guests\": 6,\n  \"amenities\": [\"wifi\", \"pool\", \"parking\"],\n  \"images\": [\"image1.jpg\", \"image2.jpg\"],\n  \"finalize\": false\n}"
+							"raw": "{\n  \"title\": \"Beautiful Oceanview Villa\",\n  \"description\": \"Stunning 3-bedroom villa with panoramic ocean views\",\n  \"listing_type_id\": 1,\n  \"category_id\": 2,\n  \"address\": \"123 Ocean Drive\",\n  \"city\": \"Miami Beach\",\n  \"state\": \"FL\",\n  \"country\": \"USA\",\n  \"latitude\": 25.7617,\n  \"longitude\": -80.1918,\n  \"price_per_night\": 299.99,\n  \"currency\": \"USD\",\n  \"num_of_bedrooms\": 3,\n  \"num_of_bathrooms\": 2,\n  \"maximum_guests\": 6,\n  \"amenities\": [\"wifi\", \"pool\", \"parking\"],\n  \"images\": [\"image1.jpg\", \"image2.jpg\"],\n  \"finalize\": false\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/wizard-listings",
@@ -122,7 +122,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"Complete Beachfront Condo\",\n  \"description\": \"Fully furnished 2-bedroom condo steps from the beach\",\n  \"property_type_id\": 2,\n  \"category_id\": 1,\n  \"address\": \"456 Beach Boulevard\",\n  \"city\": \"San Diego\",\n  \"state\": \"CA\",\n  \"country\": \"USA\",\n  \"latitude\": 32.7157,\n  \"longitude\": -117.1611,\n  \"price_per_night\": 199.99,\n  \"currency\": \"USD\",\n  \"num_of_bedrooms\": 2,\n  \"num_of_bathrooms\": 2,\n  \"maximum_guests\": 4,\n  \"amenities\": [\"wifi\", \"beach_access\", \"balcony\"],\n  \"images\": [\"condo1.jpg\", \"condo2.jpg\", \"condo3.jpg\"],\n  \"finalize\": true\n}"
+							"raw": "{\n  \"title\": \"Complete Beachfront Condo\",\n  \"description\": \"Fully furnished 2-bedroom condo steps from the beach\",\n  \"listing_type_id\": 2,\n  \"category_id\": 1,\n  \"address\": \"456 Beach Boulevard\",\n  \"city\": \"San Diego\",\n  \"state\": \"CA\",\n  \"country\": \"USA\",\n  \"latitude\": 32.7157,\n  \"longitude\": -117.1611,\n  \"price_per_night\": 199.99,\n  \"currency\": \"USD\",\n  \"num_of_bedrooms\": 2,\n  \"num_of_bathrooms\": 2,\n  \"maximum_guests\": 4,\n  \"amenities\": [\"wifi\", \"beach_access\", \"balcony\"],\n  \"images\": [\"condo1.jpg\", \"condo2.jpg\", \"condo3.jpg\"],\n  \"finalize\": true\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/wizard-listings",
@@ -554,7 +554,7 @@
 					}
 				},
 				{
-					"name": "Test Property Not Found (404)",
+					"name": "Test listing Not Found (404)",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -569,7 +569,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"This property doesn't exist\"\n}"
+							"raw": "{\n  \"title\": \"This listing doesn't exist\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/wizard-listings/99999",

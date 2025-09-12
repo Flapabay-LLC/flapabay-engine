@@ -114,7 +114,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function isHost()
     {
-        return (bool) $this->attributes['is_host'] ?? false;
+        return (bool) (array_key_exists('is_host', $this->attributes) ? $this->attributes['is_host'] : false);
     }
 
     /**
@@ -122,7 +122,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function getIsHostAttribute()
     {
-        return (bool) $this->attributes['is_host'] ?? false;
+        return (bool) (array_key_exists('is_host', $this->attributes) ? $this->attributes['is_host'] : false);
     }
 
     /**
@@ -144,12 +144,12 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Relationship with Property model (properties owned by this user).
+     * Relationship with listing model (listings owned by this user).
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function properties()
+    public function listings()
     {
-        return $this->hasMany(Property::class, 'user_id');
+        return $this->hasMany(listing::class, 'user_id');
     }
 }

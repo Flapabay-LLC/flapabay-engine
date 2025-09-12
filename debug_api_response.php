@@ -73,7 +73,7 @@ if ($response) {
                 echo "=== SUMMARY ===\n";
                 echo "API pagination says total: " . ($data['total'] ?? 'N/A') . "\n";
                 echo "Actual items in response: " . count($items) . "\n";
-                echo "Database analysis showed: 2 items (1 listing + 1 draft property)\n";
+                echo "Database analysis showed: 2 items (1 listing + 1 draft listing)\n";
             }
         }
     } else {

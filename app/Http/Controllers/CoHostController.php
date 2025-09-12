@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CoHost;
-use App\Models\Property;
+use App\Models\listing;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Validator;
 class CoHostController extends Controller
 {
     /**
-     * Add a property to the co-host whitelist
+     * Add a listing to the co-host whitelist
      */
-    public function addPropertyToWhitelist(Request $request)
+    public function addlistingToWhitelist(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'listing_id' => 'required|exists:properties,id',
+                'listing_id' => 'required|exists:listings,id',
                 'co_user_id' => 'required|exists:users,id',
                 // 'permissions' => 'required|array'
             ]);
@@ -31,12 +31,12 @@ class CoHostController extends Controller
                 ], 422);
             }
 
-            // Check if the current user is the owner of the property
-            $property = Property::findOrFail($request->listing_id);
-            if ($property->user_id !== auth()->id()) {
+            // Check if the current user is the owner of the listing
+            $listing = listing::findOrFail($request->listing_id);
+            if ($listing->user_id !== auth()->id()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'You are not authorized to add co-hosts to this property'
+                    'message' => 'You are not authorized to add co-hosts to this listing'
                 ], 403);
             }
 
@@ -52,13 +52,13 @@ class CoHostController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Property added to co-host whitelist successfully',
+                'message' => 'listing added to co-host whitelist successfully',
                 'data' => $coHost
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to add property to whitelist',
+                'message' => 'Failed to add listing to whitelist',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -71,7 +71,7 @@ class CoHostController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'listing_id' => 'required|exists:properties,id',
+                'listing_id' => 'required|exists:listings,id',
                 'user_id' => 'required|exists:users,id'
             ]);
 
@@ -119,14 +119,14 @@ class CoHostController extends Controller
     }
 
     /**
-     * Get properties managed by a co-host
+     * Get listings managed by a co-host
      */
-    public function getPropertiesManagedByCoHost(Request $request)
+    public function getlistingsManagedByCoHost(Request $request)
     {
         try {
             $coHostId = $request->co_user_id ?? auth()->user()->id;
 
-            $properties = Property::whereHas('coHosts', function ($query) use ($coHostId) {
+            $listings = listing::whereHas('coHosts', function ($query) use ($coHostId) {
                 $query->where('co_user_id', $coHostId)
                     ->where('status', 'active');
             })->with(['coHosts' => function ($query) use ($coHostId) {
@@ -135,12 +135,12 @@ class CoHostController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $properties
+                'data' => $listings
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch managed properties',
+                'message' => 'Failed to fetch managed listings',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -155,7 +155,7 @@ class CoHostController extends Controller
             $hostId = $request->user_id ?? auth()->user()->id;
 
             $coHosts = CoHost::where('user_id', $hostId)
-                ->with(['coHost', 'property'])
+                ->with(['coHost', 'listing'])
                 ->get()
                 ->groupBy('listing_id');
 

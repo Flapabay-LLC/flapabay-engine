@@ -79,7 +79,7 @@ Metadata and options (makes FE simpler and consistent) 7) Metadata endpoint
 
 Add: GET /api/v1/wizard-listings/meta
 Response includes:
-property_types, categories, amenities, house_rules, currencies, timezones
+listing_types, categories, amenities, house_rules, currencies, timezones
 constraints: { max_images, max_video_size_mb, allowed_mime_types, check_in_out_rules, pricing_rules }
 Acceptance criteria:
 FE builds dropdowns and validates inputs using server-provided rules.

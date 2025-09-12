@@ -311,20 +311,20 @@ class ChatController extends Controller
         if ($request->has('listing_id')) {
             $contextType = 'listing';
             $contextId = $request->listing_id;
-            $listing = \App\Models\Listing::with(['category', 'propertyType'])->find($request->listing_id);
+            $listing = \App\Models\Listing::with(['category', 'listingType'])->find($request->listing_id);
             if ($listing && $listing->category) {
                 $category = $listing->category->name;
-            } elseif ($listing && $listing->propertyType) {
-                $category = $listing->propertyType->name;
+            } elseif ($listing && $listing->listingType) {
+                $category = $listing->listingType->name;
             }
         } elseif ($request->has('booking_id')) {
             $contextType = 'booking';
             $contextId = $request->booking_id;
-            $booking = \App\Models\Booking::with(['property.category', 'property.propertyType'])->find($request->booking_id);
-            if ($booking && $booking->property && $booking->property->category) {
-                $category = $booking->property->category->name;
-            } elseif ($booking && $booking->property && $booking->property->propertyType) {
-                $category = $booking->property->propertyType->name;
+            $booking = \App\Models\Booking::with(['listing.category', 'listing.listingType'])->find($request->booking_id);
+            if ($booking && $booking->listing && $booking->listing->category) {
+                $category = $booking->listing->category->name;
+            } elseif ($booking && $booking->listing && $booking->listing->listingType) {
+                $category = $booking->listing->listingType->name;
             }
         }
         // Fallback: use explicit category if provided, else 'Support'

@@ -17,8 +17,8 @@ $headers = @{
 
 $testBody = '{
     "title": "Beautiful Test Villa",
-    "description": "A stunning test property for validation",
-    "property_type_id": 1,
+    "description": "A stunning test listing for validation",
+    "listing_type_id": 1,
     "price_per_night": 150,
     "currency": "USD",
     "num_of_bedrooms": 3,

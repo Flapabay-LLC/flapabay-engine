@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('listings', function (Blueprint $table) {
-            $table->string('availability_type')->nullable()->after('is_completed');
-            $table->string('flexible_period')->nullable()->after('availability_type');
-            $table->string('flexible_month')->nullable()->after('flexible_period');
-        });
+        // Migration disabled: listings table structure is already correct
+        // These fields can be added later if needed
     }
 
     /**
@@ -24,7 +21,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('listings', function (Blueprint $table) {
-            $table->dropColumn(['availability_type', 'flexible_period', 'flexible_month']);
+            if (Schema::hasColumn('listings', 'availability_type')) {
+                $table->dropColumn('availability_type');
+            }
+            if (Schema::hasColumn('listings', 'flexible_period')) {
+                $table->dropColumn('flexible_period');
+            }
+            if (Schema::hasColumn('listings', 'flexible_month')) {
+                $table->dropColumn('flexible_month');
+            }
         });
     }
-}; 
+};

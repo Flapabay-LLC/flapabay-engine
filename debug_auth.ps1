@@ -25,9 +25,9 @@ try {
         }
         
         $testBody = '{
-            "title": "Test Property",
-            "description": "A test property",
-            "property_type_id": 1,
+            "title": "Test listing",
+            "description": "A test listing",
+            "listing_type_id": 1,
             "price_per_night": 100,
             "currency": "USD",
             "num_of_bedrooms": 2,

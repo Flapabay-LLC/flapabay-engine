@@ -1,17 +1,17 @@
 # Wizard Listing API Documentation
 
-This document provides comprehensive documentation for the wizard listing endpoints that enable step-by-step property creation and management.
+This document provides comprehensive documentation for the wizard listing endpoints that enable step-by-step listing creation and management.
 
 ## Overview
 
-The Wizard Listing API provides a streamlined interface for hosts to create and manage property listings through a guided, multi-step process. It includes features like:
+The Wizard Listing API provides a streamlined interface for hosts to create and manage listing listings through a guided, multi-step process. It includes features like:
 
 - **Draft Management**: Create and update listings in draft state
 - **Validation**: Step-by-step and full validation
 - **State Management**: Server-driven state transitions
 - **Concurrency Control**: ETag-based optimistic locking
 - **Media Uploads**: Presigned URL flow for images and videos
-- **Metadata**: Dynamic property types, categories, and constraints
+- **Metadata**: Dynamic listing types, categories, and constraints
 
 ## Authentication
 
@@ -33,14 +33,14 @@ POST /api/v1/wizard-listings
 
 **POST** `/api/v1/wizard-listings`
 
-Creates a new property listing in draft state or finalizes it immediately.
+Creates a new listing listing in draft state or finalizes it immediately.
 
 #### Request Body
 ```json
 {
   "title": "Beautiful Oceanview Villa",
   "description": "Stunning 3-bedroom villa with panoramic ocean views",
-  "property_type_id": 1,
+  "listing_type_id": 1,
   "category_id": 2,
   "address": "123 Ocean Drive",
   "city": "Miami Beach",
@@ -63,7 +63,7 @@ Creates a new property listing in draft state or finalizes it immediately.
 ```json
 {
   "draft_id": 123,
-  "property": {
+  "listing": {
     "id": 123,
     "title": "Beautiful Oceanview Villa",
     "is_draft": true,
@@ -78,13 +78,13 @@ Creates a new property listing in draft state or finalizes it immediately.
           "action": "update",
           "method": "PATCH",
           "endpoint": "/api/v1/wizard-listings/123",
-          "description": "Update draft property"
+          "description": "Update draft listing"
         },
         {
           "action": "validate",
           "method": "POST",
           "endpoint": "/api/v1/wizard-listings/123/validate",
-          "description": "Validate property completeness"
+          "description": "Validate listing completeness"
         }
       ]
     }
@@ -117,8 +117,8 @@ Partially updates a draft listing with new field values.
 ```json
 {
   "code": "SUCCESS",
-  "message": "Property updated successfully",
-  "property": {
+  "message": "listing updated successfully",
+  "listing": {
     "id": 123,
     "title": "Updated Villa Title",
     "version": 2,
@@ -136,8 +136,8 @@ Partially updates a draft listing with new field values.
 
 #### Error Responses
 - `412 Precondition Failed` - ETag mismatch (concurrent modification)
-- `404 Not Found` - Property not found
-- `400 Bad Request` - Property not in draft state
+- `404 Not Found` - listing not found
+- `400 Bad Request` - listing not in draft state
 
 ### 3. Validate Listing
 
@@ -199,7 +199,7 @@ Finalizes a draft listing, making it live and bookable.
 {
   "code": "SUCCESS",
   "message": "Listing finalized successfully",
-  "property": {
+  "listing": {
     "id": 123,
     "is_draft": false,
     "version": 3,
@@ -211,13 +211,13 @@ Finalizes a draft listing, making it live and bookable.
           "action": "update",
           "method": "POST",
           "endpoint": "/api/v1/listings/123",
-          "description": "Update published property details"
+          "description": "Update published listing details"
         },
         {
           "action": "deactivate",
           "method": "POST",
           "endpoint": "/api/v1/listings/123/deactivate",
-          "description": "Temporarily deactivate property"
+          "description": "Temporarily deactivate listing"
         }
       ]
     }
@@ -230,7 +230,7 @@ Finalizes a draft listing, making it live and bookable.
 {
   "code": "VALIDATION_SUCCESS",
   "message": "Listing is ready for finalization",
-  "property": {
+  "listing": {
     "completion_percentage": 100,
     "state_management": {...}
   }
@@ -241,7 +241,7 @@ Finalizes a draft listing, making it live and bookable.
 
 **GET** `/api/v1/wizard-listings/meta`
 
-Retrieve metadata for property creation including types, categories, amenities, and validation constraints.
+Retrieve metadata for listing creation including types, categories, amenities, and validation constraints.
 
 #### Response
 ```json
@@ -249,13 +249,13 @@ Retrieve metadata for property creation including types, categories, amenities, 
   "code": "SUCCESS",
   "message": "Metadata retrieved successfully",
   "data": {
-    "property_types": [
+    "listing_types": [
       {"id": 1, "name": "House", "description": "Entire house"},
       {"id": 2, "name": "Apartment", "description": "Entire apartment"}
     ],
     "categories": [
-      {"id": 1, "name": "Beachfront", "description": "Properties near beach"},
-      {"id": 2, "name": "City Center", "description": "Urban properties"}
+      {"id": 1, "name": "Beachfront", "description": "listings near beach"},
+      {"id": 2, "name": "City Center", "description": "Urban listings"}
     ],
     "amenities": [
       {"id": "wifi", "name": "WiFi", "category": "connectivity"},
@@ -271,7 +271,7 @@ Retrieve metadata for property creation including types, categories, amenities, 
       "required_fields": [
         "title", "description", "address", "city", "country",
         "price_per_night", "currency", "num_of_bedrooms",
-        "num_of_bathrooms", "maximum_guests", "property_type_id"
+        "num_of_bathrooms", "maximum_guests", "listing_type_id"
       ],
       "field_formats": {
         "currency": "3-letter ISO code (USD, EUR, etc.)",
@@ -390,9 +390,9 @@ All endpoints use standardized error responses:
 ### Common Error Codes
 - `UNAUTHORIZED` (401): Authentication required
 - `FORBIDDEN` (403): Insufficient permissions
-- `PROPERTY_NOT_FOUND` (404): Property doesn't exist
+- `listing_NOT_FOUND` (404): listing doesn't exist
 - `DRAFT_NOT_FOUND` (404): Draft listing not found
-- `PROPERTY_NOT_DRAFT` (400): Operation only allowed on drafts
+- `listing_NOT_DRAFT` (400): Operation only allowed on drafts
 - `VALIDATION_FAILED` (422): Field validation errors
 - `PRECONDITION_FAILED` (412): ETag mismatch
 - `SERVER_ERROR` (500): Internal server error
@@ -401,14 +401,14 @@ All endpoints use standardized error responses:
 
 The API uses ETags for optimistic concurrency control:
 
-1. **ETag Generation**: Each property has a version-based ETag
+1. **ETag Generation**: Each listing has a version-based ETag
 2. **If-Match Header**: Include current ETag in update requests
 3. **Conflict Detection**: 412 error if ETag doesn't match
 4. **Version Increment**: Version increases on each modification
 
 ### Example Flow
 ```bash
-# 1. Get current property with ETag
+# 1. Get current listing with ETag
 GET /api/v1/wizard-listings/123
 Response: ETag: "v1-abc123"
 
@@ -427,21 +427,21 @@ Response: 412 Precondition Failed
 
 ## State Management
 
-Each property response includes `state_management` with:
-- `current_state`: Current property state (draft/published)
+Each listing response includes `state_management` with:
+- `current_state`: Current listing state (draft/published)
 - `completion_percentage`: Completeness score (0-100)
 - `allowed_transitions`: Available actions with endpoints
 
 ### State Transitions
 
 **Draft State:**
-- `update`: Modify property details
+- `update`: Modify listing details
 - `validate`: Check completeness
-- `finalize`: Publish property (requires 80%+ completion)
+- `finalize`: Publish listing (requires 80%+ completion)
 - `delete`: Remove draft
 
 **Published State:**
-- `update`: Modify published property
+- `update`: Modify published listing
 - `deactivate`: Temporarily disable
 - `delete`: Permanently remove
 
@@ -474,7 +474,7 @@ const response = await fetch('/api/v1/wizard-listings', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    title: 'My Property',
+    title: 'My listing',
     price_per_night: 100,
     finalize: false
   })
@@ -492,7 +492,7 @@ const updateResponse = await fetch(`/api/v1/wizard-listings/${data.draft_id}`, {
     'If-Match': etag
   },
   body: JSON.stringify({
-    title: 'Updated Property Title'
+    title: 'Updated listing Title'
   })
 });
 ```
@@ -502,7 +502,7 @@ const updateResponse = await fetch(`/api/v1/wizard-listings/${data.draft_id}`, {
 // Create draft listing
 $response = Http::withToken($token)
     ->post('/api/v1/wizard-listings', [
-        'title' => 'My Property',
+        'title' => 'My listing',
         'price_per_night' => 100,
         'finalize' => false
     ]);
@@ -514,7 +514,7 @@ $etag = $response->header('ETag');
 $updateResponse = Http::withToken($token)
     ->withHeaders(['If-Match' => $etag])
     ->patch("/api/v1/wizard-listings/{$data['draft_id']}", [
-        'title' => 'Updated Property Title'
+        'title' => 'Updated listing Title'
     ]);
 ```
 

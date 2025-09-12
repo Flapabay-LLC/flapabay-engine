@@ -31,7 +31,7 @@ try {
     // Test the wizard-listings API
     $url = 'http://localhost:8000/api/v1/wizard-listings';
     $data = [
-        'title' => 'Test Property via API',
+        'title' => 'Test listing via API',
         'listing_type' => 'stay',
         'price_per_night' => 150
     ];

@@ -4,7 +4,7 @@
     <span class="inline-block px-2 py-1 mb-4 font-mono text-sm text-white bg-black rounded">POST {base_url}/listings/create-new</span>
     <h3 class="mb-2 text-lg font-bold text-orange-300">Create New Listing (Wizard API)</h3>
     <p class="mb-2">
-      The <code class="px-1 bg-gray-800 rounded">createNewListing</code> API allows hosts to create a property listing step-by-step (wizard style). Only <strong>one draft</strong> is allowed per host at a time. Each step updates the same draft record using the <code class="px-1 bg-gray-800 rounded">draft_id</code> and <code class="px-1 bg-gray-800 rounded">user_id</code> as keys. When all required fields are provided and <code class="px-1 bg-gray-800 rounded">finalize=1</code> is sent, the draft is finalized and a new draft can be started for that host.
+      The <code class="px-1 bg-gray-800 rounded">createNewListing</code> API allows hosts to create a listing listing step-by-step (wizard style). Only <strong>one draft</strong> is allowed per host at a time. Each step updates the same draft record using the <code class="px-1 bg-gray-800 rounded">draft_id</code> and <code class="px-1 bg-gray-800 rounded">user_id</code> as keys. When all required fields are provided and <code class="px-1 bg-gray-800 rounded">finalize=1</code> is sent, the draft is finalized and a new draft can be started for that host.
     </p>
     <ul class="mb-2 ml-6 list-disc">
       <li><strong>user_id</strong> is required in every request.</li>
@@ -24,7 +24,7 @@
       // Response:
       {
         "draft_id": 42,
-        "property": { ... }
+        "listing": { ... }
       }</pre>
     </div>
     <div class="mb-2">
@@ -39,7 +39,7 @@
 // Response:
 {
   "success": true,
-  "property": { ... }
+  "listing": { ... }
 }</pre>
     </div>
     <p class="text-sm text-orange-200">If a required field is missing at finalize, the API will return a 422 error with details and the <code class="px-1 bg-gray-800 rounded">draft_id</code> for further updates.</p>

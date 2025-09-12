@@ -335,7 +335,7 @@
                     <div class="col-md-4">
                         <div class="feature parallax">
                             <h3>Curated Selection</h3>
-                            <p>Access our handpicked collection of premium properties and experiences, vetted for quality and uniqueness.</p>
+                            <p>Access our handpicked collection of premium listings and experiences, vetted for quality and uniqueness.</p>
                         </div>
                     </div>
                     <div class="col-md-4">

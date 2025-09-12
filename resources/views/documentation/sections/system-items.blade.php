@@ -2,7 +2,7 @@
 <section id="system-items" class="mb-12">
   <h2 class="mb-4 text-2xl font-bold text-orange-600">Fetch System Items to Use During Creating new Listing to be populated.</h2>
   <p class="mb-4 text-base text-gray-700">
-    Retrieve lists of system-wide items such as amenities, favorites, place items, and property types. These endpoints are public and help populate dropdowns, filters, and other UI elements.
+    Retrieve lists of system-wide items such as amenities, favorites, place items, and listing types. These endpoints are public and help populate dropdowns, filters, and other UI elements.
   </p>
   <div class="mb-4 space-y-2">
     <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/amenities</span>
@@ -11,8 +11,8 @@
     <p class="mb-4 text-base text-gray-700">Include the favorite 'name' in the <b>favorites[]</b> array Input Field when creating a new listing.</p>
     <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/place-items</span>
     <p class="mb-4 text-base text-gray-700">Include the place item 'name' in the <b>place_items[]</b> array Input Field when creating a new listing.</p>
-    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/property-types</span>
-    <p class="mb-4 text-base text-gray-700">Set the property type 'Id' in the <b>property_type_id</b> field when creating a new listing.</p>
+    <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/system/listing-types</span>
+    <p class="mb-4 text-base text-gray-700">Set the listing type 'Id' in the <b>listing_type_id</b> field when creating a new listing.</p>
     <span class="inline-block px-2 py-1 font-mono text-sm text-white bg-black rounded">GET https://{base_url}/categories</span>
     <p class="mb-4 text-base text-gray-700">Include the category 'Id' in the <b>category_id</b> array Input Field when creating a new listing.</p>
   </div>

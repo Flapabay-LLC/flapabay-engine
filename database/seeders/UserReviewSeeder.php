@@ -19,7 +19,7 @@ class UserReviewSeeder extends Seeder
                     'user_id' => 1,
                     'listing_id' => 1, // Assuming listing with ID 1 exists
                     'rating' => 5,
-                    'review' => 'Amazing place! Loved the experience, the property was exactly as described, and the hosts were very welcoming.',
+                    'review' => 'Amazing place! Loved the experience, the listing was exactly as described, and the hosts were very welcoming.',
                 ],
                 [
                     'user_id' => 2,

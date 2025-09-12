@@ -44,11 +44,11 @@ class Booking extends Model
      */
 
     /**
-     * Get the property associated with the booking.
+     * Get the listing associated with the booking.
      */
-    public function property()
+    public function listing()
     {
-        return $this->belongsTo(Property::class, 'listing_id');
+        return $this->belongsTo(Listing::class, 'listing_id');
     }
 
     /**

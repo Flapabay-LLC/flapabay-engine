@@ -16,7 +16,7 @@ class FavoriteController extends Controller
     public function index()
     {
         try {
-            $favorites = Favorite::with(['property.listing', 'wishlist'])->get();
+            $favorites = Favorite::with(['listing.listing', 'wishlist'])->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Favorites fetched successfully',
@@ -38,7 +38,7 @@ class FavoriteController extends Controller
     {
         $user = auth()->user();
         try {
-            $query = Favorite::with(['property.listing', 'wishlist'])
+            $query = Favorite::with(['listing.listing', 'wishlist'])
                 ->where('user_id', $user->id);
             if ($request->has('wishlist')) {
                 $query->where('wishlist_id', $request->wishlist);
@@ -83,7 +83,7 @@ class FavoriteController extends Controller
 
             $request->validate([
                 'name' => 'required|string|max:255',
-                'listing_id' => 'nullable|integer|exists:properties,id',
+                'listing_id' => 'nullable|integer|exists:listings,id',
                 'wslist' => 'nullable',
                 'is_default' => 'nullable|boolean',
             ]);
@@ -126,7 +126,7 @@ class FavoriteController extends Controller
     }
 
     /**
-     * Store a favorite (add property to wishlist or create new favorite)
+     * Store a favorite (add listing to wishlist or create new favorite)
      */
     public function store(Request $request)
     {
@@ -158,7 +158,7 @@ class FavoriteController extends Controller
         if ($existingFavorite) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'This property is already in your favorites'
+                'message' => 'This listing is already in your favorites'
             ], 409);
         }
 
@@ -168,10 +168,10 @@ class FavoriteController extends Controller
             'wishlist_id' => $request->wishlist_id,
         ]);
 
-        $favorite = Favorite::with(['property.listing', 'wishlist'])->find($favorite->id);
+        $favorite = Favorite::with(['listing.listing', 'wishlist'])->find($favorite->id);
         return response()->json([
             'status' => 'success',
-            'message' => 'Property added to favorites successfully',
+            'message' => 'listing added to favorites successfully',
             'favorite' => $favorite,
         ]);
     }
@@ -220,7 +220,7 @@ class FavoriteController extends Controller
             if (!$favorite) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Property is not in this wishlist'
+                    'message' => 'listing is not in this wishlist'
                 ], 404);
             }
 
@@ -228,24 +228,24 @@ class FavoriteController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Property removed from wishlist successfully'
+                'message' => 'listing removed from wishlist successfully'
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to remove property from wishlist',
+                'message' => 'Failed to remove listing from wishlist',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get all wishlists for the authenticated user, with properties and listings
+     * Get all wishlists for the authenticated user, with listings and listings
      */
     public function myWishlists(Request $request)
     {
         try {
-            $wishlists = Wishlist::with(['favorites.property.listing'])
+            $wishlists = Wishlist::with(['favorites.listing'])
                 ->where('user_id', auth()->user()->id)
                 ->get();
             return response()->json([

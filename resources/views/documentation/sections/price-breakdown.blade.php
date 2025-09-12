@@ -22,18 +22,18 @@
         <h4 class="mb-2 font-semibold text-gray-800">2. Additional Guest Charges</h4>
         <p class="text-gray-600 mb-2">Extra cost for guests beyond the base guest count</p>
         <code class="bg-gray-200 px-2 py-1 rounded text-sm">Additional Guest Price = (Additional guests × Additional guest price per night) × Number of nights</code>
-        <p class="text-sm text-gray-500 mt-1">Only applies if guests exceed the property's base guest count</p>
+        <p class="text-sm text-gray-500 mt-1">Only applies if guests exceed the listing's base guest count</p>
       </div>
 
       <div class="p-4 bg-gray-50 rounded-lg">
         <h4 class="mb-2 font-semibold text-gray-800">3. Children Charges</h4>
-        <p class="text-gray-600 mb-2">Cost for children (if property charges for children)</p>
+        <p class="text-gray-600 mb-2">Cost for children (if listing charges for children)</p>
         <code class="bg-gray-200 px-2 py-1 rounded text-sm">Children Price = Number of children × Children price per night × Number of nights</code>
       </div>
 
       <div class="p-4 bg-gray-50 rounded-lg">
         <h4 class="mb-2 font-semibold text-gray-800">4. Pet Charges</h4>
-        <p class="text-gray-600 mb-2">Cost for pets (if property allows pets)</p>
+        <p class="text-gray-600 mb-2">Cost for pets (if listing allows pets)</p>
         <code class="bg-gray-200 px-2 py-1 rounded text-sm">Pet Price = Number of pets × $10 per pet per night × Number of nights</code>
         <p class="text-sm text-gray-500 mt-1">Standard $10 per pet per night fee</p>
       </div>
@@ -53,7 +53,7 @@
     <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
       <h4 class="mb-2 font-semibold text-green-800">Sample Scenario</h4>
       <ul class="text-sm text-green-700 space-y-1">
-        <li>• Property: $100 per night</li>
+        <li>• listing: $100 per night</li>
         <li>• Stay: 3 nights</li>
         <li>• Guests: 4 (base is 2, so 2 additional)</li>
         <li>• Additional guest price: $20 per night</li>
@@ -105,11 +105,11 @@
     <div class="space-y-2 text-sm text-gray-600">
       <div class="flex items-start">
         <span class="mr-2 text-orange-500">•</span>
-        <span>Additional guest charges only apply when guests exceed the property's base guest count</span>
+        <span>Additional guest charges only apply when guests exceed the listing's base guest count</span>
       </div>
       <div class="flex items-start">
         <span class="mr-2 text-orange-500">•</span>
-        <span>Children and pet charges are optional and depend on property settings</span>
+        <span>Children and pet charges are optional and depend on listing settings</span>
       </div>
       <div class="flex items-start">
         <span class="mr-2 text-orange-500">•</span>
@@ -121,7 +121,7 @@
       </div>
       <div class="flex items-start">
         <span class="mr-2 text-orange-500">•</span>
-        <span>Currency is inherited from the property settings</span>
+        <span>Currency is inherited from the listing settings</span>
       </div>
     </div>
   </div>
@@ -129,7 +129,7 @@
   <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
     <h4 class="mb-2 font-semibold text-yellow-800">Developer Tips</h4>
     <ul class="text-sm text-yellow-700 space-y-1">
-      <li>• Use the <code class="bg-yellow-200 px-1 rounded">getPropertyAvailability</code> endpoint to preview pricing before creating a reservation</li>
+      <li>• Use the <code class="bg-yellow-200 px-1 rounded">getlistingAvailability</code> endpoint to preview pricing before creating a reservation</li>
       <li>• The price breakdown is stored with each reservation for historical accuracy</li>
       <li>• Guest capacity validation happens before price calculation</li>
       <li>• All date calculations use Carbon for timezone consistency</li>

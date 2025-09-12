@@ -34,24 +34,24 @@ Development: http://localhost:8000/api/v1
 
 ---
 
-## 🏠 Property Management Endpoints
+## 🏠 listing Management Endpoints
 
-### Public Property Endpoints
+### Public listing Endpoints
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| `GET` | `/properties` | ❌ | Get all properties (with filters) |
-| `GET` | `/properties/{propertyId}` | ❌ | Get single property details |
-| `GET` | `/properties/{propertyId}/description` | ❌ | Get property description |
-| `GET` | `/properties/{propertyId}/price-details` | ❌ | Get property pricing |
-| `GET` | `/properties/{propertyId}/amenities` | ❌ | Get property amenities |
-| `GET` | `/properties/{propertyId}/availability` | ❌ | Get property availability |
+| `GET` | `/listings` | ❌ | Get all listings (with filters) |
+| `GET` | `/listings/{listingId}` | ❌ | Get single listing details |
+| `GET` | `/listings/{listingId}/description` | ❌ | Get listing description |
+| `GET` | `/listings/{listingId}/price-details` | ❌ | Get listing pricing |
+| `GET` | `/listings/{listingId}/amenities` | ❌ | Get listing amenities |
+| `GET` | `/listings/{listingId}/availability` | ❌ | Get listing availability |
 
-### Protected Property Endpoints
+### Protected listing Endpoints
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| `POST` | `/properties` | ✅ | Create new property |
-| `POST` | `/update-properties` | ✅ | Update property details |
-| `POST` | `/properties/{propertyId}/availability` | ✅ | Set property availability |
+| `POST` | `/listings` | ✅ | Create new listing |
+| `POST` | `/update-listings` | ✅ | Update listing details |
+| `POST` | `/listings/{listingId}/availability` | ✅ | Set listing availability |
 
 ---
 
@@ -113,9 +113,9 @@ Development: http://localhost:8000/api/v1
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| `GET` | `/reviews` | ✅ | Get property reviews |
-| `POST` | `/create-review` | ✅ | Create property review |
-| `POST` | `/update-review` | ✅ | Update property review |
+| `GET` | `/reviews` | ✅ | Get listing reviews |
+| `POST` | `/create-review` | ✅ | Create listing review |
+| `POST` | `/update-review` | ✅ | Update listing review |
 
 ---
 
@@ -124,7 +124,7 @@ Development: http://localhost:8000/api/v1
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
 | `GET` | `/favorites` | ✅ | Get user favorites |
-| `GET` | `/favorites/user` | ✅ | Get user's favorite properties |
+| `GET` | `/favorites/user` | ✅ | Get user's favorite listings |
 | `POST` | `/favorites` | ✅ | Add to favorites |
 | `DELETE` | `/favorites` | ✅ | Remove from favorites |
 | `POST` | `/wishlists` | ❌ | Create wishlist |
@@ -184,9 +184,9 @@ Development: http://localhost:8000/api/v1
 
 | Method | Endpoint | Auth Required | Description |
 |--------|----------|---------------|-------------|
-| `POST` | `/co-hosts/whitelist` | ✅ | Add property to co-host whitelist |
+| `POST` | `/co-hosts/whitelist` | ✅ | Add listing to co-host whitelist |
 | `POST` | `/co-hosts/signup` | ✅ | Sign up as co-host |
-| `GET` | `/co-hosts/properties` | ✅ | Get co-host managed properties |
+| `GET` | `/co-hosts/listings` | ✅ | Get co-host managed listings |
 | `GET` | `/co-hosts/members` | ✅ | Get host's co-host members |
 
 ---
@@ -210,8 +210,8 @@ Development: http://localhost:8000/api/v1
 |--------|----------|---------------|-------------|
 | `POST` | `/categories/add` | ❌ | Add category |
 | `GET` | `/categories` | ❌ | Get all categories |
-| `GET` | `/property-types` | ❌ | Get property types |
-| `POST` | `/property-types` | ✅ | Create property type |
+| `GET` | `/listing-types` | ❌ | Get listing types |
+| `POST` | `/listing-types` | ✅ | Create listing type |
 
 ### System Data
 | Method | Endpoint | Auth Required | Description |
@@ -219,10 +219,10 @@ Development: http://localhost:8000/api/v1
 | `GET` | `/system/amenities` | ❌ | Get system amenities |
 | `GET` | `/system/favorites` | ❌ | Get system favorites |
 | `GET` | `/system/place-items` | ❌ | Get system place items |
-| `GET` | `/system/property-types` | ❌ | Get system property types |
+| `GET` | `/system/listing-types` | ❌ | Get system listing types |
 | `POST` | `/system/amenities` | ✅ | Create system amenity |
 | `POST` | `/system/favorites` | ✅ | Create system favorite |
-| `POST` | `/system/property-types` | ✅ | Create system property type |
+| `POST` | `/system/listing-types` | ✅ | Create system listing type |
 
 ### Languages & Currencies
 | Method | Endpoint | Auth Required | Description |

@@ -298,11 +298,11 @@ profile_picture: [file]
 
 ---
 
-## 🏠 Property Management Endpoints
+## 🏠 listing Management Endpoints
 
-### 8. Get Properties (Public)
+### 8. Get listings (Public)
 
-**Endpoint:** `GET /properties`  
+**Endpoint:** `GET /listings`  
 **Authentication:** None required  
 
 #### Query Parameters
@@ -315,7 +315,7 @@ profile_picture: [file]
 {
   "success": true,
   "data": {
-    "properties": [
+    "listings": [
       {
         "id": 1,
         "title": "Cozy Downtown Apartment",
@@ -328,11 +328,11 @@ profile_picture: [file]
         "max_guests": 4,
         "bedrooms": 2,
         "bathrooms": 1,
-        "property_type": "Apartment",
+        "listing_type": "Apartment",
         "images": [
           {
             "id": 1,
-            "url": "https://your-domain.com/storage/properties/1/image1.jpg",
+            "url": "https://your-domain.com/storage/listings/1/image1.jpg",
             "is_primary": true
           }
         ],
@@ -371,9 +371,9 @@ profile_picture: [file]
 }
 ```
 
-### 9. Get Single Property
+### 9. Get Single listing
 
-**Endpoint:** `GET /properties/{propertyId}`  
+**Endpoint:** `GET /listings/{listingId}`  
 **Authentication:** None required  
 
 #### Success Response (200)
@@ -392,7 +392,7 @@ profile_picture: [file]
     "max_guests": 4,
     "bedrooms": 2,
     "bathrooms": 1,
-    "property_type": "Apartment",
+    "listing_type": "Apartment",
     "check_in_time": "15:00",
     "check_out_time": "11:00",
     "minimum_nights": 2,
@@ -400,13 +400,13 @@ profile_picture: [file]
     "images": [
       {
         "id": 1,
-        "url": "https://your-domain.com/storage/properties/1/image1.jpg",
+        "url": "https://your-domain.com/storage/listings/1/image1.jpg",
         "is_primary": true,
         "caption": "Living room"
       },
       {
         "id": 2,
-        "url": "https://your-domain.com/storage/properties/1/image2.jpg",
+        "url": "https://your-domain.com/storage/listings/1/image2.jpg",
         "is_primary": false,
         "caption": "Bedroom"
       }
@@ -467,9 +467,9 @@ profile_picture: [file]
 }
 ```
 
-### 10. Create Property (Host)
+### 10. Create listing (Host)
 
-**Endpoint:** `POST /properties`  
+**Endpoint:** `POST /listings`  
 **Authentication:** Required (JWT Token)  
 
 #### Request
@@ -477,7 +477,7 @@ profile_picture: [file]
 {
   "title": "Modern City Loft",
   "description": "Spacious loft in downtown area with city views",
-  "property_type_id": 1,
+  "listing_type_id": 1,
   "price_per_night": 150.00,
   "currency": "USD",
   "location": "San Francisco, CA",
@@ -510,7 +510,7 @@ profile_picture: [file]
 ```json
 {
   "success": true,
-  "message": "Property created successfully",
+  "message": "listing created successfully",
   "data": {
     "id": 25,
     "title": "Modern City Loft",
@@ -554,7 +554,7 @@ profile_picture: [file]
   "message": "Booking created successfully",
   "data": {
     "booking_id": "BK-2025-001234",
-    "property": {
+    "listing": {
       "id": 1,
       "title": "Cozy Downtown Apartment",
       "location": "New York, NY"
@@ -604,11 +604,11 @@ profile_picture: [file]
     "bookings": [
       {
         "id": "BK-2025-001234",
-        "property": {
+        "listing": {
           "id": 1,
           "title": "Cozy Downtown Apartment",
           "location": "New York, NY",
-          "image": "https://your-domain.com/storage/properties/1/image1.jpg"
+          "image": "https://your-domain.com/storage/listings/1/image1.jpg"
         },
         "dates": {
           "check_in": "2025-02-15",
@@ -647,7 +647,7 @@ profile_picture: [file]
 {
   "listing_id": 1,
   "recipient_id": 456,
-  "message": "Hi! I'm interested in booking your property for next weekend."
+  "message": "Hi! I'm interested in booking your listing for next weekend."
 }
 ```
 
@@ -669,13 +669,13 @@ profile_picture: [file]
         "role": "host"
       }
     ],
-    "property": {
+    "listing": {
       "id": 1,
       "title": "Cozy Downtown Apartment"
     },
     "last_message": {
       "id": "msg_xyz789",
-      "content": "Hi! I'm interested in booking your property for next weekend.",
+      "content": "Hi! I'm interested in booking your listing for next weekend.",
       "sender_id": 123,
       "created_at": "2025-01-24T13:00:00.000000Z"
     },
@@ -704,10 +704,10 @@ profile_picture: [file]
           "role": "host"
         }
       ],
-      "property": {
+      "listing": {
         "id": 1,
         "title": "Cozy Downtown Apartment",
-        "image": "https://your-domain.com/storage/properties/1/image1.jpg"
+        "image": "https://your-domain.com/storage/listings/1/image1.jpg"
       },
       "last_message": {
         "content": "That sounds perfect! Let me check availability.",
@@ -760,9 +760,9 @@ profile_picture: [file]
 }
 ```
 
-### 16. Get Property Types
+### 16. Get listing Types
 
-**Endpoint:** `GET /property-types`  
+**Endpoint:** `GET /listing-types`  
 **Authentication:** None required  
 
 #### Success Response (200)

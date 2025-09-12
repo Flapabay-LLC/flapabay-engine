@@ -20,7 +20,7 @@
       <a href="#supported-languages" class="block hover:text-black">Supported Languages</a>
       <a href="#system-items" class="block hover:text-black">System Items</a>
       <a href="#listings" class="block hover:text-black">Listings</a>
-      <a href="#property-types" class="block hover:text-black">Property Types</a>
+      <a href="#listing-types" class="block hover:text-black">listing Types</a>
       <a href="#host-signup" class="block hover:text-black">Host Signup</a>
       <a href="#verification-status" class="block hover:text-black">Verification Status</a>
       <a href="#price-breakdown" class="block hover:text-black">Price Breakdown</a>
@@ -40,7 +40,7 @@
         <option value="#supported-languages">Supported Languages</option>
         <option value="#system-items">System Items</option>
         <option value="#listings">Listings</option>
-        <option value="#property-types">Property Types</option>
+        <option value="#listing-types">listing Types</option>
         <option value="#host-signup">Host Signup</option>
         <option value="#verification-status">Verification Status</option>
         <option value="#price-breakdown">Price Breakdown</option>
@@ -75,7 +75,7 @@ Authorization: Bearer &lt;your_token_here&gt;</pre>
     @include('documentation.sections.supported-languages')
     @include('documentation.sections.system-items')
     @include('documentation.sections.listings')
-    @include('documentation.sections.property-types')
+    @include('documentation.sections.listing-types')
     @include('documentation.sections.price-breakdown')
 
     <footer class="mt-20 text-sm text-center text-gray-500">

@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->bigIncrements('id'); // Primary key
-            $table->string('booking_number')->nullable(); // Foreign key to properties table
-            $table->float('amount', 10,2)->nullable(); // Foreign key to properties table
-            $table->unsignedBigInteger('listing_id'); // Foreign key to properties table
+            $table->string('booking_number')->nullable(); // Foreign key to listings table
+            $table->float('amount', 10,2)->nullable(); // Foreign key to listings table
+            $table->unsignedBigInteger('listing_id'); // Foreign key to listings table
             $table->unsignedBigInteger('user_id'); // Foreign key to users table
             $table->date('start_date')->nullable(); // Date the booking starts
             $table->date('end_date')->nullable(); // Date the booking ends

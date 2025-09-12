@@ -73,9 +73,9 @@ class Listing extends Model
         'images',
         'video_link',
         'verified',
-        'property_type',
+        'listing_type',
         'featured_status',
-        'property_type_id',
+        'listing_type_id',
         'listing_type',
         'has_unallocated_rooms',
         'num_of_bedrooms',
@@ -172,14 +172,22 @@ class Listing extends Model
         return $this->user();
     }
 
-    // Property relationship removed - properties are now merged into listings
+    // listing relationship removed - listings are now merged into listings
 
     /**
-     * Get the property type associated with the post.
+     * Get the category associated with the listing.
      */
-    public function propertyType()
+    public function category()
     {
-        return $this->belongsTo(PropertyType::class);
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the listing type associated with the post.
+     */
+    public function listingType()
+    {
+        return $this->belongsTo(ListingType::class);
     }
 
     /**
@@ -187,7 +195,7 @@ class Listing extends Model
      */
     public function reviews()
     {
-        return $this->hasMany(PropertyReview::class, 'listing_id');
+        return $this->hasMany(ListingReview::class, 'listing_id');
     }
 
     /**

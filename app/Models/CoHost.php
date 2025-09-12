@@ -42,9 +42,9 @@ class CoHost extends Model
         return $this->belongsTo(User::class, 'co_user_id');
     }
 
-    public function property()
+    public function listing()
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(listing::class);
     }
 
     // Scopes

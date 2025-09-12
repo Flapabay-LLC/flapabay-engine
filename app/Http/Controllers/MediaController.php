@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use App\Models\Property;
+use App\Models\listing;
 
 class MediaController extends Controller
 {
@@ -29,7 +29,7 @@ class MediaController extends Controller
                 'file_name' => 'required|string|max:255',
                 'file_size' => 'required|integer|min:1|max:10485760', // 10MB max
                 'file_type' => 'required|string|in:image/jpeg,image/png,image/jpg,image/webp',
-                'listing_id' => 'nullable|exists:properties,id'
+                'listing_id' => 'nullable|exists:listings,id'
             ]);
 
             if ($validator->fails()) {
@@ -115,7 +115,7 @@ class MediaController extends Controller
             $validator = Validator::make($request->all(), [
                 'file' => 'required|file|mimes:jpeg,png,jpg,webp|max:10240', // 10MB
                 'file_key' => 'required|string',
-                'listing_id' => 'nullable|exists:properties,id'
+                'listing_id' => 'nullable|exists:listings,id'
             ]);
 
             if ($validator->fails()) {
@@ -163,9 +163,9 @@ class MediaController extends Controller
     }
 
     /**
-     * Attach media to property
+     * Attach media to listing
      */
-    public function attachToProperty(Request $request)
+    public function attachTolisting(Request $request)
     {
         try {
             $user = Auth::user();
@@ -177,7 +177,7 @@ class MediaController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'listing_id' => 'required|exists:properties,id',
+                'listing_id' => 'required|exists:listings,id',
                 'file_keys' => 'required|array|min:1|max:20',
                 'file_keys.*' => 'required|string',
                 'action' => 'required|in:add,replace,remove'
@@ -191,18 +191,18 @@ class MediaController extends Controller
                 ], 422);
             }
 
-            $property = Property::where('user_id', $user->id)
+            $listing = listing::where('user_id', $user->id)
                 ->where('id', $request->listing_id)
                 ->first();
 
-            if (!$property) {
+            if (!$listing) {
                 return response()->json([
-                    'code' => 'PROPERTY_NOT_FOUND',
-                    'message' => 'Property not found'
+                    'code' => 'listing_NOT_FOUND',
+                    'message' => 'listing not found'
                 ], 404);
             }
 
-            $currentImages = $property->images ? json_decode($property->images, true) : [];
+            $currentImages = $listing->images ? json_decode($listing->images, true) : [];
             $newFileKeys = $request->file_keys;
 
             switch ($request->action) {
@@ -220,13 +220,13 @@ class MediaController extends Controller
             // Remove duplicates and reindex
             $updatedImages = array_values(array_unique($updatedImages));
 
-            $property->images = json_encode($updatedImages);
-            $property->save();
+            $listing->images = json_encode($updatedImages);
+            $listing->save();
 
             return response()->json([
                 'code' => 'SUCCESS',
                 'message' => 'Media attached successfully',
-                'listing_id' => $property->id,
+                'listing_id' => $listing->id,
                 'images' => $updatedImages,
                 'total_images' => count($updatedImages)
             ]);

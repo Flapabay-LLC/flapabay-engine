@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Amenity;
 use App\Models\Favorite;
 use App\Models\PlaceItem;
-use App\Models\PropertyType;
+use App\Models\listingType;
 use Illuminate\Support\Facades\Auth;
 use App\Models\SystemFavourite;
 use App\Helpers\CurrencyHelper;
@@ -143,21 +143,21 @@ class ListingController extends Controller
     }
 
     /**
-     * Get all system property types
+     * Get all system listing types
      */
-    public function getSystemPropertyTypes()
+    public function getSystemlistingTypes()
     {
         try {
-            $propertyTypes = PropertyType::all();
+            $listingTypes = listingType::all();
             return response()->json([
                 'status' => 'success',
-                'message' => 'Property types fetched successfully',
-                'data' => $propertyTypes
+                'message' => 'listing types fetched successfully',
+                'data' => $listingTypes
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch property types',
+                'message' => 'Failed to fetch listing types',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -171,7 +171,7 @@ class ListingController extends Controller
         // dd($request);
         try {
             $query = \App\Models\Listing::with([
-                'propertyType',
+                'listingType',
                 'reviews',
                 'stayDetails',
                 'experienceDetails'
@@ -205,9 +205,9 @@ class ListingController extends Controller
                     $q->orWhere('price_per_night', '<=', $request->max_price);
                 }
 
-                // Property type
-                if ($request->filled('property_type_id')) {
-                    $q->orWhere('property_type_id', $request->property_type_id);
+                // listing type
+                if ($request->filled('listing_type_id')) {
+                    $q->orWhere('listing_type_id', $request->listing_type_id);
                 }
 
                 // Bedrooms
@@ -358,7 +358,7 @@ class ListingController extends Controller
             // dd($e);
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to search properties',
+                'message' => 'Failed to search listings',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -400,22 +400,30 @@ class ListingController extends Controller
                 return response()->json(['errors' => ['user_id' => ['User not authenticated.']]], 422);
             }
 
-            // 1. Find or create a draft listing for this user
+            // Check if draft_id is provided - if so, this should be a PATCH request
             $draftId = $request->input('draft_id');
-            $listing = null;
             if ($draftId) {
-                // If draft_id is provided, find that specific draft
-                $listing = Listing::where('id', $draftId)
+                // If draft_id is provided, this should use the PATCH endpoint
+                // But for backward compatibility, we'll handle it here by calling the update method
+                // First, verify the draft exists and belongs to the user
+                $existingDraft = Listing::where('id', $draftId)
                     ->where('user_id', $userId)
                     ->where('status', 'draft')
                     ->first();
+                
+                if (!$existingDraft) {
+                    return response()->json([
+                        'code' => 'DRAFT_NOT_FOUND',
+                        'message' => 'Draft listing not found or does not belong to user'
+                    ], 404);
+                }
+                
+                return $this->updateWizardListing($request, $draftId);
             }
-            if (!$listing) {
-                // Always create a new draft if no specific draft_id is found
-                // This allows multiple drafts per user
-                $listing = new Listing(['status' => 'draft', 'user_id' => $userId]);
-                $listing->save();
-            }
+
+            // 1. Create a new draft listing for this user (only when no draft_id provided)
+            $listing = new Listing(['status' => 'draft', 'user_id' => $userId]);
+            $listing->save();
             
             // Update user's is_host status to true when working with any draft
             $user->is_host = true;
@@ -470,7 +478,7 @@ class ListingController extends Controller
                 'house_rules' => 'nullable|array',
                 'favorites' => 'nullable|array',
                 'video_link' => 'nullable|string',
-                'property_type_id' => 'exists:property_types,id',
+                'listing_type_id' => 'exists:listing_types,id',
                 'category_id' => 'exists:categories,id',
                 'place_items' => 'nullable|array',
                 'first_reserver' => 'string',
@@ -541,7 +549,7 @@ class ListingController extends Controller
                         try {
                             $result = $s3Client->putObject([
                                 'Bucket'     => $bucketName,
-                                'Key'        => 'properties/' . $fileName,
+                                'Key'        => 'listings/' . $fileName,
                                 'SourceFile' => $image->getPathname(),
                             ]);
                             if (isset($result['ObjectURL'])) {
@@ -551,7 +559,7 @@ class ListingController extends Controller
                             }
                         } catch (\Exception $e) {
                             // Fallback to local storage
-                            $localPath = $image->storeAs('properties', $fileName, 'public');
+                            $localPath = $image->storeAs('listings', $fileName, 'public');
                             $imageUrl = \Storage::disk('public')->url($localPath);
                         }
                         $imagePaths[] = $imageUrl;
@@ -595,7 +603,7 @@ class ListingController extends Controller
                     'check_out_hour' => 'required|string',
                     'num_of_guests' => 'required|integer|min:1',
                     'maximum_guests' => 'required|integer|min:1',
-                    'property_type_id' => 'required|exists:property_types,id',
+                    'listing_type_id' => 'required|exists:listing_types,id',
                     'category_id' => 'required|exists:categories,id',
                     'host_type' => 'required|in:Private Individual,Business',
                     'num_of_bedrooms' => 'required|integer|min:1',
@@ -698,7 +706,7 @@ class ListingController extends Controller
             $requiredFields = [
                 'title', 'description', 'address', 'location', 'price', 'price_per_night',
                 'currency', 'latitude', 'longitude', 'city', 'country', 'check_in_hour',
-                'check_out_hour', 'num_of_guests', 'maximum_guests', 'property_type_id',
+                'check_out_hour', 'num_of_guests', 'maximum_guests', 'listing_type_id',
                 'category_id', 'host_type', 'num_of_bedrooms', 'num_of_bathrooms',
                 'first_reserver', 'user_id'
             ];
@@ -757,8 +765,8 @@ class ListingController extends Controller
             $responseData = [
                 'code' => 'SUCCESS',
                 'message' => 'Listing finalized successfully',
-                'property' => $property->toArray() + [
-                    'images' => $property->images ? json_decode($property->images, true) : [],
+                'listing' => $listing->toArray() + [
+                    'images' => $listing->images ? json_decode($listing->images, true) : [],
                     'completion_percentage' => $completionPercentage,
                     'state_management' => $stateInfo
                 ],
@@ -826,7 +834,7 @@ class ListingController extends Controller
                     case 'basic_info':
                         if (!$listing->title) $errors['title'] = 'Title is required';
                         if (!$listing->description) $errors['description'] = 'Description is required';
-                        if (!$listing->property_type_id) $errors['property_type'] = 'Property type is required';
+                        if (!$listing->listing_type_id) $errors['listing_type'] = 'listing type is required';
                         break;
                     case 'location':
                         if (!$listing->address) $errors['address'] = 'Address is required';
@@ -853,7 +861,7 @@ class ListingController extends Controller
                 // Full validation
                 if (!$listing->title) $errors['title'] = 'Title is required';
                 if (!$listing->description) $errors['description'] = 'Description is required';
-                if (!$listing->property_type_id) $errors['property_type'] = 'Property type is required';
+                if (!$listing->listing_type_id) $errors['listing_type'] = 'listing type is required';
                 if (!$listing->address) $errors['address'] = 'Address is required';
                 if (!$listing->city) $errors['city'] = 'City is required';
                 if (!$listing->state) $errors['state'] = 'State is required';
@@ -875,7 +883,7 @@ class ListingController extends Controller
             
             if ($listing->title) $completedFields++;
             if ($listing->description) $completedFields++;
-            if ($listing->property_type_id) $completedFields++;
+            if ($listing->listing_type_id) $completedFields++;
             if ($listing->address) $completedFields++;
             if ($listing->city) $completedFields++;
             if ($listing->state) $completedFields++;
@@ -960,44 +968,78 @@ class ListingController extends Controller
                 return $concurrencyError;
             }
 
-            // Define allowed fields for partial updates
+            // Define allowed fields for partial updates (expanded to match createNewListing)
             $allowedFields = [
-                'title', 'description', 'property_type', 'address', 'city', 'state', 
+                'title', 'description', 'listing_type', 'address', 'city', 'state', 
                 'country', 'postal_code', 'latitude', 'longitude', 'num_of_bedrooms', 
                 'num_of_bathrooms', 'maximum_guests', 'price_per_night', 'cleaning_fee',
                 'security_deposit', 'check_in_hour', 'check_out_hour', 'house_rules',
-                'cancellation_policy', 'amenities', 'images'
+                'cancellation_policy', 'amenities', 'images', 'location', 'price',
+                'weekend_price', 'discount_type', 'discount_value', 'currency',
+                'num_of_guests', 'num_of_children', 'allow_extra_guests',
+                'neighborhood_area', 'show_contact_form_instead_of_booking',
+                'allow_instant_booking', 'additional_guest_price', 'children_price',
+                'favorites', 'video_link', 'listing_type_id', 'category_id',
+                'place_items', 'first_reserver', 'host_type', 'num_of_quarters',
+                'has_unallocated_rooms', 'listing_type', 'nights', 'check_in_date',
+                'check_out_date', 'verified', 'about_place', 'step_data'
             ];
 
-            // Only update fields that are present in the request
-            $updateData = [];
-            foreach ($allowedFields as $field) {
-                if ($request->has($field)) {
-                    $value = $request->input($field);
-                    
-                    // Handle special cases
-                    if ($field === 'amenities' && is_array($value)) {
-                        $updateData[$field] = json_encode($value);
-                    } elseif ($field === 'images' && is_array($value)) {
-                        $updateData[$field] = json_encode($value);
-                    } else {
-                        $updateData[$field] = $value;
+            // Handle array fields: amenities, house_rules, favorites, place_items
+            foreach (['amenities', 'house_rules', 'favorites', 'place_items'] as $jsonField) {
+                if ($request->has($jsonField)) {
+                    $value = $request->input($jsonField);
+                    // If it's a string and is valid JSON, decode it
+                    if (is_string($value) && $this->isJson($value)) {
+                        $value = json_decode($value, true);
+                    }
+                    // If it's an array with a single JSON string, decode it
+                    if (is_array($value) && count($value) === 1 && is_string($value[0]) && $this->isJson($value[0])) {
+                        $value = json_decode($value[0], true);
+                    }
+                    // Always encode as JSON for storage in the listing field
+                    $listing->$jsonField = json_encode($value);
+                }
+            }
+
+            // Handle step_data if provided
+            if ($request->has('step_data')) {
+                $stepData = $request->input('step_data');
+                if (is_array($stepData)) {
+                    // Merge step_data fields into the main request for processing
+                    foreach ($stepData as $key => $value) {
+                        if (in_array($key, $allowedFields)) {
+                            $listing->$key = $value;
+                        }
                     }
                 }
             }
 
-            if (empty($updateData)) {
-                return response()->json([
-                    'code' => 'NO_UPDATES',
-                    'message' => 'No valid fields provided for update'
-                ], 400);
+            // Only update fields that are present in the request
+            $updateData = [];
+            foreach ($allowedFields as $field) {
+                if ($request->has($field) && $field !== 'step_data') { // step_data handled above
+                    $value = $request->input($field);
+                    
+                    // Handle special cases (skip JSON fields as they're handled above)
+                    if (!in_array($field, ['amenities', 'house_rules', 'favorites', 'place_items'])) {
+                        if ($field === 'images' && is_array($value)) {
+                            $updateData[$field] = json_encode($value);
+                        } else {
+                            $updateData[$field] = $value;
+                        }
+                    }
+                }
             }
 
             // Increment version for optimistic concurrency control
             $updateData['version'] = ($listing->version ?? 1) + 1;
 
             // Update the listing
-            $listing->update($updateData);
+            if (!empty($updateData)) {
+                $listing->update($updateData);
+            }
+            $listing->save(); // Save any JSON field changes
             $listing->refresh();
             
             // Update user's is_host status to true when updating a listing
@@ -1012,6 +1054,46 @@ class ListingController extends Controller
 
             // Handle type-specific data
             $this->handleTypeSpecificData($request, $listing);
+
+            // Handle finalize parameter
+            if ($request->input('finalize', false)) {
+                // Validate required fields for finalization
+                $requiredFields = ['title', 'description', 'listing_type', 'address', 'city', 'country', 'price_per_night'];
+                $missingFields = [];
+                
+                foreach ($requiredFields as $field) {
+                    if (empty($listing->$field)) {
+                        $missingFields[] = $field;
+                    }
+                }
+                
+                if (!empty($missingFields)) {
+                    return response()->json([
+                        'code' => 'VALIDATION_ERROR',
+                        'message' => 'Missing required fields for finalization',
+                        'errors' => [
+                            'missing_fields' => $missingFields
+                        ]
+                    ], 422);
+                }
+                
+                // Update status to published
+                $listing->status = 'published';
+                $listing->save();
+                
+                return response()->json([
+                    'code' => 'LISTING_FINALIZED',
+                    'message' => 'Listing finalized and published successfully',
+                    'data' => [
+                        'listing' => array_merge($listing->toArray(), [
+                            'images' => $listing->images ? json_decode($listing->images, true) : [],
+                            'amenities' => $listing->amenities ? json_decode($listing->amenities, true) : [],
+                            'completion_percentage' => 100,
+                            'status' => 'published'
+                        ])
+                    ]
+                ], 200)->header('ETag', $this->generateETag($listing));
+            }
 
             // Calculate completion percentage
             $completionPercentage = $this->calculateCompletionPercentage($listing);
@@ -1050,12 +1132,12 @@ class ListingController extends Controller
     }
 
     /**
-     * Calculate completion percentage for a property
+     * Calculate completion percentage for a listing
      */
     private function calculateCompletionPercentage($listing)
     {
         $requiredFields = [
-            'title', 'description', 'property_type', 'address', 'city', 'state',
+            'title', 'description', 'listing_type', 'address', 'city', 'state',
             'country', 'latitude', 'longitude', 'num_of_bedrooms', 'num_of_bathrooms', 
             'maximum_guests', 'price_per_night'
         ];
@@ -1149,22 +1231,22 @@ class ListingController extends Controller
     }
 
     /**
-     * Generate ETag for a property based on its version
+     * Generate ETag for a listing based on its version
      */
-    private function generateETag($property)
+    private function generateETag($listing)
     {
-        $version = $property->version ?? 1;
-        return '"' . md5($property->id . '-' . $version . '-' . $property->updated_at) . '"';
+        $version = $listing->version ?? 1;
+        return '"' . md5($listing->id . '-' . $version . '-' . $listing->updated_at) . '"';
     }
 
     /**
      * Validate If-Match header for optimistic concurrency control
      */
-    private function validateIfMatch(Request $request, $property)
+    private function validateIfMatch(Request $request, $listing)
     {
         $ifMatch = $request->header('If-Match');
         if ($ifMatch) {
-            $currentETag = $this->generateETag($property);
+            $currentETag = $this->generateETag($listing);
             if ($ifMatch !== $currentETag) {
                 return response()->json([
                     'code' => 'PRECONDITION_FAILED',
@@ -1229,7 +1311,7 @@ class ListingController extends Controller
                 'amenities' => 'nullable|array',
                 'house_rules' => 'nullable|array',
                 'video_link' => 'nullable|string',
-                'property_type_id' => 'sometimes|exists:property_types,id',
+                'listing_type_id' => 'sometimes|exists:listing_types,id',
                 'category_id' => 'sometimes|exists:categories,id',
                 'place_items' => 'nullable|array',
                 'first_reserver' => 'sometimes|string',
@@ -1277,7 +1359,7 @@ class ListingController extends Controller
                         try {
                             $result = $s3Client->putObject([
                                 'Bucket'     => $bucketName,
-                                'Key'        => 'properties/' . $fileName,
+                                'Key'        => 'listings/' . $fileName,
                                 'SourceFile' => $image->getPathname(),
                             ]);
 
@@ -1288,7 +1370,7 @@ class ListingController extends Controller
                             }
                         } catch (\Exception $e) {
                             // Fallback to local storage
-                            $localPath = $image->storeAs('properties', $fileName, 'public');
+                            $localPath = $image->storeAs('listings', $fileName, 'public');
                             $localUrl = \Storage::disk('public')->url($localPath);
                             $imagePaths[] = $localUrl;
                         }
@@ -1322,7 +1404,7 @@ class ListingController extends Controller
                 'amenities' => $request->has('amenities') ? json_encode($request->amenities) : $listing->amenities,
                 'house_rules' => $request->has('house_rules') ? json_encode($request->house_rules) : $listing->house_rules,
                 'video_link' => $request->has('video_link') ? json_encode($request->video_link) : $listing->video_link,
-                'property_type_id' => $request->has('property_type_id') ? $request->property_type_id : $listing->property_type_id,
+                'listing_type_id' => $request->has('listing_type_id') ? $request->listing_type_id : $listing->listing_type_id,
                 'category_id' => $request->has('category_id') ? $request->category_id : $listing->category_id,
                 'place_items' => $request->has('place_items') ? json_encode($request->place_items) : $listing->place_items,
                 'verified' => $request->has('verified') ? $request->verified === '1' : $listing->verified,
@@ -1370,11 +1452,11 @@ class ListingController extends Controller
                 ], 401);
             }
 
-            // Get both published listings and draft properties
+            // Get both published listings and draft listings
             // After normalization, all listings (including drafts) are in the listings table
             $listingsQuery = Listing::where('user_id', $user->id)
                 ->with([
-                    'propertyType',
+                    'listingType',
                     'reviews',
                     'stayDetails',
                     'experienceDetails'
@@ -1495,7 +1577,7 @@ class ListingController extends Controller
             $query = Listing::where('user_id', $user->id)
                 ->where('status', 'draft')
                 ->with([
-                    'propertyType',
+                    'listingType',
                     'reviews'
                 ]);
 
@@ -1561,7 +1643,7 @@ class ListingController extends Controller
             }
 
             $listing = Listing::where('user_id', $user->id)
-                ->with(['property', 'bookings'])
+                ->with(['bookings'])
                 ->find($listingId);
 
             if (!$listing) {
@@ -1591,7 +1673,7 @@ class ListingController extends Controller
                 $listing->placeItems()->detach();
                 $listing->images()->delete();
                 
-                // Property data is now part of the listing, no separate property to delete
+                // listing data is now part of the listing, no separate listing to delete
 
                 // Delete the listing
                 $listing->delete();
@@ -1679,18 +1761,18 @@ class ListingController extends Controller
     }
 
     /**
-     * Create a new property type
+     * Create a new listing type
      */
-    public function createSystemPropertyType(Request $request)
+    public function createSystemlistingType(Request $request)
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255|unique:property_types',
+                'name' => 'required|string|max:255|unique:listing_types',
                 'icon' => 'nullable|string|max:255',
                 'description' => 'nullable|string'
             ]);
 
-            $propertyType = PropertyType::create([
+            $listingType = listingType::create([
                 'name' => $request->name,
                 'icon' => $request->icon,
                 'description' => $request->description
@@ -1698,13 +1780,13 @@ class ListingController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Property type created successfully',
-                'data' => $propertyType
+                'message' => 'listing type created successfully',
+                'data' => $listingType
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to create property type',
+                'message' => 'Failed to create listing type',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -1719,30 +1801,34 @@ class ListingController extends Controller
     {
         try {
             // Get filter and pagination parameters
-            $propertyType = strtolower($request->query('property_type', '')) ?: null; // e.g., 'bangalow', 'apartment', etc.
             $listingType = strtolower($request->query('listing_type', '')) ?: null; // e.g., 'experience' or 'stay'
+            $authenticated = $request->query('authenticated', 'false') === 'true';
             $page = (int) $request->query('page', 1);
             $perPage = (int) $request->query('per_page', 10);
 
             // Build the query with relationships
             $query = Listing::with([
-                'propertyType',
+                'listingType',
                 'user',
                 'reviews'
             ])
             // Only show published listings to public
             ->where('status', Listing::STATUS_PUBLISHED);
 
-            // Filter by listing_type if provided
+            // Filter by listing_type if provided (use the column, not relationship)
             if ($listingType) {
                 $query->whereRaw('LOWER(listing_type) = ?', [$listingType]);
             }
 
-            // Filter by property_type (string name) if provided
-            if ($propertyType) {
-                $query->whereHas('propertyType', function ($q) use ($propertyType) {
-                    $q->whereRaw('LOWER(name) = ?', [$propertyType]);
-                });
+            // Apply location-based filtering for authenticated users
+            if ($authenticated && auth()->check()) {
+                $user = auth()->user();
+                // Filter by user's preferred location/country if available
+                if ($user->country) {
+                    $query->where('country', $user->country);
+                }
+                // You can add more location-based filters here
+                // e.g., by city, region, or distance from user's location
             }
 
             // Paginate the results
@@ -1811,7 +1897,7 @@ class ListingController extends Controller
                     'listing_favoutites' => $listing_favoutites,
                     'safety_items' => $safety_items,
                     'who_is_there' => $who_is_there,
-                    'property_type' => $listing->propertyType,
+                    'listing_type' => $listing->listingType,
                     'listing_type' => $listing->listing_type,
                     'host' => $listing->user ? [
                         'id' => $listing->user->id,
@@ -1862,7 +1948,7 @@ class ListingController extends Controller
     {
         try {
             $metadata = [
-                'property_types' => [
+                'listing_types' => [
                     ['value' => 'apartment', 'label' => 'Apartment', 'description' => 'A self-contained housing unit within a larger building'],
                     ['value' => 'house', 'label' => 'House', 'description' => 'A standalone residential building'],
                     ['value' => 'condo', 'label' => 'Condominium', 'description' => 'A privately owned unit in a building or complex'],
@@ -1920,7 +2006,7 @@ class ListingController extends Controller
                 ],
                 'validation_rules' => [
                     'required_fields' => [
-                        'title', 'description', 'property_type', 'category',
+                        'title', 'description', 'listing_type', 'category',
                         'bedrooms', 'bathrooms', 'max_guests', 'price_per_night',
                         'address', 'city', 'state', 'country', 'postal_code',
                         'latitude', 'longitude'

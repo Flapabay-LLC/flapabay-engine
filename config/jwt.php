@@ -195,7 +195,7 @@ return [
     | Leeway
     |--------------------------------------------------------------------------
     |
-    | This property gives the jwt timestamp claims some "leeway".
+    | This listing gives the jwt timestamp claims some "leeway".
     | Meaning that if you have any unavoidable slight clock skew on
     | any of your servers then this will afford you some level of cushioning.
     |

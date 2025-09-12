@@ -23,7 +23,7 @@ class PlaceItemSeeder extends Seeder
                 'description' => '',
             ],
             [
-                'name' => 'Weapon(s) on the Property',
+                'name' => 'Weapon(s) on the listing',
                 'description' => '',
             ],
         ];

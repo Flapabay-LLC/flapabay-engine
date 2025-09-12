@@ -8,7 +8,7 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\User;
-use App\Models\Property;
+use App\Models\listing;
 use App\Models\Listing;
 
 try {
@@ -26,13 +26,13 @@ try {
     echo "User: {$user->fname} {$user->lname} (ID: {$user->id})\n";
     echo "Email: {$user->email}\n\n";
     
-    // Check properties
-    echo "--- PROPERTIES TABLE ---\n";
-    $properties = Property::where('user_id', $userId)->get();
-    echo "Total properties: " . $properties->count() . "\n";
+    // Check listings
+    echo "--- listings TABLE ---\n";
+    $listings = listing::where('user_id', $userId)->get();
+    echo "Total listings: " . $listings->count() . "\n";
     
-    foreach ($properties as $property) {
-        echo "Property ID: {$property->id}, Status: {$property->status}, Title: {$property->title}\n";
+    foreach ($listings as $listing) {
+        echo "listing ID: {$listing->id}, Status: {$listing->status}, Title: {$listing->title}\n";
     }
     
     // Check listings
@@ -44,24 +44,24 @@ try {
         echo "Listing ID: {$listing->id}, Status: {$listing->status}, Title: {$listing->title}, Type: {$listing->listing_type}\n";
     }
     
-    // Check draft properties specifically
-    echo "\n--- DRAFT PROPERTIES ---\n";
-    $draftProperties = Property::where('user_id', $userId)
-        ->where('status', Property::STATUS_DRAFT)
+    // Check draft listings specifically
+    echo "\n--- DRAFT listings ---\n";
+    $draftlistings = listing::where('user_id', $userId)
+        ->where('status', listing::STATUS_DRAFT)
         ->get();
-    echo "Draft properties: " . $draftProperties->count() . "\n";
+    echo "Draft listings: " . $draftlistings->count() . "\n";
     
-    foreach ($draftProperties as $draft) {
-        echo "Draft Property ID: {$draft->id}, Title: {$draft->title}\n";
+    foreach ($draftlistings as $draft) {
+        echo "Draft listing ID: {$draft->id}, Title: {$draft->title}\n";
     }
     
     // Total count (what API returns)
-    $totalCount = $listings->count() + $draftProperties->count();
+    $totalCount = $listings->count() + $draftlistings->count();
     echo "\n--- SUMMARY ---\n";
     echo "Published listings: {$listings->count()}\n";
-    echo "Draft properties: {$draftProperties->count()}\n";
+    echo "Draft listings: {$draftlistings->count()}\n";
     echo "Total (API result): {$totalCount}\n";
-    echo "\nThis explains why the API shows {$totalCount} items while our property query showed only {$properties->count()}.\n";
+    echo "\nThis explains why the API shows {$totalCount} items while our listing query showed only {$listings->count()}.\n";
     
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";

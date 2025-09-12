@@ -17,7 +17,7 @@ try {
     $response = Invoke-WebRequest -Uri "$baseUrl/wizard-listings/meta" -Method GET -Headers $headers -ErrorAction Stop
     Write-Host "✅ SUCCESS: $($response.StatusCode)" -ForegroundColor Green
     $meta = $response.Content | ConvertFrom-Json
-    Write-Host "   📊 Property Types: $($meta.data.property_types.Count)" -ForegroundColor Gray
+    Write-Host "   📊 listing Types: $($meta.data.listing_types.Count)" -ForegroundColor Gray
     Write-Host "   📊 Categories: $($meta.data.categories.Count)" -ForegroundColor Gray
     Write-Host "   📊 Amenities: $($meta.data.amenities.Count)" -ForegroundColor Gray
 } catch {
@@ -30,7 +30,7 @@ $createBody = @{
     user_id = 1111
     title = 'API Test Listing'
     description = 'This is a comprehensive test listing created through the wizard API to verify all functionality works correctly'
-    property_type = 'apartment'
+    listing_type = 'apartment'
     category = 'entire_place'
     bedrooms = 3
     bathrooms = 2
@@ -49,14 +49,14 @@ try {
     $response = Invoke-WebRequest -Uri "$baseUrl/wizard-listings" -Method POST -Body $createBody -ContentType 'application/json' -Headers $headers -ErrorAction Stop
     Write-Host "✅ SUCCESS: $($response.StatusCode)" -ForegroundColor Green
     $listing = $response.Content | ConvertFrom-Json
-    $listingId = $listing.data.property.id
+    $listingId = $listing.data.listing.id
     Write-Host "   🆔 Created Listing ID: $listingId" -ForegroundColor Gray
-    Write-Host "   📈 Completion: $($listing.data.property.completion_percentage)%" -ForegroundColor Gray
+    Write-Host "   📈 Completion: $($listing.data.listing.completion_percentage)%" -ForegroundColor Gray
     
     # Test 3: Media Upload Initialization
     Write-Host "\n3️⃣  Testing POST /media/uploads/init" -ForegroundColor Yellow
     $mediaBody = @{
-        file_name = 'test-property-image.jpg'
+        file_name = 'test-listing-image.jpg'
         file_size = 2048000
         file_type = 'image'
         content_type = 'image/jpeg'
@@ -106,7 +106,7 @@ try {
         $updateResponse = Invoke-WebRequest -Uri "$baseUrl/wizard-listings/$listingId" -Method PATCH -Body $updateBody -ContentType 'application/json' -Headers $headers -ErrorAction Stop
         Write-Host "✅ SUCCESS: $($updateResponse.StatusCode)" -ForegroundColor Green
         $updated = $updateResponse.Content | ConvertFrom-Json
-        Write-Host "   📈 Updated Completion: $($updated.data.property.completion_percentage)%" -ForegroundColor Gray
+        Write-Host "   📈 Updated Completion: $($updated.data.listing.completion_percentage)%" -ForegroundColor Gray
     } catch {
         Write-Host "❌ FAILED: $($_.Exception.Message)" -ForegroundColor Red
         if ($_.Exception.Response) {

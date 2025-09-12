@@ -18,8 +18,8 @@ $headers = @{
 
 $body = @{
     title = "Test Villa"
-    description = "A beautiful test property"
-    property_type_id = 1
+    description = "A beautiful test listing"
+    listing_type_id = 1
     price_per_night = 150
     currency = "USD"
     num_of_bedrooms = 2

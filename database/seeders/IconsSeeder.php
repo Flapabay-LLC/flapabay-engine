@@ -70,7 +70,7 @@ class IconsSeeder extends Seeder
                 'icon_image_url' => 'https://example.com/icons/map.png',
             ],
 
-            // Property Type Icons
+            // listing Type Icons
             [
                 'black_icon' => 'apartment',
                 'white_icon' => 'apartment-outline',
@@ -110,7 +110,7 @@ class IconsSeeder extends Seeder
                 'icon_image_url' => 'https://example.com/icons/office.png',
             ],
 
-            // More property-related icons
+            // More listing-related icons
             [
                 'black_icon' => 'pool',
                 'white_icon' => 'pool-outline',

@@ -6,7 +6,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReviewController;
-use App\Http\Controllers\PropertyController;
+
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\HostController;
 use App\Http\Controllers\PaymentController;
@@ -18,11 +18,11 @@ use App\Http\Controllers\ComsmeticController;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ListingController;
-use App\Http\Controllers\PropertyReviewController;
+use App\Http\Controllers\listingReviewController;
 use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PlaceItemController;
-use App\Http\Controllers\PropertyTypeController;
+use App\Http\Controllers\listingTypeController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\CoHostController;
@@ -59,14 +59,13 @@ Route::prefix('v1')->group(function () {
     //Listings
     Route::post('listings/search', [ListingController::class, 'searchListings']);
     Route::get('listings', [ListingController::class, 'fetchAllListings']);
-    Route::delete('properties/{propertyId}', [PropertyController::class, 'deleteProperty']);
-    Route::get('properties/{propertyId}/reviews', [PropertyController::class, 'getPropertyReviews']);
-    Route::get('properties/{propertyId}/description', [PropertyController::class, 'getPropertyDescription']);
-    Route::get('properties/{propertyId}/price-details', [PropertyController::class, 'getPropertyPriceDetails']);
-    Route::get('properties/{propertyId}/amenities', [PropertyController::class, 'getPropertyAmenities']);
-    Route::get('properties/{propertyId}/availability', [PropertyController::class, 'getPropertyAvailabilityDates']);
-    Route::get('properties/{propertyId}', [PropertyController::class, 'getProperty']);
-    Route::get('properties', [PropertyController::class, 'getProperties']);
+    Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
+    Route::get('listings/{listingId}/reviews', [ListingController::class, 'getlistingReviews']);
+    Route::get('listings/{listingId}/description', [ListingController::class, 'getlistingDescription']);
+    Route::get('listings/{listingId}/price-details', [ListingController::class, 'getlistingPriceDetails']);
+    Route::get('listings/{listingId}/amenities', [ListingController::class, 'getlistingAmenities']);
+    Route::get('listings/{listingId}/availability', [ListingController::class, 'getlistingAvailabilityDates']);
+    Route::get('listings/{listingId}', [ListingController::class, 'getlisting']);
 
     // Google & Facebook Auth
 // Route::post('google/signup', [GoogleAuthController::class, 'googleSignUp']);
@@ -84,8 +83,8 @@ Route::post('google/logout', [GoogleAuthController::class, 'logout'])->middlewar
     Route::post('categories/add', [CategoryController::class, 'addCategory']);
     Route::get('categories', [CategoryController::class, 'getAllCategories']);
 
-    //property types
-    Route::get('property-types', [PropertyTypeController::class, 'index']);
+    //listing types
+    Route::get('listing-types', [listingTypeController::class, 'index']);
 
     //Supported Languages
     Route::get('/supported-lang', [LanguageController::class, 'getSupportedLang']);
@@ -94,7 +93,7 @@ Route::post('google/logout', [GoogleAuthController::class, 'logout'])->middlewar
     Route::get('system/amenities', [ListingController::class, 'getSystemAmenities']);
     Route::get('system/favorites', [ListingController::class, 'getSystemFavorites']);
     Route::get('system/place-items', [ListingController::class, 'getSystemPlaceItems']);
-    Route::get('system/property-types', [ListingController::class, 'getSystemPropertyTypes']);
+    Route::get('system/listing-types', [ListingController::class, 'getSystemlistingTypes']);
     //Currencies
     Route::get('/get-supported-currencies', [CurrencyController::class, 'getSupportedCurrencies']);
     // Wishlist routes
@@ -148,22 +147,22 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     // Media upload routes
     Route::post('media/uploads/init', [\App\Http\Controllers\MediaController::class, 'initializeUpload']);
     Route::post('media/uploads/direct', [\App\Http\Controllers\MediaController::class, 'directUpload']);
-    Route::post('media/attach', [\App\Http\Controllers\MediaController::class, 'attachToProperty']);
+    Route::post('media/attach', [\App\Http\Controllers\MediaController::class, 'attachTolisting']);
     Route::get('media/status/{fileKey}', [\App\Http\Controllers\MediaController::class, 'getUploadStatus'])->where('fileKey', '.*');
     Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
     Route::get('listings/host/drafts', [ListingController::class, 'fetchHostDraftListings']);
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
 
-    // Property routes
-    // Route::get('properties', [PropertyController::class, 'getProperties']);
-    Route::post('properties', [PropertyController::class, 'createProperties']);
-    Route::post('update-properties', [PropertyController::class, 'updateProperties']);
-    Route::post('properties/{propertyId}/availability', [PropertyController::class, 'setPropertyAvailabilityDates']);
+    // listing routes
+    // Route::get('listings', [listingController::class, 'getlistings']);
+    Route::post('listings', [ListingController::class, 'createlistings']);
+    Route::post('update-listings', [ListingController::class, 'updatelistings']);
+    Route::post('listings/{listingId}/availability', [ListingController::class, 'setlistingAvailabilityDates']);
 
-    // Property Rating & Reviews
-    Route::get('/reviews', [PropertyReviewController::class, 'index']);
-    Route::post('/create-review', [PropertyReviewController::class, 'store']);
-    Route::post('/update-review', [PropertyReviewController::class, 'update']);
+    // listing Rating & Reviews
+    Route::get('/reviews', [listingReviewController::class, 'index']);
+    Route::post('/create-review', [listingReviewController::class, 'store']);
+    Route::post('/update-review', [listingReviewController::class, 'update']);
 
     // Booking routes
     Route::post('booking', [BookingController::class, 'createBooking']);
@@ -236,7 +235,7 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     // System Data Management Routes
     Route::post('/system/amenities', [ListingController::class, 'createSystemAmenity']);
     Route::post('/system/favorites', [ListingController::class, 'createSystemFavorite']);
-    Route::post('/system/property-types', [ListingController::class, 'createSystemPropertyType']);
+    Route::post('/system/listing-types', [ListingController::class, 'createSystemlistingType']);
 
     // Reservation routes
     Route::post('reserve', [ReservationController::class, 'store']);
@@ -245,9 +244,9 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::post('reservations/{id}/cancel', [ReservationController::class, 'cancel']);
 
     // Co-host routes
-    Route::post('co-hosts/whitelist', [CoHostController::class, 'addPropertyToWhitelist']);
+    Route::post('co-hosts/whitelist', [CoHostController::class, 'addlistingToWhitelist']);
     Route::post('co-hosts/signup', [CoHostController::class, 'signUpAsCoHost']);
-    Route::get('co-hosts/properties', [CoHostController::class, 'getPropertiesManagedByCoHost']);
+    Route::get('co-hosts/listings', [CoHostController::class, 'getlistingsManagedByCoHost']);
     Route::get('co-hosts/members', [CoHostController::class, 'getHostCoHostMembers']);
 
     // Support routes
@@ -257,8 +256,8 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::post('support/ticket/{ticketId}/responses', [SupportController::class, 'addTicketResponse']);
     Route::get('support/faqs', [SupportController::class, 'fetchFaqs']);
 
-    // Property Type routes
-    Route::post('property-types', [PropertyTypeController::class, 'store']);
+    // listing Type routes
+    Route::post('listing-types', [listingTypeController::class, 'store']);
 
     // Wishlist routes
     Route::get('my-wishlists', [FavoriteController::class, 'myWishlists']);

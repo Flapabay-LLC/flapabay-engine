@@ -1,7 +1,7 @@
 <section id="host-signup" class="mb-8 p-4 bg-gray-900 text-white rounded-lg border-l-4 border-orange-500 shadow">
   <h2 class="mb-2 text-xl font-bold text-orange-300">Host Signup (registerHost)</h2>
   <p class="mb-2">
-    The <code>/host/signup</code> endpoint allows a user to register as a host and create a property and listing in a single request. This endpoint is handled by the <code>registerHost</code> method in <code>UserController.php</code>.
+    The <code>/host/signup</code> endpoint allows a user to register as a host and create a listing and listing in a single request. This endpoint is handled by the <code>registerHost</code> method in <code>UserController.php</code>.
   </p>
   <h3 class="mb-2 text-lg font-semibold text-orange-200">Endpoint</h3>
   <pre class="bg-gray-800 text-orange-200 p-2 rounded text-xs overflow-x-auto">POST /api/host/signup</pre>
@@ -42,14 +42,14 @@
     </table>
   </div>
   <h3 class="mb-2 text-lg font-semibold text-orange-200">Response</h3>
-  <p class="mb-2">On success, returns the created user, property, and listing data:</p>
+  <p class="mb-2">On success, returns the created user, listing, and listing data:</p>
   <pre class="bg-gray-800 text-orange-200 p-2 rounded text-xs overflow-x-auto">{
   "status": "success",
-  "message": "Host registered and property/listing created successfully",
+  "message": "Host registered and listing/listing created successfully",
   "data": {
     "user_id": 1,
     "user_id": "1234",
-    "property": { ... },
+    "listing": { ... },
     "listing": { ... }
   }
 }</pre>

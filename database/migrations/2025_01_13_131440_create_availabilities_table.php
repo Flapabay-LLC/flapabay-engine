@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('availabilities', function (Blueprint $table) {
             $table->bigIncrements('id'); // Auto-increment primary key
-            $table->unsignedBigInteger('listing_id'); // Foreign key referencing properties
+            $table->unsignedBigInteger('listing_id'); // Foreign key referencing listings
             $table->json('date_range')->nullable(); // JSON column for date range (start and end dates)
             $table->json('price_dates')->nullable(); // JSON column for price overrides on specific dates
             $table->timestamps();

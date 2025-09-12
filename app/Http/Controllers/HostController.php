@@ -30,7 +30,7 @@ class HostController extends Controller
                 'name' => $host->fname . ' ' . $host->lname,
                 'email' => $host->email,
                 'phone' => $host->phone,
-                'properties' => $host->properties, // Assuming a relationship exists
+                'listings' => $host->listings, // Assuming a relationship exists
             ]
         ]);
     }

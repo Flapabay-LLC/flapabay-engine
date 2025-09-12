@@ -31,10 +31,10 @@ class Category extends Model
     }
 
     /**
-     * Relationship with Property model (if applicable).
+     * Relationship with listing model (if applicable).
      */
-    public function properties()
+    public function listings()
     {
-        return $this->belongsToMany(Property::class, 'category_property', 'category_id', 'listing_id');
+        return $this->belongsToMany(listing::class, 'category_listing', 'category_id', 'listing_id');
     }
 }

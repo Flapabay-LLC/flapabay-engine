@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StorePropertyRequest extends FormRequest
+class StorelistingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -56,7 +56,7 @@ class StorePropertyRequest extends FormRequest
             'images' => 'nullable|array',
             'video_link' => 'nullable',
             'verified' => 'boolean',
-            'property_type_id' => 'nullable',
+            'listing_type_id' => 'nullable',
             'category_id' => 'required',
             'tags' => 'nullable',
         ];

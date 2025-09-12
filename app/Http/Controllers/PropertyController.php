@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 
-use App\Http\Requests\StorePropertyRequest;
-use App\Http\Requests\UpdatePropertyRequest;
+use App\Http\Requests\StorelistingRequest;
+use App\Http\Requests\UpdatelistingRequest;
 use App\Models\Availability;
 use App\Models\Booking;
 use App\Models\Experience;
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
-class PropertyController extends Controller
+class listingController extends Controller
 {
     /**
      * Get a list of listings without filters.
@@ -28,7 +28,7 @@ class PropertyController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getProperties(Request $request)
+    public function getlistings(Request $request)
     {
         // dd($request);
         try {
@@ -65,7 +65,7 @@ class PropertyController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createProperties(StorePropertyRequest $request)
+    public function createlistings(StorelistingRequest $request)
     {
         $validatedData = $request->validated();
 
@@ -132,7 +132,7 @@ class PropertyController extends Controller
                         try {
                             $result = $s3Client->putObject([
                                 'Bucket'     => $bucketName,
-                                'Key'        => 'properties/' . $fileName,
+                                'Key'        => 'listings/' . $fileName,
                                 'SourceFile' => $image->getPathname(),
                             ]);
 
@@ -143,7 +143,7 @@ class PropertyController extends Controller
                             }
                         } catch (Exception $e) {
                             // Fallback to local storage
-                            $localPath = $image->storeAs('properties', $fileName, 'public');
+                            $localPath = $image->storeAs('listings', $fileName, 'public');
                             $wasabiUrl = Storage::disk('public')->url($localPath);
                         }
 
@@ -177,24 +177,24 @@ class PropertyController extends Controller
     }
 
 
-    public function updateProperties(UpdatePropertyRequest $request) {
+    public function updatelistings(UpdatelistingRequest $request) {
         // Step 1: Validate incoming request data
        
 
         try {
             DB::beginTransaction();
     
-            // Fetch existing property
-            $property = Property::find($request->input('listing_id'));
-            if (!$property) {
+            // Fetch existing listing
+            $listing = listing::find($request->input('listing_id'));
+            if (!$listing) {
                 return response()->json([
                     "success" => false,
-                    "message" => 'Property not found.',
+                    "message" => 'listing not found.',
                 ], 404);
             }
     
-            // Update property data
-            $property->update($request->validated());
+            // Update listing data
+            $listing->update($request->validated());
     
             $imagePaths = [];
     
@@ -222,7 +222,7 @@ class PropertyController extends Controller
                         try {
                             $result = $s3Client->putObject([
                                 'Bucket'     => $bucketName,
-                                'Key'        => 'properties/images/' . $fileName,
+                                'Key'        => 'listings/images/' . $fileName,
                                 'SourceFile' => $image->getPathname(),
                             ]);
     
@@ -236,7 +236,7 @@ class PropertyController extends Controller
                             Log::error('Wasabi upload failed: ' . $e->getMessage());
     
                             // Fallback: Store in local Laravel storage
-                            $path = $image->store('properties/images', 'public');
+                            $path = $image->store('listings/images', 'public');
                             if ($path) {
                                 $imagePaths[] = Storage::disk('public')->url($path);
                             } else {
@@ -249,23 +249,23 @@ class PropertyController extends Controller
             }
     
             if (!empty($imagePaths)) {
-                $property->images = json_encode($imagePaths);
-                $property->save();
+                $listing->images = json_encode($imagePaths);
+                $listing->save();
             }
     
             DB::commit();
     
             return response()->json([
                 "success" => true,
-                "message" => 'Property updated successfully',
-                "property" => $property,
+                "message" => 'listing updated successfully',
+                "listing" => $listing,
             ], 200);
     
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 "success" => false,
-                "message" => 'Failed to update property',
+                "message" => 'Failed to update listing',
                 "error" => $e->getMessage(),
             ], 500);
         }
@@ -274,44 +274,44 @@ class PropertyController extends Controller
 
 
 
-    public function deleteProperty($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+    public function deletelisting($listingId) {
+        // Step 1: Validate the listing ID
+        if (!is_numeric($listingId) || $listingId <= 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid property ID',
+                'message' => 'Invalid listing ID',
             ], 400);
         }
 
         try {
             DB::beginTransaction();
 
-            // Step 2: Find the property
-            $property = Property::findOrFail($propertyId);
+            // Step 2: Find the listing
+            $listing = listing::findOrFail($listingId);
 
             // Step 3: Delete related Listings
-            Listing::where('listing_id', $propertyId)->delete();
+            Listing::where('listing_id', $listingId)->delete();
 
             // Step 4: Delete related Availability
-            Availability::where('listing_id', $propertyId)->delete();
+            Availability::where('listing_id', $listingId)->delete();
 
             // Step 5: Delete related Bookings
-            Booking::where('listing_id', $propertyId)->delete();
+            Booking::where('listing_id', $listingId)->delete();
 
-            // Step 6: Delete the Property
-            $property->delete();
+            // Step 6: Delete the listing
+            $listing->delete();
 
             DB::commit();
             return response()->json([
                 'success' => true,
-                'message' => 'Property deleted successfully',
+                'message' => 'listing deleted successfully',
             ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete property',
+                'message' => 'Failed to delete listing',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -319,14 +319,14 @@ class PropertyController extends Controller
 
 
 
-    public function getProperty($propertyId) {
-        // dd($propertyId);
+    public function getlisting($listingId) {
+        // dd($listingId);
         try {
-            // Step 1: Validate the property ID
-            if (!is_numeric($propertyId) || $propertyId <= 0) {
+            // Step 1: Validate the listing ID
+            if (!is_numeric($listingId) || $listingId <= 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid property ID',
+                    'message' => 'Invalid listing ID',
                 ], 400);
             }
 
@@ -335,7 +335,7 @@ class PropertyController extends Controller
                 'category' => function($query) {
                     $query->select('id', 'name', 'description');
                 },
-                'propertyType' => function($query) {
+                'listingType' => function($query) {
                     $query->select('id', 'name', 'description');
                 },
                 'reviews' => function($query) {
@@ -348,7 +348,7 @@ class PropertyController extends Controller
                 'experienceDetails' // eager load experience details
             ])
             ->where('status', Listing::STATUS_PUBLISHED)
-            ->find($propertyId);
+            ->find($listingId);
             
             // Only load user relationship if user_id is not null
             if ($listing && $listing->user_id) {
@@ -425,34 +425,34 @@ class PropertyController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Property retrieval error: ' . $e->getMessage());
+            Log::error('listing retrieval error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve property',
+                'message' => 'Failed to retrieve listing',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
 
-    public function getPropertyReviews($propertyId) {
-        // Step 1: Validate the property ID
-        if (!is_numeric($propertyId) || $propertyId <= 0) {
+    public function getlistingReviews($listingId) {
+        // Step 1: Validate the listing ID
+        if (!is_numeric($listingId) || $listingId <= 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid property ID',
+                'message' => 'Invalid listing ID',
             ], 400);
         }
 
         try {
-            // Step 2: Retrieve reviews from UserReview Model where listing_id = $propertyId
-            $reviews = UserReview::where('listing_id', $propertyId)->get();
+            // Step 2: Retrieve reviews from UserReview Model where listing_id = $listingId
+            $reviews = UserReview::where('listing_id', $listingId)->get();
 
             // Step 3: Check if reviews exist
             if ($reviews->isEmpty()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No reviews found for this property',
+                    'message' => 'No reviews found for this listing',
                     'reviews' => [],
                 ], 200);
             }
@@ -473,7 +473,7 @@ class PropertyController extends Controller
     }
 
 
-    public function getPropertyDescription($listingId) {
+    public function getlistingDescription($listingId) {
         try {
             // Step 1: Validate the listing ID
             if (!is_numeric($listingId) || $listingId <= 0) {
@@ -514,7 +514,7 @@ class PropertyController extends Controller
         }
     }
 
-    public function getPropertyPriceDetails($listingId) {
+    public function getlistingPriceDetails($listingId) {
         try {
             // Step 1: Validate the listing ID
             if (!is_numeric($listingId) || $listingId <= 0) {
@@ -571,7 +571,7 @@ class PropertyController extends Controller
     }
 
 
-    public function getPropertyAmenities($listingId) {
+    public function getlistingAmenities($listingId) {
         try {
             // Step 1: Validate the listing ID
             if (!is_numeric($listingId) || $listingId <= 0) {
@@ -623,7 +623,7 @@ class PropertyController extends Controller
     /**
      * Get listing availability dates based on check_in_date and check_out_date
      */
-    public function getPropertyAvailabilityDates($listingId) {
+    public function getlistingAvailabilityDates($listingId) {
         try {
             // Validate the listing ID
             if (!is_numeric($listingId) || $listingId <= 0) {
@@ -678,7 +678,7 @@ class PropertyController extends Controller
     /**
      * Set listing availability dates and related availability fields
      */
-    public function setPropertyAvailabilityDates(Request $request, $listingId) {
+    public function setlistingAvailabilityDates(Request $request, $listingId) {
         $validated = $request->validate([
             'check_in_date' => 'nullable|date',
             'check_out_date' => 'nullable|date|after_or_equal:check_in_date',

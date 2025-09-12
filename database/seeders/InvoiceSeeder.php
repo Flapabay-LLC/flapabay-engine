@@ -23,7 +23,7 @@ class InvoiceSeeder extends Seeder
                     'status' => 'paid',
                     'payment_method' => 'credit_card',
                     'due_date' => Carbon::today()->addDays(10)->toDateString(),
-                    'description' => 'Invoice for beachfront property booking.',
+                    'description' => 'Invoice for beachfront listing booking.',
                     'currency' => 'USD',
                 ],
                 [
@@ -45,7 +45,7 @@ class InvoiceSeeder extends Seeder
                     'status' => 'paid',
                     'payment_method' => 'bank_transfer',
                     'due_date' => Carbon::today()->addDays(20)->toDateString(),
-                    'description' => 'Invoice for urban living property booking.',
+                    'description' => 'Invoice for urban living listing booking.',
                     'currency' => 'USD',
                 ],
                 // Add more sample invoices as needed
