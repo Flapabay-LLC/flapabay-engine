@@ -3,7 +3,6 @@
 use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\Auth\AuthenticatorController;
 use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserReviewController;
 use App\Http\Controllers\GuestReviewController;
@@ -29,6 +28,10 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\CoHostController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\EarningsController;
+use App\Http\Controllers\PayoutMethodsController;
+use App\Http\Controllers\WithdrawalController;
+use App\Http\Controllers\PaymentHistoryController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +63,10 @@ Route::prefix('v1')->group(function () {
     //Listings
     Route::post('listings/search', [ListingController::class, 'searchListings']);
     Route::get('listings', [ListingController::class, 'fetchAllListings']);
+    // Host-specific routes (must come before {listingId} routes)
+    Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
+    Route::get('listings/host/drafts', [ListingController::class, 'fetchHostDraftListings']);
+    // General listing routes with parameters
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
     Route::get('listings/{listingId}/reviews', [ListingController::class, 'getlistingReviews']);
     Route::get('listings/{listingId}/description', [ListingController::class, 'getlistingDescription']);
@@ -78,6 +85,10 @@ Route::post('google/logout', [GoogleAuthController::class, 'logout'])->middlewar
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
     Route::post('facebook/signin', [FacebookController::class, 'facebookSignIn']);
+    
+    // Public Payout Methods Information (no auth required)
+    Route::get('payout-methods/countries', [PayoutMethodsController::class, 'getAllSupportedCountries']);
+    Route::get('payout-methods/supported', [PayoutMethodsController::class, 'getSupportedPayoutMethods']);
     // Route::get('facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
     
     // Category routes
@@ -150,8 +161,6 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::post('media/uploads/direct', [\App\Http\Controllers\MediaController::class, 'directUpload']);
     Route::post('media/attach', [\App\Http\Controllers\MediaController::class, 'attachTolisting']);
     Route::get('media/status/{fileKey}', [\App\Http\Controllers\MediaController::class, 'getUploadStatus'])->where('fileKey', '.*');
-    Route::get('listings/host', [ListingController::class, 'fetchHostListings']);
-    Route::get('listings/host/drafts', [ListingController::class, 'fetchHostDraftListings']);
     Route::delete('listings/{listingId}', [ListingController::class, 'deleteHostListing']);
 
     // listing routes
@@ -197,6 +206,30 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
     Route::get('payments/user-payment-details', [PaymentController::class, 'getUserPaymentDetails']);
     Route::post('payments/user-payment-details', [PaymentController::class, 'addUserPaymentDetails']);
     Route::post('payments/user-payment-details/edit/{id}', [PaymentController::class, 'editUserPaymentDetails']);
+
+    // Enhanced Payment APIs
+    // Balance and Earnings routes
+    Route::get('earnings/balance', [EarningsController::class, 'getBalance']);
+    Route::get('earnings/pending', [EarningsController::class, 'getPendingEarnings']);
+    Route::get('earnings/total', [EarningsController::class, 'getTotalEarnings']);
+    Route::get('earnings/monthly', [EarningsController::class, 'getMonthlyEarnings']);
+
+    // Payout Methods Management routes (authenticated)
+    Route::get('payout-methods', [PayoutMethodsController::class, 'getUserPayoutMethods']);
+    Route::post('payout-methods', [PayoutMethodsController::class, 'createPayoutMethod']);
+    Route::put('payout-methods/{id}', [PayoutMethodsController::class, 'updatePayoutMethod']);
+    Route::put('payout-methods/{id}/set-default', [PayoutMethodsController::class, 'setDefaultPayoutMethod']);
+    Route::delete('payout-methods/{id}', [PayoutMethodsController::class, 'deletePayoutMethod']);
+
+    // Withdrawal/Payout Request routes
+    Route::post('withdrawals/request', [WithdrawalController::class, 'requestWithdrawal']);
+    Route::post('withdrawals/verify-otp', [WithdrawalController::class, 'verifyWithdrawalOtp']);
+    Route::get('withdrawals', [WithdrawalController::class, 'getWithdrawalHistory']);
+    Route::post('withdrawals/{id}/cancel', [WithdrawalController::class, 'cancelWithdrawal']);
+
+    // Payment History routes
+    Route::get('payment-history', [PaymentHistoryController::class, 'getPaymentHistory']);
+    Route::get('payment-history/export', [PaymentHistoryController::class, 'exportPaymentHistory']);
 
     // Stripe routes
     Route::get('/stripe/authenticate', [StripeController::class, 'auth']);
@@ -277,6 +310,13 @@ Route::middleware('auth.api')->prefix('v1')->group(function () {
 
     // Host reservations endpoint
     Route::get('host/reservations', [\App\Http\Controllers\ReservationController::class, 'hostReservations']);
+
+    // Experience CRUD routes
+    Route::get('experiences', [\App\Http\Controllers\ExperienceController::class, 'index']);
+    Route::post('experiences', [\App\Http\Controllers\ExperienceController::class, 'store']);
+    Route::get('experiences/{id}', [\App\Http\Controllers\ExperienceController::class, 'show']);
+    Route::put('experiences/{id}', [\App\Http\Controllers\ExperienceController::class, 'update']);
+    Route::delete('experiences/{id}', [\App\Http\Controllers\ExperienceController::class, 'destroy']);
 
 });
 

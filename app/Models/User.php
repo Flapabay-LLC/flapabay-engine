@@ -42,6 +42,11 @@ class User extends Authenticatable implements JWTSubject
         'google_id',
         'profile_complete',
         'currency',
+        'balance',
+        'pending_earnings',
+        'total_earnings',
+        'total_withdrawn',
+        'last_payout_at',
     ];
 
 
@@ -90,6 +95,11 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_host' => 'boolean',
+            'balance' => 'decimal:2',
+            'pending_earnings' => 'decimal:2',
+            'total_earnings' => 'decimal:2',
+            'total_withdrawn' => 'decimal:2',
+            'last_payout_at' => 'datetime',
         ];
     }
 
@@ -151,5 +161,45 @@ class User extends Authenticatable implements JWTSubject
     public function listings()
     {
         return $this->hasMany(listing::class, 'user_id');
+    }
+
+    /**
+     * Relationship with withdrawals.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
+    /**
+     * Relationship with payment methods.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function paymentMethods()
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    /**
+     * Get user's bookings as a guest.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Get bookings for listings owned by this user (as host).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function hostBookings()
+    {
+        return $this->hasManyThrough(Booking::class, Listing::class, 'user_id', 'listing_id');
     }
 }

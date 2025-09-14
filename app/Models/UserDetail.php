@@ -43,7 +43,8 @@ class UserDetail extends Model
         'pets',
         'my_fun_fact',
         'favourite_place',
-        'my_work'
+        'my_work',
+        'default_payout_method_id'
     ];
 
 

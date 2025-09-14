@@ -74,4 +74,12 @@ class Booking extends Model
     {
         return $this->hasMany(UserReview::class, 'trip_id');
     }
+
+    /**
+     * Get the payment associated with the booking.
+     */
+    public function payment()
+    {
+        return $this->hasOne(Payment::class, 'booking_id');
+    }
 }

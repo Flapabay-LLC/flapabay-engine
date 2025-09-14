@@ -104,6 +104,15 @@ class listingTypeSeeder extends Seeder
                 'bg_color' => '#F1F8E9',
                 'color' => '#558B2F',
                 'type' => 'experience'
+            ],
+            [
+                'name' => 'experience',
+                'black_icon' => 'Activity',
+                'white_icon' => 'Activity',
+                'description' => 'Unique experiences and activities hosted by locals',
+                'bg_color' => '#FFF8E1',
+                'color' => '#F57F17',
+                'type' => 'experience'
             ]
         ];
 
